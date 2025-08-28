@@ -454,7 +454,11 @@
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 
                 if (window.localDb && window.localDb.loaded) {
-                    await carregarDadosFrequencia();
+                    // Forçar carregamento do arquivo primeiro
+                    const carregouArquivo = await carregarDadosFrequenciaDoArquivo();
+                    if (!carregouArquivo) {
+                        await carregarDadosFrequencia();
+                    }
                     await carregarEstatisticasFrequencia();
                     await carregarAlertasFrequencia();
                     await carregarResumoTurmas();
@@ -632,11 +636,8 @@
                 // Atualizar dados locais
                 dadosFrequencia = [...dadosFrequencia, ...registrosProcessados];
                 
-                // Salvar backup no localStorage
-                localStorage.setItem('dadosFrequencia_backup', JSON.stringify({
-                    timestamp: Date.now(),
-                    dados: dadosFrequencia
-                }));
+                // Não usar localStorage para evitar erro de quota
+                console.log('ℹ️ Dados salvos no sistema local, sem backup localStorage devido ao tamanho');
                 
                 const alunosProcessados = new Set(registrosProcessados.map(r => r.codigo_aluno)).size;
                 const diasProcessados = new Set(registrosProcessados.map(r => r.data)).size;
@@ -650,20 +651,27 @@
                     </div>
                 `;
                 
-                // Recarregar dados de forma otimizada
+                // Recarregar dados automaticamente
                 statusDiv.innerHTML += `
                     <div class="alert alert-info" style="margin-top: 5px;">
-                        🔄 Atualizando interface...
+                        🔄 Carregando dados atualizados...
                     </div>
                 `;
                 
-                // Usar setTimeout para não bloquear a UI
+                // Forçar recarregamento dos dados do arquivo
                 setTimeout(async () => {
                     try {
+                        await carregarDadosFrequenciaDoArquivo();
                         await carregarEstatisticasFrequencia();
                         await carregarAlertasFrequencia();
                         await carregarResumoTurmas();
                         aplicarFiltrosFrequencia();
+                        
+                        statusDiv.innerHTML += `
+                            <div class="alert alert-success" style="margin-top: 5px;">
+                                ✨ Interface atualizada com novos dados!
+                            </div>
+                        `;
                     } catch (error) {
                         console.warn('Erro ao recarregar interface:', error);
                     }
@@ -733,20 +741,37 @@
 
         // ======= CARREGAR DADOS =======
         
+        // Função específica para carregar do arquivo JSON
+        async function carregarDadosFrequenciaDoArquivo() {
+            try {
+                const response = await fetch('dados/frequencia.json');
+                if (response.ok) {
+                    const dadosJson = await response.json();
+                    if (dadosJson.registros && dadosJson.registros.length > 0) {
+                        dadosFrequencia = dadosJson.registros;
+                        console.log(`📂 ${dadosFrequencia.length} registros carregados do arquivo JSON (versão ${dadosJson.version})`);
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.warn('Erro ao carregar arquivo JSON:', error);
+            }
+            return false;
+        }
+        
         async function carregarDadosFrequencia() {
             try {
-                // 1. Tentar carregar do GitHub primeiro
+                // 1. Tentar carregar do arquivo JSON primeiro (dados mais atualizados)
+                const carregouArquivo = await carregarDadosFrequenciaDoArquivo();
+                if (carregouArquivo) {
+                    return;
+                }
+                
+                // 2. Tentar carregar do GitHub como alternativa
                 if (window.gitHubSync) {
                     const dadosGitHub = await window.gitHubSync.sincronizarDados('frequencia');
                     if (dadosGitHub && dadosGitHub.length > 0) {
                         dadosFrequencia = dadosGitHub;
-                        
-                        // Salvar no localStorage como backup
-                        localStorage.setItem('dadosFrequencia_backup', JSON.stringify({
-                            timestamp: Date.now(),
-                            dados: dadosFrequencia
-                        }));
-                        
                         console.log(`📅 ${dadosFrequencia.length} registros carregados do GitHub`);
                         return;
                     }
