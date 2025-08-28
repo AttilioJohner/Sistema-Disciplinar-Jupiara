@@ -411,6 +411,9 @@
                                 <button class="btn btn-success" onclick="salvarNoGitHub()">
                                     💾 Salvar no GitHub
                                 </button>
+                                <button class="btn btn-warning" onclick="forcarCarregamentoFrequencia().then(() => location.reload())" title="Forçar carregamento dos dados atualizados">
+                                    🔄 Forçar Atualização
+                                </button>
                                 <button class="btn btn-danger" onclick="limparDadosFrequencia()">
                                     🗑️ Limpar Dados
                                 </button>
@@ -432,6 +435,7 @@
     
     <script src="../assets/js/main.js" defer></script>
     <script src="../assets/js/gestao.js" defer></script>
+    <script src="../assets/js/forcar-carregamento-frequencia.js" defer></script>
     
     <script>
         // Variáveis globais
@@ -744,17 +748,40 @@
         // Função específica para carregar do arquivo JSON
         async function carregarDadosFrequenciaDoArquivo() {
             try {
-                const response = await fetch('dados/frequencia.json');
+                // Forçar sem cache
+                const timestamp = Date.now();
+                const response = await fetch(`dados/frequencia.json?v=${timestamp}`, {
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
                 if (response.ok) {
                     const dadosJson = await response.json();
+                    console.log('📈 Dados do arquivo:', {
+                        total: dadosJson.total,
+                        version: dadosJson.version,
+                        diasUteis: dadosJson.diasUteis?.length,
+                        registros: dadosJson.registros?.length
+                    });
+                    
                     if (dadosJson.registros && dadosJson.registros.length > 0) {
                         dadosFrequencia = dadosJson.registros;
                         console.log(`📂 ${dadosFrequencia.length} registros carregados do arquivo JSON (versão ${dadosJson.version})`);
+                        
+                        // Verificar se os dados são os corretos (devem ter 19 dias)
+                        const diasUnicos = new Set(dadosFrequencia.map(r => r.data));
+                        console.log(`📅 Dias únicos encontrados: ${diasUnicos.size}`);
+                        
                         return true;
                     }
+                } else {
+                    console.error(`Erro HTTP: ${response.status} ${response.statusText}`);
                 }
             } catch (error) {
-                console.warn('Erro ao carregar arquivo JSON:', error);
+                console.error('Erro ao carregar arquivo JSON:', error);
             }
             return false;
         }
