@@ -1222,14 +1222,32 @@
                 
                 try {
                     if (window.db && window.db.collection) {
-                        console.log('FICHA: Tentando carregar medidas do Firebase...');
-                        const medidasSnapshot = await window.db.collection('medidas').where('aluno_id', '==', selectAluno.value).get();
+                        console.log('FICHA: Tentando carregar medidas do Sistema Local...');
+                        const medidasSnapshot = await window.db.collection('medidas_disciplinares').where('codigo_aluno', '==', selectAluno.value).get();
+                        console.log(`FICHA: Query retornou ${medidasSnapshot.size} medidas para código ${selectAluno.value}`);
+                        
                         medidasSnapshot.forEach(doc => {
-                            medidas.push({ id: doc.id, ...doc.data() });
+                            const medidaData = { id: doc.id, ...doc.data() };
+                            console.log('FICHA: Medida encontrada:', medidaData);
+                            medidas.push(medidaData);
                         });
                     }
                 } catch (fbError) {
-                    console.log('FICHA: Firebase não disponível ou erro:', fbError.message);
+                    console.log('FICHA: Sistema Local não disponível ou erro:', fbError.message);
+                }
+                
+                // Debug: Listar todas as medidas disponíveis
+                try {
+                    if (window.db && window.db.collection) {
+                        const todasMedidas = await window.db.collection('medidas_disciplinares').get();
+                        console.log(`DEBUG: Total de medidas na coleção: ${todasMedidas.size}`);
+                        todasMedidas.forEach(doc => {
+                            const data = doc.data();
+                            console.log(`DEBUG: Medida ID ${doc.id} - Código: ${data.codigo_aluno}, Nome: ${data.nome_aluno}`);
+                        });
+                    }
+                } catch (debugError) {
+                    console.log('DEBUG: Erro ao listar todas as medidas:', debugError.message);
                 }
                 
                 console.log('FICHA: Encontradas ' + medidas.length + ' medidas disciplinares');
