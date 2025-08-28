@@ -750,7 +750,7 @@
             try {
                 // Forçar sem cache
                 const timestamp = Date.now();
-                const response = await fetch(`dados/frequencia.json?v=${timestamp}`, {
+                const response = await fetch(`../dados/frequencia.json?v=${timestamp}`, {
                     cache: 'no-cache',
                     headers: {
                         'Cache-Control': 'no-cache, no-store, must-revalidate',
