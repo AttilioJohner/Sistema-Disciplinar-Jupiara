@@ -598,15 +598,35 @@
                     throw new Error('Nenhum registro válido encontrado no arquivo');
                 }
                 
-                // Salvar no Sistema Local
+                // Salvar no Sistema Local em lotes para evitar travamento
                 if (window.db) {
-                    const batch = [];
-                    for (const registro of registrosProcessados) {
-                        batch.push(
+                    const LOTE_SIZE = 50; // Processar 50 registros por vez
+                    const totalLotes = Math.ceil(registrosProcessados.length / LOTE_SIZE);
+                    
+                    for (let loteIndex = 0; loteIndex < totalLotes; loteIndex++) {
+                        const inicio = loteIndex * LOTE_SIZE;
+                        const fim = Math.min(inicio + LOTE_SIZE, registrosProcessados.length);
+                        const lote = registrosProcessados.slice(inicio, fim);
+                        
+                        // Mostrar progresso
+                        statusDiv.innerHTML = `
+                            <div class="alert alert-info">
+                                💾 <strong>Salvando...</strong> Lote ${loteIndex + 1}/${totalLotes} (${fim}/${registrosProcessados.length} registros)
+                            </div>
+                        `;
+                        
+                        // Salvar lote
+                        const promises = lote.map(registro => 
                             window.db.collection('frequencia').doc(registro.id).set(registro)
                         );
+                        
+                        await Promise.all(promises);
+                        
+                        // Pequena pausa para não sobrecarregar
+                        if (loteIndex < totalLotes - 1) {
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                        }
                     }
-                    await Promise.all(batch);
                 }
                 
                 // Atualizar dados locais
@@ -630,34 +650,34 @@
                     </div>
                 `;
                 
-                // Recarregar dados
-                await carregarEstatisticasFrequencia();
-                await carregarAlertasFrequencia();
-                await carregarResumoTurmas();
-                aplicarFiltrosFrequencia();
+                // Recarregar dados de forma otimizada
+                statusDiv.innerHTML += `
+                    <div class="alert alert-info" style="margin-top: 5px;">
+                        🔄 Atualizando interface...
+                    </div>
+                `;
+                
+                // Usar setTimeout para não bloquear a UI
+                setTimeout(async () => {
+                    try {
+                        await carregarEstatisticasFrequencia();
+                        await carregarAlertasFrequencia();
+                        await carregarResumoTurmas();
+                        aplicarFiltrosFrequencia();
+                    } catch (error) {
+                        console.warn('Erro ao recarregar interface:', error);
+                    }
+                }, 500);
                 
                 showMessage(`${registrosProcessados.length} registros de frequência importados!`, 'success');
                 
-                // SINCRONIZAÇÃO AUTOMÁTICA COM GITHUB
-                try {
-                    statusDiv.innerHTML += `
-                        <div class="alert alert-info" style="margin-top: 10px;">
-                            🔄 <strong>Sincronizando automaticamente com GitHub...</strong><br>
-                            ⏳ Preparando dados para commit automático...
-                        </div>
-                    `;
-                    
-                    await sincronizarAutomaticamenteComGitHub(registrosProcessados);
-                    
-                } catch (syncError) {
-                    console.warn('Erro na sincronização automática:', syncError);
-                    statusDiv.innerHTML += `
-                        <div class="alert alert-warning" style="margin-top: 10px;">
-                            ⚠️ <strong>Sincronização manual necessária</strong><br>
-                            Use o botão "Salvar no GitHub" para sincronizar manualmente
-                        </div>
-                    `;
-                }
+                // PULAR SINCRONIZAÇÃO AUTOMÁTICA PARA EVITAR TRAVAMENTO
+                statusDiv.innerHTML += `
+                    <div class="alert alert-info" style="margin-top: 10px;">
+                        💾 <strong>Dados salvos localmente!</strong><br>
+                        🔄 Use o botão "Salvar no GitHub" para sincronizar quando necessário
+                    </div>
+                `;
                 
                 // Limpar input
                 fileInput.value = '';
