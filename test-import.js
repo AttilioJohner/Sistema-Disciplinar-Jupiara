@@ -16,7 +16,7 @@ try {
     console.log('📋 Cabeçalho:', cabecalho);
     
     // Dias úteis do CSV
-    const diasUteisCSV = [1, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15, 18, 19, 20];
+    const diasUteisCSV = [1, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15, 18, 19, 20, 21, 22, 25, 26, 27];
     const ano = 2024;
     const mes = '08';
     

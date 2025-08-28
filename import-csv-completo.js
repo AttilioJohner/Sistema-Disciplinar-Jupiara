@@ -47,8 +47,8 @@ try {
     // Processar cabeçalho
     const cabecalho = linhas[0].split(',').map(col => col.trim().replace(/['"]/g, ''));
     
-    // Dias úteis do CSV (14 dias)
-    const diasUteisCSV = [1, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15, 18, 19, 20];
+    // Dias úteis do CSV (19 dias até 27/08)
+    const diasUteisCSV = [1, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15, 18, 19, 20, 21, 22, 25, 26, 27];
     const ano = 2024;
     const mes = '08';
     
