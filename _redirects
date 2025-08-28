@@ -1,15 +1,9 @@
 # Redirecionamentos para o Netlify
 
-# Redirecionamentos para páginas específicas
-/pages/*  /pages/:splat  200
-/assets/*  /assets/:splat  200
-/data/*  /data/:splat  200
+# Redirecionamentos de conveniência
+/admin       /pages/login.html       302
+/dashboard   /index.html             302
+/login       /pages/login.html       302
 
-# Redirecionamento para páginas de administração (opcional)
-/admin  /pages/login.html  302
-/dashboard  /index.html  302
-/login  /pages/login.html  302
-
-# Fallback para SPA (Single Page Application)
-# Comentado por enquanto, descomente se necessário
-# /*  /index.html  200
+# Fallback para páginas não encontradas (SPA)
+/*           /index.html             200
