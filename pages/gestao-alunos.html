@@ -233,17 +233,18 @@
   <!-- Toast para mensagens do gestao.js -->
   <div id="toast"></div>
 
-  <!-- Guard de Autenticação -->
+  <!-- Guard de Autenticação TEMPORARIAMENTE DESABILITADO -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      // Usar requireAuth do sistema híbrido
-      requireAuth({
-        loginPath: 'login.html',
-        onAuth: (user) => {
-          console.log('Usuário logado:', user.email || user.id);
-          // A listagem em tempo real é automática via gestao.js
-        }
-      });
+      console.log('🛑 Guard de autenticação DESABILITADO - testando redirecionamento');
+      // TEMPORARIAMENTE desabilitado para testar loop de redirecionamento
+      // requireAuth({
+      //   loginPath: 'login.html',
+      //   onAuth: (user) => {
+      //     console.log('Usuário logado:', user.email || user.id);
+      //     // A listagem em tempo real é automática via gestao.js
+      //   }
+      // });
     });
   </script>
 
