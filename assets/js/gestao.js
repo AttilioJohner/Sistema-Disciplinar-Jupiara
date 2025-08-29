@@ -162,12 +162,15 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         }
       });
     }
-    if (els.busca) {
-      els.busca.addEventListener('input', () => renderTable());
-    }
-    if (els.filtroTurma) {
-      els.filtroTurma.addEventListener('change', () => renderTable());
-    }
+    // TEMPORARIAMENTE DESABILITADO - CAUSANDO LOOP INFINITO
+    // if (els.busca) {
+    //   els.busca.addEventListener('input', () => renderTable());
+    // }
+    // if (els.filtroTurma) {
+    //   els.filtroTurma.addEventListener('change', () => renderTable());
+    // }
+    
+    console.log('⚠️ Listeners de busca/filtro DESABILITADOS para parar loop');
 
     if (els.tbody) {
       // Delegação para Editar/Excluir
