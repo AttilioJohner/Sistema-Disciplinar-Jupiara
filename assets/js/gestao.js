@@ -32,30 +32,48 @@
   // =====================
   const els = {};
   
-  // Controle de inicialização para evitar loops
+  // Controle RÍGIDO de inicialização para parar loops
   let isInitialized = false;
+  let initCount = 0;
+
+  // REMOVER LISTENERS EXISTENTES (se houver)
+  if (window.gestaoInitialized) {
+    console.log('🛑 GESTÃO JÁ FOI INICIALIZADO - ABORTANDO');
+    return;
+  }
+  window.gestaoInitialized = true;
 
   document.addEventListener('DOMContentLoaded', async () => {
-    // Evitar múltiplas inicializações
-    if (isInitialized) {
-      console.log('⚠️ Gestão já foi inicializado, ignorando');
+    initCount++;
+    console.log(`🔄 DOMContentLoaded executado ${initCount}x`);
+    
+    // HARD STOP - Máximo 1 execução
+    if (isInitialized || initCount > 1) {
+      console.log('🛑 INICIALIZAÇÃO BLOQUEADA - evitando loop');
       return;
     }
     
     try {
       isInitialized = true;
+      console.log('✅ Iniciando gestão (ÚNICA VEZ)');
+      
       await ensureLocalDb();
       mapElements();
       bindEvents();
       await startLiveList();
-      // Inicializar estatísticas com valores zerados
+      
+      // Única atualização de estatísticas
       setTimeout(() => {
-        updateStatistics();
-      }, 500);
-      debugLog('gestao.js inicializado com sucesso');
+        if (!window.statsUpdated) {
+          window.statsUpdated = true;
+          updateStatistics();
+        }
+      }, 1000);
+      
+      console.log('✅ gestao.js inicializado DEFINITIVAMENTE');
     } catch (e) {
-      console.error(e);
-      isInitialized = false; // Permitir retry em caso de erro
+      console.error('❌ Erro na inicialização:', e);
+      // NÃO resetar flag para evitar retry infinito
       toast(e.message || 'Falha ao iniciar gestao.js', 'erro');
     }
   });
