@@ -221,15 +221,25 @@
         const data = doc.data();
         medidas.push({ 
           id: doc.id, 
-          alunoId: data.codigo_aluno,
+          alunoId: data.aluno_codigo || data.codigo_aluno,
+          aluno_nome: data.aluno_nome,
+          turma: data.turma,
+          data_ocorrencia: data.data_ocorrencia || data.data,
+          descricao: data.descricao || data.especificacao,
+          observacoes: data.observacoes || data.observacao,
+          tipo: data.tipo,
+          numero_medida: data.numero_medida || data.nr_medida,
+          status: data.status || 'ativa',
+          responsavel: data.responsavel,
+          criado_em: data.criado_em,
           ...data 
         });
       });
 
       // Ordenar por data no JavaScript (mais recentes primeiro)
       medidas.sort((a, b) => {
-        const dataA = a.data ? new Date(a.data) : new Date(0);
-        const dataB = b.data ? new Date(b.data) : new Date(0);
+        const dataA = a.data_ocorrencia ? new Date(a.data_ocorrencia) : new Date(0);
+        const dataB = b.data_ocorrencia ? new Date(b.data_ocorrencia) : new Date(0);
         return dataB - dataA;
       });
 

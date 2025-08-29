@@ -48,10 +48,10 @@
 
     // Medidas - buscar na coleção principal filtrando por código do aluno
     const medidasSnap = await window.db.collection('medidas_disciplinares')
-      .where('codigo_aluno', '==', alunoId).get();
+      .where('aluno_codigo', '==', alunoId).get();
     const medidas = medidasSnap.docs
       .map(d => ({ id: d.id, ...d.data() }))
-      .filter(m => inRange(m.data, start, end));
+      .filter(m => inRange(m.data_ocorrencia || m.data, start, end));
 
     // Agregações simples
     const totalFaltas = faltas.length;
@@ -93,8 +93,8 @@
       const data = d.data();
       return { 
         id: d.id, 
-        alunoId: data.codigo_aluno,
-        data: data.data,
+        alunoId: data.aluno_codigo,
+        data: data.data_ocorrencia || data.data,
         ...data 
       };
     }).filter(m => inRange(m.data, start, end));

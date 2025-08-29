@@ -500,7 +500,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
               '<td>' + escapeHtml(a.turma || '') + '</td>' +
               '<td class="' + statusClass + '">' + statusIcon + ' ' + escapeHtml(a.status || 'ativo') + '</td>' +
               '<td>' + escapeHtml(a.responsavel || '') + '</td>' +
-              '<td>' + escapeHtml(a.telefone1 || '') + '</td>' +
+              '<td>' + escapeHtml(a.telefone || a.telefone_responsavel || '') + '</td>' +
               '<td>' + escapeHtml(a.telefone2 || '') + '</td>' +
               '<td style="white-space:nowrap">' +
                 '<button type="button" class="btn btn-small" data-action="edit" data-id="' + encodeURIComponent(a.id) + '">Editar</button>' +
@@ -543,7 +543,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       turma: data.turma || '',
       status: data.status || 'ativo',
       responsavel: data.responsavel || '',
-      telefone1: data.telefone1 || '',
+      telefone: data.telefone || data.telefone_responsavel || '',
       telefone2: data.telefone2 || ''
     };
     
@@ -607,12 +607,13 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     // Campos opcionais
     if (data.status) out.status = String(data.status).trim();
     if (data.responsavel) out.responsavel = String(data.responsavel).trim();
-    if (data.telefone1) out.telefone1 = String(data.telefone1).trim();
+    if (data.telefone) out.telefone = String(data.telefone).trim();
     if (data.telefone2) out.telefone2 = String(data.telefone2).trim();
     
-    // Criar campo combinado para compatibilidade
-    const telefones = [data.telefone1, data.telefone2].filter(t => t && t.trim()).join(' / ');
-    if (telefones) out.telefone_responsavel = telefones;
+    // Campos para compatibilidade
+    if (data.telefone) out.telefone_responsavel = String(data.telefone).trim();
+    const telefones = [data.telefone, data.telefone2].filter(t => t && t.trim()).join(' / ');
+    if (telefones) out.telefone_combinado = telefones;
     
     // Garantir que status seja sempre definido
     if (!out.status) out.status = 'ativo';
