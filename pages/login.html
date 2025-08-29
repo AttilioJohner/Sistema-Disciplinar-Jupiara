@@ -330,11 +330,39 @@
         }, 2000);
       };
       
+      // BYPASS - LOGIN SEM CONFIRMAÇÃO DE EMAIL
+      window.bypassLogin = function() {
+        console.log('🔓 BYPASS - Fazendo login direto...');
+        
+        // Simular login bem-sucedido no sistema local
+        localStorage.setItem('loginSuccess', JSON.stringify({
+          email: 'admin@eecmjupiara.com.br',
+          timestamp: Date.now(),
+          remember: true,
+          bypass: true
+        }));
+        
+        // Configurar auth fake
+        window.currentUser = {
+          email: 'admin@eecmjupiara.com.br',
+          uid: 'admin-bypass',
+          displayName: 'Administrador'
+        };
+        
+        console.log('✅ Login bypass realizado!');
+        console.log('🔥 Redirecionando para dashboard...');
+        
+        setTimeout(() => {
+          window.location.href = '../index.html?bypass=true';
+        }, 1500);
+      };
+      
       console.log('📋 FUNÇÕES DISPONÍVEIS:');
       console.log('- registrarUsuario() // Criar conta admin no Supabase');
       console.log('- corrigirSistema() // Eliminar loops e usar só Supabase');
+      console.log('- bypassLogin() // LOGIN DIRETO (sem confirmação email)');
       console.log('');
-      console.log('🚀 EXECUTE: registrarUsuario() depois corrigirSistema()');
+      console.log('🚀 EXECUTE: bypassLogin() para entrar AGORA!');
       
     }, 2000);
   </script>
