@@ -12,6 +12,11 @@
   <!-- Sistema Local de Autenticação -->
   <script src="../assets/js/local-auth.js"></script>
   <script src="../assets/js/local-db.js"></script>
+  
+  <!-- Supabase para solução definitiva -->
+  <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas - usando modo local')"></script>
+  <script src="../assets/js/env-config.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <style>
     .login-container{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0078d4,#106ebe);padding:20px}
@@ -216,6 +221,122 @@
       try { await window.localAuth.signOut(); msgOk('👋 Você saiu do sistema.'); atualizarUI(null); }
       catch (err){ console.error(err); msgErro('Erro ao sair: ' + (err?.message || err)); }
     });
+    
+    // ==========================================
+    // SOLUÇÃO DEFINITIVA - SCRIPTS DIRETOS
+    // ==========================================
+    
+    // Aguardar Supabase carregar
+    setTimeout(function() {
+      console.log('🎯 SCRIPTS DE CORREÇÃO CARREGADOS!');
+      
+      // REGISTRAR USUÁRIO NO SUPABASE
+      window.registrarUsuario = async function() {
+        console.log('🔧 Registrando usuário no Supabase...');
+        
+        if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+          console.error('❌ Supabase não configurado');
+          console.log('SUPABASE_URL:', window.SUPABASE_URL ? 'OK' : 'FALTANDO');
+          console.log('SUPABASE_ANON_KEY:', window.SUPABASE_ANON_KEY ? 'OK' : 'FALTANDO');
+          return;
+        }
+        
+        const supabase = window.supabase.createClient(
+          window.SUPABASE_URL,
+          window.SUPABASE_ANON_KEY
+        );
+        
+        try {
+          const { data, error } = await supabase.auth.signUp({
+            email: 'admin@eecmjupiara.com.br',
+            password: 'JupiaraAdmin2024!'
+          });
+          
+          if (error) {
+            if (error.message.includes('already registered')) {
+              console.log('📧 Usuário já existe, fazendo login...');
+              
+              const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+                email: 'admin@eecmjupiara.com.br',
+                password: 'JupiaraAdmin2024!'
+              });
+              
+              if (loginError) {
+                console.error('❌ Erro no login:', loginError.message);
+              } else {
+                console.log('✅ Login realizado:', loginData.user.email);
+                console.log('🎉 SUCESSO! Usuário autenticado no Supabase!');
+              }
+            } else {
+              console.error('❌ Erro ao registrar:', error.message);
+            }
+          } else {
+            console.log('✅ Usuário registrado:', data.user.email);
+            console.log('🎉 SUCESSO! Usuário criado no Supabase!');
+          }
+          
+        } catch (error) {
+          console.error('❌ Erro inesperado:', error);
+        }
+      };
+      
+      // LIMPAR SISTEMA LOCAL E CONFIGURAR APENAS SUPABASE
+      window.corrigirSistema = function() {
+        console.log('🔥 CORRIGINDO SISTEMA - ELIMINANDO LOOPS!');
+        
+        // 1. Limpar localStorage problemático
+        const keys = Object.keys(localStorage);
+        keys.forEach(key => {
+          if (key.includes('auth') || key.includes('local') || key.includes('db')) {
+            localStorage.removeItem(key);
+            console.log('🗑️ Removido:', key);
+          }
+        });
+        
+        // 2. Configurar Supabase como único DB
+        if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.supabase) {
+          const supabase = window.supabase.createClient(
+            window.SUPABASE_URL,
+            window.SUPABASE_ANON_KEY
+          );
+          
+          // Substituir window.db
+          window.db = {
+            collection: (nome) => ({
+              get: async () => {
+                const { data, error } = await supabase.from(nome).select('*');
+                if (error) throw error;
+                
+                return {
+                  size: data.length,
+                  empty: data.length === 0,
+                  docs: data.map(item => ({
+                    id: item.id || item.codigo,
+                    data: () => item
+                  }))
+                };
+              }
+            })
+          };
+          
+          console.log('✅ window.db configurado para Supabase');
+        }
+        
+        console.log('🎉 SISTEMA CORRIGIDO! Recarregando página...');
+        
+        // Recarregar sem cache
+        setTimeout(() => {
+          window.location.href = '../index.html?nocache=' + Date.now();
+        }, 2000);
+      };
+      
+      console.log('📋 FUNÇÕES DISPONÍVEIS:');
+      console.log('- registrarUsuario() // Criar conta admin no Supabase');
+      console.log('- corrigirSistema() // Eliminar loops e usar só Supabase');
+      console.log('');
+      console.log('🚀 EXECUTE: registrarUsuario() depois corrigirSistema()');
+      
+    }, 2000);
   </script>
 </body>
 </html>
