@@ -87,30 +87,41 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     }
   });
 
-  // FUNÇÃO ORIGINAL DESABILITADA - CAUSAVA WHILE LOOP INFINITO
+  // Aguardar sistema híbrido com timeout seguro
   async function ensureLocalDb() {
-    console.log('🛑 ensureLocalDb DESABILITADA - usando DB imediato');
+    console.log('🔄 Aguardando sistema híbrido (Supabase + Local)...');
     
-    // Usar qualquer DB disponível imediatamente SEM ESPERAR
-    if (window.db) {
-      db = window.db;
-      console.log('✅ Usando window.db diretamente');
-    } else if (window.localDb) {
+    // Aguardar alguns segundos para Supabase inicializar
+    let attempts = 0;
+    const maxAttempts = 20; // 10 segundos máximo (500ms x 20)
+    
+    while (attempts < maxAttempts) {
+      // Priorizar Supabase se disponível
+      if (window.db && window.supabaseConfig && !window.supabaseConfig.isLocal()) {
+        db = window.db;
+        console.log('✅ Usando Supabase via window.db');
+        return;
+      }
+      
+      // Fallback para localStorage se Supabase não estiver pronto
+      if (window.db) {
+        db = window.db;
+        console.log('⚠️ Usando sistema local via window.db');
+        return;
+      }
+      
+      attempts++;
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    // Último fallback
+    console.warn('⚠️ Timeout - usando fallback direto');
+    if (window.localDb) {
       db = {
         collection: (name) => window.localDb.collection(name),
         batch: () => window.localDb.batch()
       };
-      console.log('✅ Usando window.localDb como fallback');
-    } else {
-      // Criar DB dummy para não quebrar
-      db = {
-        collection: () => ({ get: async () => ({ docs: [], size: 0, empty: true }) }),
-        batch: () => ({ commit: async () => true })
-      };
-      console.log('⚠️ Usando DB dummy - nenhum sistema encontrado');
     }
-    
-    return Promise.resolve();
   }
 
   function mapElements() {
