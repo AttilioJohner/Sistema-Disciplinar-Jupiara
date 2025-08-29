@@ -87,46 +87,30 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     }
   });
 
-  // Aguarda Sistema Local disponível via window.localDb/window.db
+  // FUNÇÃO ORIGINAL DESABILITADA - CAUSAVA WHILE LOOP INFINITO
   async function ensureLocalDb() {
-    const maxWaitMs = 10000; // Reduzido para 10 segundos
-    const start = Date.now();
+    console.log('🛑 ensureLocalDb DESABILITADA - usando DB imediato');
     
-    // Verificação única no console
-    console.log('🔄 Aguardando sistema local...', {
-      localDb: !!window.localDb,
-      loaded: window.localDb?.loaded,
-      db: !!window.db
-    });
-    
-    // Se já estiver pronto, retornar imediatamente
+    // Usar qualquer DB disponível imediatamente SEM ESPERAR
     if (window.db) {
       db = window.db;
-      console.log('✅ Sistema local pronto para gestão de alunos');
-      return;
+      console.log('✅ Usando window.db diretamente');
+    } else if (window.localDb) {
+      db = {
+        collection: (name) => window.localDb.collection(name),
+        batch: () => window.localDb.batch()
+      };
+      console.log('✅ Usando window.localDb como fallback');
+    } else {
+      // Criar DB dummy para não quebrar
+      db = {
+        collection: () => ({ get: async () => ({ docs: [], size: 0, empty: true }) }),
+        batch: () => ({ commit: async () => true })
+      };
+      console.log('⚠️ Usando DB dummy - nenhum sistema encontrado');
     }
     
-    // Aguardar apenas se necessário
-    while (!window.db) {
-      if (Date.now() - start > maxWaitMs) {
-        console.error('❌ Timeout do sistema local - usando fallback');
-        // Em vez de erro, usar fallback
-        if (window.localDb) {
-          db = {
-            collection: (name) => window.localDb.collection(name),
-            batch: () => window.localDb.batch()
-          };
-        }
-        break;
-      }
-      await sleep(500); // Aumentado o intervalo para reduzir spam
-    }
-    
-    if (!db && window.db) {
-      db = window.db;
-    }
-    
-    console.log('✅ Sistema local pronto para gestão de alunos');
+    return Promise.resolve();
   }
 
   function mapElements() {
