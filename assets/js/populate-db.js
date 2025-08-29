@@ -140,28 +140,30 @@ async function popularBancoLocal() {
   return true;
 }
 
-// Auto-executar quando os dados estiverem carregados
-window.addEventListener('localDbReady', () => {
-  // Verificar se já existem dados
-  const existingData = Object.keys(window.localDb.data.frequencia_diaria || {})
-    .filter(key => key !== 'sample_loading');
-  
-  if (existingData.length === 0) {
-    console.log('📝 Banco vazio, iniciando população...');
-    
-    // Aguardar um pouco para garantir que todos os recursos estejam carregados
-    setTimeout(() => {
-      console.log('🔄 Iniciando população do banco...');
-      popularBancoLocal();
-    }, 1000);
-  } else {
-    console.log(`📚 Banco já possui ${existingData.length} registros`);
-    // Disparar evento mesmo se já tem dados
-    window.dispatchEvent(new CustomEvent('dadosPopulados', { 
-      detail: { total: existingData.length } 
-    }));
-  }
-});
+// DESABILITADO TEMPORARIAMENTE - CAUSAVA LOOP INFINITO
+// window.addEventListener('localDbReady', () => {
+//   // Verificar se já existem dados
+//   const existingData = Object.keys(window.localDb.data.frequencia_diaria || {})
+//     .filter(key => key !== 'sample_loading');
+//   
+//   if (existingData.length === 0) {
+//     console.log('📝 Banco vazio, iniciando população...');
+//     
+//     // Aguardar um pouco para garantir que todos os recursos estejam carregados
+//     setTimeout(() => {
+//       console.log('🔄 Iniciando população do banco...');
+//       popularBancoLocal();
+//     }, 1000);
+//   } else {
+//     console.log(`📚 Banco já possui ${existingData.length} registros`);
+//     // Disparar evento mesmo se já tem dados
+
+console.log('⚠️ populate-db.js: Auto-população DESABILITADA para evitar loops');
+//     window.dispatchEvent(new CustomEvent('dadosPopulados', { 
+//       detail: { total: existingData.length } 
+//     }));
+//   }
+// });
 
 // Função para limpar e repopular
 window.limparERepopularBanco = async function() {
