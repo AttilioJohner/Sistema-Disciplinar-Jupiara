@@ -12,26 +12,54 @@
   <link rel="stylesheet" href="assets/css/components.css">
   <link rel="stylesheet" href="assets/css/dashboard.css">
 
-  <!-- Sistema Híbrido de Banco de Dados (Supabase + Local) -->
-  <script src="netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas - usando modo local')"></script>
+  <!-- APENAS SUPABASE -->
+  <script src="netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
   <script src="assets/js/env-config.js"></script>
-  <script src="assets/js/config.js"></script>
-  <script src="assets/js/supabase-config.js"></script>
-  <script src="assets/js/local-db.js"></script>
-  <script src="assets/js/local-auth.js"></script>
-  <script src="assets/js/supabase-auth.js"></script>
-  <script src="assets/js/populate-db.js"></script>
-  <script src="import-csv-correto.js" defer></script>
-  <script src="executar-importacao.js" defer></script>
-  <script src="registro-usuario.js" defer></script>
-  <script src="sistema-simples.js" defer></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="assets/js/supabase-only.js"></script>
 
   <!-- (Opcional) Chart.js se precisar de gráficos nesta página -->
   <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
 
     <!-- Scripts do dashboard -->
-    <script src="assets/js/main.js" defer></script>
-    <script src="assets/js/dashboard-alunos.js" defer></script>
+    <script>
+      // DASHBOARD APENAS SUPABASE
+      document.addEventListener('DOMContentLoaded', async function() {
+        console.log('📊 Carregando dashboard...');
+        
+        // Verificar autenticação
+        if (!window.supabaseSystem.auth.requireAuth()) {
+          return;
+        }
+        
+        try {
+          // Carregar estatísticas
+          const stats = await window.supabaseSystem.stats();
+          
+          // Atualizar elementos
+          const totalAlunosEl = document.getElementById('totalAlunosAtivos');
+          const totalMedidasEl = document.getElementById('totalMedidas');
+          const totalTurmasEl = document.getElementById('totalTurmas');
+          
+          if (totalAlunosEl) totalAlunosEl.textContent = stats.totalAlunos;
+          if (totalMedidasEl) totalMedidasEl.textContent = stats.totalMedidas;
+          if (totalTurmasEl) totalTurmasEl.textContent = stats.totalTurmas + '/12';
+          
+          console.log('✅ Dashboard carregado:', stats);
+          
+        } catch (error) {
+          console.error('❌ Erro ao carregar dashboard:', error);
+        }
+      });
+      
+      // Função de logout
+      function logout() {
+        window.supabaseSystem.auth.logout();
+      }
+      
+      // Tornar logout global
+      window.logout = logout;
+    </script>
   </head>
 <body>
   <!-- Topbar -->
