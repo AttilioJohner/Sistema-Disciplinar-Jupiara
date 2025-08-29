@@ -2,6 +2,8 @@
 
 Dashboard completo para gestão disciplinar escolar com integração Supabase e deploy automático na Netlify.
 
+**Status**: Sistema em produção - Deploy automático ativo (teste de deploy)
+
 ## 🚀 Características
 
 - **Sistema Híbrido**: Funciona com Supabase (produção) ou armazenamento local (desenvolvimento)
