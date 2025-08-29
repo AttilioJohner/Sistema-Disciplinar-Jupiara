@@ -17,13 +17,22 @@ async function initSupabase() {
         window.SUPABASE_ANON_KEY
     );
     
-    // Verificar usuário logado
-    const { data: { user } } = await supabase.auth.getUser();
-    currentUser = user;
+    // Verificar usuário da sessão local
+    const authData = localStorage.getItem('supabase_auth');
+    if (authData) {
+        try {
+            const auth = JSON.parse(authData);
+            if (auth.user && auth.expires > Date.now()) {
+                currentUser = auth.user;
+            }
+        } catch (e) {
+            localStorage.removeItem('supabase_auth');
+        }
+    }
     
     console.log('✅ Supabase inicializado');
-    if (user) {
-        console.log('✅ Usuário logado:', user.email);
+    if (currentUser) {
+        console.log('✅ Usuário da sessão:', currentUser.email);
     }
     
     return true;
@@ -188,6 +197,18 @@ const medidasDB = {
 // Estatísticas
 async function getStatistics() {
     try {
+        // Garantir que Supabase está inicializado
+        if (!supabase) {
+            await initSupabase();
+        }
+        
+        if (!supabase) {
+            console.error('❌ Supabase não disponível para estatísticas');
+            return { totalAlunos: 0, totalMedidas: 0, totalTurmas: 0 };
+        }
+        
+        console.log('📊 Carregando estatísticas do Supabase...');
+        
         // Total alunos
         const { count: totalAlunos } = await supabase
             .from('alunos')
