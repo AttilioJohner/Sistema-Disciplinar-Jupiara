@@ -1,21 +1,18 @@
+import { supabase as client } from '../../scripts/supabaseClient.js';
+
 // SISTEMA APENAS SUPABASE - SEM LOCALSTORAGE
 console.log('🎯 Carregando sistema APENAS Supabase...');
 
 // Configuração global
-let supabase = null;
+let supabase = client;
 let currentUser = null;
 
 // Inicializar Supabase
 async function initSupabase() {
-    if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
-        console.error('❌ Credenciais Supabase não configuradas');
+    if (!supabase) {
+        console.error('❌ Supabase client não disponível');
         return false;
     }
-    
-    supabase = window.supabase.createClient(
-        window.SUPABASE_URL,
-        window.SUPABASE_ANON_KEY
-    );
     
     // Verificar usuário da sessão local
     const authData = localStorage.getItem('supabase_auth');
@@ -145,7 +142,7 @@ const alunosDB = {
 const medidasDB = {
     async getAll() {
         const { data, error } = await supabase
-            .from('medidas_disciplinares')
+            .from('medidas')
             .select('*')
             .order('data_ocorrencia', { ascending: false });
         
@@ -155,7 +152,7 @@ const medidasDB = {
     
     async getByAluno(alunoId) {
         const { data, error } = await supabase
-            .from('medidas_disciplinares')
+            .from('medidas')
             .select('*')
             .eq('aluno_codigo', alunoId)
             .order('data_ocorrencia', { ascending: false });
@@ -166,7 +163,7 @@ const medidasDB = {
     
     async create(medida) {
         const { data, error } = await supabase
-            .from('medidas_disciplinares')
+            .from('medidas')
             .insert(medida)
             .select()
             .single();
@@ -177,7 +174,7 @@ const medidasDB = {
     
     async update(id, medida) {
         const { data, error } = await supabase
-            .from('medidas_disciplinares')
+            .from('medidas')
             .update(medida)
             .eq('id', id)
             .select()
@@ -189,7 +186,7 @@ const medidasDB = {
     
     async delete(id) {
         const { error } = await supabase
-            .from('medidas_disciplinares')
+            .from('medidas')
             .delete()
             .eq('id', id);
         
@@ -219,7 +216,7 @@ async function getStatistics() {
         
         // Total medidas
         const { count: totalMedidas } = await supabase
-            .from('medidas_disciplinares')
+            .from('medidas')
             .select('*', { count: 'exact', head: true });
         
         // Turmas únicas

@@ -16,7 +16,7 @@
   <!-- Supabase para solução definitiva -->
   <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas - usando modo local')"></script>
   <script src="../assets/js/env-config.js"></script>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script type="module" src="../scripts/supabaseClient.js"></script>
 
   <style>
     .login-container{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0078d4,#106ebe);padding:20px}
@@ -241,10 +241,7 @@
           return;
         }
         
-        const supabase = window.supabase.createClient(
-          window.SUPABASE_URL,
-          window.SUPABASE_ANON_KEY
-        );
+        const supabase = window.__supabase;
         
         try {
           const { data, error } = await supabase.auth.signUp({
@@ -294,11 +291,8 @@
         });
         
         // 2. Configurar Supabase como único DB
-        if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.supabase) {
-          const supabase = window.supabase.createClient(
-            window.SUPABASE_URL,
-            window.SUPABASE_ANON_KEY
-          );
+        if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.__supabase) {
+          const supabase = window.__supabase;
           
           // Substituir window.db
           window.db = {

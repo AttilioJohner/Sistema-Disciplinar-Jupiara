@@ -1,3 +1,5 @@
+import { supabase } from './scripts/supabaseClient.js';
+
 // Script para executar importação diretamente no navegador
 // Usar com: executarImportacaoSupabase()
 
@@ -7,22 +9,16 @@ async function executarImportacaoSupabase() {
     console.log('🔥 Iniciando importação para Supabase...');
     
     // Verificar se Supabase está configurado
-    if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY || !window.supabase) {
+    if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY || !supabase) {
         console.error('❌ Supabase não configurado');
         console.log('Verificando variáveis...');
         console.log('SUPABASE_URL:', window.SUPABASE_URL ? '✅ Configurado' : '❌ Não encontrado');
         console.log('SUPABASE_ANON_KEY:', window.SUPABASE_ANON_KEY ? '✅ Configurado' : '❌ Não encontrado');
-        console.log('Supabase Client:', window.supabase ? '✅ Carregado' : '❌ Não carregado');
+        console.log('Supabase Client:', supabase ? '✅ Carregado' : '❌ Não carregado');
         return;
     }
-    
-    // Criar cliente Supabase
-    const supabase = window.supabase.createClient(
-        window.SUPABASE_URL,
-        window.SUPABASE_ANON_KEY
-    );
-    
-    console.log('✅ Cliente Supabase criado');
+
+    console.log('✅ Cliente Supabase pronto');
     
     try {
         // Verificar se já temos dados locais
@@ -130,7 +126,7 @@ async function importarMedidasParaSupabase(supabase, medidas) {
             };
             
             const { error } = await supabase
-                .from('medidas_disciplinares')
+                .from('medidas')
                 .upsert(medidaLimpa, { onConflict: 'id' });
             
             if (error) {
@@ -192,7 +188,7 @@ async function verificarResultados(supabase) {
         
         // Contar medidas
         const { count: totalMedidas } = await supabase
-            .from('medidas_disciplinares')
+            .from('medidas')
             .select('*', { count: 'exact', head: true });
         
         console.log('📈 Resultados finais:');
@@ -219,15 +215,10 @@ async function limparDadosSupabase() {
         return;
     }
     
-    const supabase = window.supabase.createClient(
-        window.SUPABASE_URL,
-        window.SUPABASE_ANON_KEY
-    );
-    
     console.log('🗑️ Limpando dados...');
     
     try {
-        await supabase.from('medidas_disciplinares').delete().neq('id', '');
+        await supabase.from('medidas').delete().neq('id', '');
         await supabase.from('alunos').delete().neq('codigo', '');
         console.log('✅ Dados limpos com sucesso');
     } catch (error) {

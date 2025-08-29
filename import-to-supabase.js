@@ -1,3 +1,5 @@
+import { supabase } from './scripts/supabaseClient.js';
+
 // Script de importação de dados para o Supabase
 // Sistema Disciplinar Jupiara - Migração completa
 
@@ -129,7 +131,7 @@ async function importarMedidas(medidas, supabase) {
       
       // Inserir no Supabase
       const { error } = await supabase
-        .from('medidas_disciplinares')
+        .from('medidas')
         .upsert(medidaData, {
           onConflict: 'id'
         });
@@ -166,12 +168,6 @@ async function executarImportacao() {
   if (!(await verificarSupabase())) {
     return;
   }
-  
-  // Inicializar Supabase
-  const supabase = window.supabase.createClient(
-    window.SUPABASE_URL,
-    window.SUPABASE_ANON_KEY
-  );
   
   // Carregar dados locais
   const dados = await carregarDadosLocais();
@@ -211,7 +207,7 @@ async function atualizarEstatisticas(supabase) {
     
     // Contar medidas
     const { count: totalMedidas } = await supabase
-      .from('medidas_disciplinares')
+      .from('medidas')
       .select('*', { count: 'exact', head: true });
     
     console.log('📊 Estatísticas finais:');
@@ -230,11 +226,6 @@ window.verificarDadosSupabase = async function() {
     console.log('❌ Supabase não configurado');
     return;
   }
-  
-  const supabase = window.supabase.createClient(
-    window.SUPABASE_URL,
-    window.SUPABASE_ANON_KEY
-  );
   
   await atualizarEstatisticas(supabase);
 };

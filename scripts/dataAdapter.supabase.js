@@ -7,6 +7,7 @@ import { supabase } from './supabaseClient.js';
  * medidas: id, codigo_matricula, nome_completo, turma, data, especificacao, observacao, tipo_medida, criado_em
  */
 
+// === Alunos ===
 export async function fetchAlunos({ turma = null, search = null, page = 1, pageSize = 25 } = {}) {
   let q = supabase.from('alunos').select(`
     "código (matrícula)",
@@ -23,10 +24,11 @@ export async function fetchAlunos({ turma = null, search = null, page = 1, pageS
 
   const from = (page - 1) * pageSize, to = from + pageSize - 1;
   const { data: rows, error, count } = await q.range(from, to);
-  if (error) return { data: [], error, count: 0 };
+  if (error) { console.error('[fetchAlunos]', error); return { data: [], error, count: 0 }; }
   return { data: rows, error: null, count };
 }
 
+// === Medidas ===
 export async function fetchMedidas({ codigo_matricula = null, turma = null, dataDe = null, dataAte = null, page = 1, pageSize = 25 } = {}) {
   let q = supabase.from('medidas').select('*', { count: 'exact' });
 
@@ -38,10 +40,11 @@ export async function fetchMedidas({ codigo_matricula = null, turma = null, data
 
   const from = (page - 1) * pageSize, to = from + pageSize - 1;
   const { data: rows, error, count } = await q.range(from, to);
-  if (error) return { data: [], error, count: 0 };
+  if (error) { console.error('[fetchMedidas]', error); return { data: [], error, count: 0 }; }
   return { data: rows, error: null, count };
 }
 
+// === Frequência ===
 export async function fetchFrequencia({ turma = null, data = null, page = 1, pageSize = 25 } = {}) {
   let q = supabase.from('frequencia').select('*', { count: 'exact' });
 
@@ -51,6 +54,6 @@ export async function fetchFrequencia({ turma = null, data = null, page = 1, pag
 
   const from = (page - 1) * pageSize, to = from + pageSize - 1;
   const { data: rows, error, count } = await q.range(from, to);
-  if (error) return { data: [], error, count: 0 };
+  if (error) { console.error('[fetchFrequencia]', error); return { data: [], error, count: 0 }; }
   return { data: rows, error: null, count };
 }

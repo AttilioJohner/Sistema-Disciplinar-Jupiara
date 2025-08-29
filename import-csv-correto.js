@@ -1,3 +1,5 @@
+import { supabase } from './scripts/supabaseClient.js';
+
 // Script para importar os CSVs corretos para o Supabase
 // Dados: BD - Gestão de Alunos - Dados.csv + BD - Medidas - Página1.csv
 
@@ -28,15 +30,10 @@ async function importarAlunosCorretos() {
     
     console.log(`📊 Encontrados ${alunosData.length} alunos no CSV`);
     
-    if (!window.supabase || !window.SUPABASE_URL) {
+    if (!supabase || !window.SUPABASE_URL) {
       console.error('❌ Supabase não configurado');
       return;
     }
-    
-    const supabase = window.supabase.createClient(
-      window.SUPABASE_URL,
-      window.SUPABASE_ANON_KEY
-    );
     
     console.log('🗑️ Limpando tabela de alunos...');
     await supabase.from('alunos').delete().neq('codigo', '');
@@ -103,18 +100,13 @@ async function importarMedidasCorretas() {
     
     console.log(`📊 Encontradas ${medidasData.length} medidas no CSV`);
     
-    if (!window.supabase || !window.SUPABASE_URL) {
+    if (!supabase || !window.SUPABASE_URL) {
       console.error('❌ Supabase não configurado');
       return;
     }
     
-    const supabase = window.supabase.createClient(
-      window.SUPABASE_URL,
-      window.SUPABASE_ANON_KEY
-    );
-    
     console.log('🗑️ Limpando tabela de medidas...');
-    await supabase.from('medidas_disciplinares').delete().neq('id', '');
+    await supabase.from('medidas').delete().neq('id', '');
     
     let importadas = 0;
     let erros = 0;
@@ -143,7 +135,7 @@ async function importarMedidasCorretas() {
         
         // Inserir no Supabase
         const { error } = await supabase
-          .from('medidas_disciplinares')
+          .from('medidas')
           .upsert(medidaLimpa, { onConflict: 'id' });
           
         if (error) {
