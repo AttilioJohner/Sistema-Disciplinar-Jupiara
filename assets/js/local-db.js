@@ -13,6 +13,14 @@ class LocalDatabase {
     try {
       console.log('🔄 Carregando banco de dados local...');
       
+      // Debug: verificar estado das variáveis
+      console.log('🔍 Debug - SUPABASE_URL:', !!window.SUPABASE_URL);
+      console.log('🔍 Debug - SUPABASE_ANON_KEY:', !!window.SUPABASE_ANON_KEY);
+      console.log('🔍 Debug - isSupabaseConfigured função:', typeof window.isSupabaseConfigured);
+      if (window.isSupabaseConfigured) {
+        console.log('🔍 Debug - isSupabaseConfigured retorno:', window.isSupabaseConfigured());
+      }
+      
       // Se Supabase estiver configurado, usar localStorage apenas como fallback
       if (window.isSupabaseConfigured && window.isSupabaseConfigured()) {
         console.log('⚡ Supabase configurado - usando localStorage apenas como fallback');
