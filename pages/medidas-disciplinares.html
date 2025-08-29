@@ -1077,7 +1077,25 @@
                 }
                 
                 todosAlunosMedidas = [];
-                    try {
+                
+                // USAR SISTEMA HÍBRIDO diretamente
+                const alunosSnapshot = await window.db.collection('alunos').get();
+                alunosSnapshot.docs.forEach(doc => {
+                    const aluno = doc.data();
+                    if (aluno.nome_completo && aluno.turma) {
+                        todosAlunosMedidas.push({
+                            id: aluno.id || doc.id,
+                            codigo: aluno.codigo || doc.id,
+                            nome: aluno.nome_completo,
+                            turma: aluno.turma
+                        });
+                    }
+                });
+                
+                console.log('✅ Sistema híbrido:', todosAlunosMedidas.length, 'alunos carregados');
+                
+                /* CÓDIGO ANTIGO COMENTADO
+                try {
                         const response = await fetch('../data/db.json');
                         const dbData = await response.json();
                         if (dbData.alunos) {
@@ -1126,6 +1144,7 @@
                     console.log('FREQ: Array todosAlunosMedidas populado com', todosAlunosMedidas.length, 'alunos do localDb');
                     console.log('FREQ: Exemplo de aluno:', todosAlunosMedidas.find(a => a.id === 'aluno_163'));
                 }
+                */ // Fim do código antigo comentado
                 
                 // Extrair turmas únicas
                 todasTurmasMedidas = [...new Set(todosAlunosMedidas.map(a => a.turma))].sort();
