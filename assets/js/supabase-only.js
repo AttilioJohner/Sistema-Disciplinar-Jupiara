@@ -50,13 +50,27 @@ async function logout() {
     window.location.href = 'pages/login.html';
 }
 
-// Verificar se está logado
+// Verificar se está logado (sistema simples)
 function requireAuth() {
-    if (!currentUser) {
-        window.location.href = 'pages/login.html';
-        return false;
+    const authData = localStorage.getItem('supabase_auth');
+    if (authData) {
+        try {
+            const auth = JSON.parse(authData);
+            if (auth.user && auth.expires > Date.now()) {
+                currentUser = auth.user;
+                return true;
+            }
+        } catch (e) {
+            localStorage.removeItem('supabase_auth');
+        }
     }
-    return true;
+    
+    // Se não está logado, redirecionar
+    const currentPath = window.location.pathname;
+    if (!currentPath.includes('login.html')) {
+        window.location.href = 'pages/login.html';
+    }
+    return false;
 }
 
 // Database - Alunos
