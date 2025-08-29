@@ -2,8 +2,8 @@
   # Diretório de publicação
   publish = "."
   
-  # Comando de build (não necessário para site estático, mas pode ser usado para processamento)
-  command = "echo 'Build concluído - Site estático'"
+  # Comando de build para injetar variáveis de ambiente
+  command = "echo 'Criando arquivo de variáveis...' && echo \"window.NETLIFY_ENV = { SUPABASE_URL: '$SUPABASE_URL', SUPABASE_ANON_KEY: '$SUPABASE_ANON_KEY' };\" > netlify-env.js && echo 'Build concluído'"
 
 # Cabeçalhos de segurança
 [[headers]]

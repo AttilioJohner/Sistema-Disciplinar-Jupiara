@@ -6,22 +6,25 @@
 
   // Função para carregar variáveis do Netlify
   function loadNetlifyEnv() {
-    // No Netlify, as variáveis de ambiente são injetadas automaticamente
-    // e ficam disponíveis em window.env ou como variáveis globais
+    // Método 1: Variáveis injetadas pelo build do Netlify
+    if (window.NETLIFY_ENV) {
+      console.log('📦 Carregando variáveis do build do Netlify');
+      return window.NETLIFY_ENV;
+    }
     
+    // Método 2: Variáveis definidas diretamente (fallback)
     if (window.env) {
-      // Método 1: Variáveis injetadas pelo Netlify via script
       return window.env;
     }
     
-    // Método 2: Variáveis definidas diretamente (para compatibilidade)
+    // Método 3: Fallback para desenvolvimento local
     return {
-      SUPABASE_URL: window.NETLIFY_SUPABASE_URL || window.VITE_SUPABASE_URL || '',
-      SUPABASE_ANON_KEY: window.NETLIFY_SUPABASE_ANON_KEY || window.VITE_SUPABASE_ANON_KEY || '',
-      NODE_ENV: window.NODE_ENV || (window.location.hostname.includes('localhost') ? 'development' : 'production'),
-      APP_BASE_URL: window.URL || window.location.origin,
-      DEBUG_ENABLED: window.DEBUG_ENABLED === 'true' || window.location.hostname.includes('localhost'),
-      LOG_LEVEL: window.LOG_LEVEL || 'info'
+      SUPABASE_URL: '',
+      SUPABASE_ANON_KEY: '',
+      NODE_ENV: window.location.hostname.includes('localhost') ? 'development' : 'production',
+      APP_BASE_URL: window.location.origin,
+      DEBUG_ENABLED: window.location.hostname.includes('localhost'),
+      LOG_LEVEL: 'info'
     };
   }
 
