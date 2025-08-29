@@ -1548,20 +1548,22 @@
         // Proteger página - requer autenticação
         // Aguardar carregamento dos scripts antes de verificar auth
         document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(() => {
-                if (typeof requireAuth === 'function') {
-                    console.log('RequireAuth disponível, ativando proteção...');
-                    requireAuth({
-                        loginPath: 'login.html',
-                        onAuth: function(user) {
-                            console.log('Usuário logado nas medidas disciplinares:', user.email);
-                            // Página já inicializa automaticamente via DOMContentLoaded
-                        }
-                    });
-                } else {
-                    console.log('RequireAuth não disponível - executando sem autenticação');
-                }
-            }, 100);
+            console.log('🛑 RequireAuth DESABILITADO temporariamente - corrigindo loops');
+            // TEMPORARIAMENTE desabilitado para corrigir loop de redirecionamento
+            // setTimeout(() => {
+            //     if (typeof requireAuth === 'function') {
+            //         console.log('RequireAuth disponível, ativando proteção...');
+            //         requireAuth({
+            //             loginPath: 'login.html',
+            //             onAuth: function(user) {
+            //                 console.log('Usuário logado nas medidas disciplinares:', user.email);
+            //                 // Página já inicializa automaticamente via DOMContentLoaded
+            //             }
+            //         });
+            //     } else {
+            //         console.log('RequireAuth não disponível - executando sem autenticação');
+            //     }
+            // }, 100);
         });
     </script>
 
