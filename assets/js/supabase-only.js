@@ -30,6 +30,9 @@ async function initSupabase() {
         }
     }
     
+    // Disponibilizar globalmente
+    window.supabaseClient = supabase;
+    
     console.log('✅ Supabase inicializado');
     if (currentUser) {
         console.log('✅ Usuário da sessão:', currentUser.email);

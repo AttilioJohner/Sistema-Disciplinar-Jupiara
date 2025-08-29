@@ -185,3 +185,102 @@ console.log('- uploadTodosCSVs() // Upload completo');
 console.log('');
 console.log('⚠️ IMPORTANTE: Substitua os dados de exemplo pelos dados reais dos CSVs!');
 console.log('📋 Depois execute: uploadTodosCSVs()');
+console.log('🧪 Para teste: testarUpload()');
+
+// FUNÇÃO DE TESTE (dados fake para testar se funciona)
+async function testarUpload() {
+    console.log('🧪 TESTANDO UPLOAD com dados fake...');
+    
+    if (!window.supabaseClient) {
+        console.error('❌ Supabase client não disponível');
+        console.log('Aguardando inicialização...');
+        
+        // Aguardar um pouco e tentar novamente
+        setTimeout(() => {
+            if (window.supabaseClient) {
+                console.log('✅ Supabase disponível agora!');
+                testarUploadReal();
+            } else {
+                console.error('❌ Supabase ainda não disponível');
+            }
+        }, 2000);
+        return;
+    }
+    
+    testarUploadReal();
+}
+
+async function testarUploadReal() {
+    const supabase = window.supabaseClient;
+    
+    try {
+        // Testar inserção de 1 aluno fake
+        console.log('📚 Testando inserção de aluno...');
+        const { data: alunoData, error: alunoError } = await supabase
+            .from('alunos')
+            .insert({
+                codigo: 'TESTE001',
+                nome_completo: 'Aluno Teste',
+                nome: 'Aluno Teste',
+                turma: '9Z',
+                responsavel: 'Responsavel Teste',
+                telefone: '(99) 99999-9999',
+                status: 'ativo',
+                criado_em: new Date().toISOString()
+            })
+            .select();
+        
+        if (alunoError) {
+            console.error('❌ Erro ao inserir aluno:', alunoError);
+        } else {
+            console.log('✅ Aluno teste inserido:', alunoData);
+        }
+        
+        // Testar inserção de 1 medida fake
+        console.log('📋 Testando inserção de medida...');
+        const { data: medidaData, error: medidaError } = await supabase
+            .from('medidas_disciplinares')
+            .insert({
+                id: 'teste_' + Date.now(),
+                aluno_codigo: 'TESTE001',
+                aluno_nome: 'Aluno Teste',
+                turma: '9Z',
+                data_ocorrencia: new Date().toISOString().split('T')[0],
+                descricao: 'Teste do sistema',
+                tipo: 'Teste',
+                status: 'ativa',
+                criado_em: new Date().toISOString()
+            })
+            .select();
+        
+        if (medidaError) {
+            console.error('❌ Erro ao inserir medida:', medidaError);
+        } else {
+            console.log('✅ Medida teste inserida:', medidaData);
+        }
+        
+        // Verificar se funcionou
+        const { count: totalAlunos } = await supabase
+            .from('alunos')
+            .select('*', { count: 'exact', head: true });
+        
+        const { count: totalMedidas } = await supabase
+            .from('medidas_disciplinares')
+            .select('*', { count: 'exact', head: true });
+        
+        console.log('🎉 TESTE CONCLUÍDO!');
+        console.log('📊 Total alunos no banco:', totalAlunos);
+        console.log('📋 Total medidas no banco:', totalMedidas);
+        
+        // Recarregar dashboard para ver os números
+        setTimeout(() => {
+            console.log('🔄 Recarregando dashboard...');
+            location.reload();
+        }, 2000);
+        
+    } catch (error) {
+        console.error('❌ Erro no teste:', error);
+    }
+}
+
+window.testarUpload = testarUpload;
