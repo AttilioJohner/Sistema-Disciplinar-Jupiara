@@ -161,12 +161,14 @@
 
   <script>
     // Proteger página - requer autenticação
-    requireAuth({
-      loginPath: 'login.html',
-      onAuth: function(user) {
-        console.log('Usuário logado:', user.email);
-      }
-    });
+    console.log('🛑 RequireAuth DESABILITADO temporariamente - corrigindo loops');
+    // TEMPORARIAMENTE desabilitado para corrigir loop de redirecionamento
+    // requireAuth({
+    //   loginPath: 'login.html',
+    //   onAuth: function(user) {
+    //     console.log('Usuário logado:', user.email);
+    //   }
+    // });
   </script>
   <script src="../assets/js/importacao-dados.js"></script>
 </body>

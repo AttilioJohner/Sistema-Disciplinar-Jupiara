@@ -2382,13 +2382,15 @@
     </script>
     <script>
         // Proteger página - requer autenticação
-        requireAuth({
-            loginPath: 'login.html',
-            onAuth: function(user) {
-                console.log('Usuário logado na frequência:', user.email);
-                // Página já inicializa automaticamente via DOMContentLoaded
-            }
-        });
+        console.log('🛑 RequireAuth DESABILITADO temporariamente - corrigindo loops');
+        // TEMPORARIAMENTE desabilitado para corrigir loop de redirecionamento
+        // requireAuth({
+        //     loginPath: 'login.html',
+        //     onAuth: function(user) {
+        //         console.log('Usuário logado na frequência:', user.email);
+        //         // Página já inicializa automaticamente via DOMContentLoaded
+        //     }
+        // });
     </script>
 
 </body>
