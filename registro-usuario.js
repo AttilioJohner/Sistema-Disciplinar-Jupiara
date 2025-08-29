@@ -1,18 +1,15 @@
+import { supabase } from './scripts/supabaseClient.js';
+
 // REGISTRO DE USUÁRIO NO SUPABASE
 // Execute no console: registrarUsuario()
 
 async function registrarUsuario() {
     console.log('🔧 Registrando usuário no Supabase...');
     
-    if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+    if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY || !supabase) {
         console.error('❌ Supabase não configurado');
         return;
     }
-    
-    const supabase = window.supabase.createClient(
-        window.SUPABASE_URL,
-        window.SUPABASE_ANON_KEY
-    );
     
     try {
         // Registrar usuário admin da escola
@@ -53,12 +50,7 @@ async function registrarUsuario() {
 // Função para login direto
 async function fazerLogin() {
     console.log('🔑 Fazendo login...');
-    
-    const supabase = window.supabase.createClient(
-        window.SUPABASE_URL,
-        window.SUPABASE_ANON_KEY
-    );
-    
+
     const { data, error } = await supabase.auth.signInWithPassword({
         email: 'admin@eecmjupiara.com.br',
         password: 'JupiaraAdmin2024!'
@@ -74,11 +66,6 @@ async function fazerLogin() {
 
 // Verificar status do usuário
 async function verificarUsuario() {
-    const supabase = window.supabase.createClient(
-        window.SUPABASE_URL,
-        window.SUPABASE_ANON_KEY
-    );
-    
     const { data: { user } } = await supabase.auth.getUser();
     
     if (user) {

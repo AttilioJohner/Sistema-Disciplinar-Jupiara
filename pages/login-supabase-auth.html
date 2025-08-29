@@ -12,7 +12,7 @@
   <!-- APENAS SUPABASE -->
   <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
   <script src="../assets/js/env-config.js"></script>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script type="module" src="../scripts/supabaseClient.js"></script>
 
   <style>
     .login-container{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0078d4,#106ebe);padding:20px}
@@ -57,19 +57,14 @@
   </div>
 
   <script>
-    let supabase = null;
+    let supabase = window.__supabase;
 
     // Inicializar Supabase
     async function initSupabase() {
-      if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+      if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY || !supabase) {
         showMessage('❌ Configuração Supabase não encontrada', 'error');
         return false;
       }
-
-      supabase = window.supabase.createClient(
-        window.SUPABASE_URL,
-        window.SUPABASE_ANON_KEY
-      );
 
       console.log('✅ Supabase inicializado');
       return true;

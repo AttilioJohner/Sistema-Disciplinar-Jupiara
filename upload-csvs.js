@@ -101,7 +101,7 @@ async function uploadMedidas() {
     
     // Limpar tabela primeiro
     console.log('🗑️ Limpando tabela de medidas...');
-    await supabase.from('medidas_disciplinares').delete().neq('id', '');
+    await supabase.from('medidas').delete().neq('id', '');
     
     for (const medidaCSV of DADOS_MEDIDAS) {
         try {
@@ -122,7 +122,7 @@ async function uploadMedidas() {
             };
             
             const { error } = await supabase
-                .from('medidas_disciplinares')
+                .from('medidas')
                 .insert(medida);
             
             if (error) {
@@ -239,7 +239,7 @@ async function testarUploadReal() {
         // Testar inserção de 1 medida fake
         console.log('📋 Testando inserção de medida...');
         const { data: medidaData, error: medidaError } = await supabase
-            .from('medidas_disciplinares')
+            .from('medidas')
             .insert({
                 id: 'teste_' + Date.now(),
                 aluno_codigo: 'TESTE001',
@@ -265,7 +265,7 @@ async function testarUploadReal() {
             .select('*', { count: 'exact', head: true });
         
         const { count: totalMedidas } = await supabase
-            .from('medidas_disciplinares')
+            .from('medidas')
             .select('*', { count: 'exact', head: true });
         
         console.log('🎉 TESTE CONCLUÍDO!');

@@ -1,3 +1,5 @@
+import { supabase } from './scripts/supabaseClient.js';
+
 // SISTEMA SIMPLES - APENAS SUPABASE
 // Substituir todo o sistema híbrido por algo direto
 
@@ -5,15 +7,10 @@ console.log('🎯 SISTEMA SIMPLES - APENAS SUPABASE');
 
 // Configurar Supabase como único banco
 window.configurarSupabaseUnico = function() {
-    if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+    if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY || !supabase) {
         console.error('❌ Supabase não configurado');
         return null;
     }
-    
-    const supabase = window.supabase.createClient(
-        window.SUPABASE_URL,
-        window.SUPABASE_ANON_KEY
-    );
     
     // SUBSTITUIR window.db pelo Supabase direto
     window.db = {

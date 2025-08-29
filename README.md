@@ -87,7 +87,7 @@ O sistema cria automaticamente as seguintes tabelas no Supabase:
 - `criadoEm` (timestamp)
 - `atualizadoEm` (timestamp)
 
-### `medidas_disciplinares`
+### `medidas`
 - `id` (text, primary key)
 - `alunoId` (text, foreign key)
 - `tipo` (text)
@@ -96,6 +96,12 @@ O sistema cria automaticamente as seguintes tabelas no Supabase:
 - `professor` (text)
 - `status` (text)
 - `criadoEm` (timestamp)
+
+> Para compatibilidade com trechos legados, crie uma *view* opcional:
+>
+> ```sql
+> create or replace view public.medidas_disciplinares as select * from public.medidas;
+> ```
 
 ### `frequencia_diaria`
 - `id` (text, primary key)
@@ -113,14 +119,14 @@ Configure as seguintes políticas no Supabase:
 ```sql
 -- Habilitar RLS
 ALTER TABLE alunos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE medidas_disciplinares ENABLE ROW LEVEL SECURITY;
+ALTER TABLE medidas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE frequencia_diaria ENABLE ROW LEVEL SECURITY;
 
 -- Política para usuários autenticados
 CREATE POLICY "Usuários autenticados podem ver tudo" ON alunos
 FOR ALL USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Usuários autenticados podem ver tudo" ON medidas_disciplinares
+CREATE POLICY "Usuários autenticados podem ver tudo" ON medidas
 FOR ALL USING (auth.role() = 'authenticated');
 
 CREATE POLICY "Usuários autenticados podem ver tudo" ON frequencia_diaria

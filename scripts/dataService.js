@@ -1,5 +1,5 @@
 export {
   fetchAlunos as listAlunos,
-  fetchMedidas as listMedidas,
+  fetchMedidas as listMedidasDisciplinares,
   fetchFrequencia as listFrequencia
 } from './dataAdapter.supabase.js';
