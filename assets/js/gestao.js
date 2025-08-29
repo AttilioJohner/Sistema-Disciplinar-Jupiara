@@ -87,39 +87,19 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     }
   });
 
-  // Aguardar sistema híbrido com timeout seguro
+  // VERSÃO ULTRA SIMPLES - SEM LOOPS, SEM ESPERAS, SEM ESCOLHAS
   async function ensureLocalDb() {
-    console.log('🔄 Aguardando sistema híbrido (Supabase + Local)...');
+    console.log('🔧 Configurando DB (versão simples)');
     
-    // Aguardar alguns segundos para Supabase inicializar
-    let attempts = 0;
-    const maxAttempts = 20; // 10 segundos máximo (500ms x 20)
-    
-    while (attempts < maxAttempts) {
-      // Priorizar Supabase se disponível
-      if (window.db && window.supabaseConfig && !window.supabaseConfig.isLocal()) {
-        db = window.db;
-        console.log('✅ Usando Supabase via window.db');
-        return;
-      }
-      
-      // Fallback para localStorage se Supabase não estiver pronto
-      if (window.db) {
-        db = window.db;
-        console.log('⚠️ Usando sistema local via window.db');
-        return;
-      }
-      
-      attempts++;
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-    
-    // Último fallback
-    console.warn('⚠️ Timeout - usando fallback direto');
-    if (window.localDb) {
+    // APENAS usar o que estiver disponível IMEDIATAMENTE
+    if (window.db) {
+      db = window.db;
+      console.log('✅ DB configurado:', typeof db);
+    } else {
+      console.error('❌ window.db não encontrado');
+      // DB dummy para não quebrar
       db = {
-        collection: (name) => window.localDb.collection(name),
-        batch: () => window.localDb.batch()
+        collection: () => ({ get: async () => ({ docs: [], size: 0, empty: true }) })
       };
     }
   }
@@ -157,15 +137,19 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         }
       });
     }
-    // TEMPORARIAMENTE DESABILITADO - CAUSANDO LOOP INFINITO
-    // if (els.busca) {
-    //   els.busca.addEventListener('input', () => renderTable());
-    // }
-    // if (els.filtroTurma) {
-    //   els.filtroTurma.addEventListener('change', () => renderTable());
-    // }
+    // Listeners com throttling para evitar execução excessiva
+    let searchTimeout;
+    if (els.busca) {
+      els.busca.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => renderTable(), 300);
+      });
+    }
+    if (els.filtroTurma) {
+      els.filtroTurma.addEventListener('change', () => renderTable());
+    }
     
-    console.log('⚠️ Listeners de busca/filtro DESABILITADOS para parar loop');
+    console.log('✅ Listeners reativados com throttling');
 
     if (els.tbody) {
       // Delegação para Editar/Excluir
