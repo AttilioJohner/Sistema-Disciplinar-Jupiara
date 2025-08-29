@@ -416,12 +416,18 @@ class LocalBatch {
 const localDb = new LocalDatabase();
 
 // Compatibilidade com código existente do Sistema Local
-window.db = {
-  collection: (name) => localDb.collection(name),
-  batch: () => new LocalBatch(localDb),
-  enableNetwork: () => Promise.resolve(),
-  disableNetwork: () => Promise.resolve()
-};
+// Só definir window.db se Supabase não estiver configurado
+if (!window.isSupabaseConfigured || !window.isSupabaseConfigured()) {
+  console.log('🔧 Definindo window.db para sistema local');
+  window.db = {
+    collection: (name) => localDb.collection(name),
+    batch: () => new LocalBatch(localDb),
+    enableNetwork: () => Promise.resolve(),
+    disableNetwork: () => Promise.resolve()
+  };
+} else {
+  console.log('⚡ Supabase configurado - mantendo window.db do SupabaseAdapter');
+}
 
 // Função para verificar se está pronto
 window.localDbReady = () => localDb.loaded;
