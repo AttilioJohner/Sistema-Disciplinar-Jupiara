@@ -187,6 +187,19 @@ Sistema-Disciplinar-Jupiara/
 | `NODE_ENV` | Ambiente (development/production) | Não |
 | `DEBUG_ENABLED` | Habilitar debug | Não |
 
+## Supabase
+
+Crie um arquivo `config.js` baseado em `config.example.js` na raiz do projeto. Ele deve definir as chaves:
+
+```js
+window.__ENV = {
+  SUPABASE_URL: "https://...supabase.co",
+  SUPABASE_ANON_KEY: "..."
+};
+```
+
+O arquivo `config.js` não deve ser commitado.
+
 ## 📞 Suporte
 
 ### Problemas Comuns
