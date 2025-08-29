@@ -131,8 +131,15 @@ class SupabaseCollection {
       return window.localDb?.collection(this.tableName)?.get() || { docs: [], size: 0, empty: true };
     }
 
+    // Verificar se o cliente Supabase está disponível
+    const client = this.config.getClient();
+    if (!client) {
+      console.warn('⚠️ Cliente Supabase não inicializado ainda, usando fallback local');
+      return window.localDb?.collection(this.tableName)?.get() || { docs: [], size: 0, empty: true };
+    }
+
     try {
-      const { data, error } = await this.config.getClient()
+      const { data, error } = await client
         .from(this.tableName)
         .select('*');
 

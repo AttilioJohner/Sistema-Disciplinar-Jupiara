@@ -236,23 +236,14 @@
   <!-- Guard de Autenticação -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const wait = setInterval(() => {
-        if (window.localDb && window.localDb.loaded) {
-          clearInterval(wait);
-          try {
-            window.localAuth.onAuthStateChanged(user => {
-              if (!user) {
-                window.location.href = 'login.html';
-              } else {
-                console.log('Usuário logado:', user.email);
-                // A listagem em tempo real é automática via gestao.js
-              }
-            });
-          } catch (e) {
-            console.error('Erro ao iniciar auth guard:', e);
-          }
+      // Usar requireAuth do sistema híbrido
+      requireAuth({
+        loginPath: 'login.html',
+        onAuth: (user) => {
+          console.log('Usuário logado:', user.email || user.id);
+          // A listagem em tempo real é automática via gestao.js
         }
-      }, 100);
+      });
     });
   </script>
 
