@@ -1068,10 +1068,15 @@
         
         async function carregarTurmasEAlunos() {
             try {
-                // Verificar se localDb está disponível
-                if (!window.localDb || !window.localDb.data || !window.localDb.data.alunos) {
-                    console.warn('LocalDb não disponível, tentando carregar do arquivo');
-                    // Tentar carregar do arquivo db.json
+                console.log('🔄 Carregando alunos via sistema híbrido...');
+                
+                // Usar sistema híbrido diretamente
+                if (!window.db) {
+                    console.warn('Sistema híbrido não disponível');
+                    return;
+                }
+                
+                todosAlunosMedidas = [];
                     try {
                         const response = await fetch('../data/db.json');
                         const dbData = await response.json();
@@ -1104,12 +1109,14 @@
                     todosAlunosMedidas = [];
                     
                     // Carregar alunos do localDb
-                    Object.keys(window.localDb.data.alunos).forEach(alunoId => {
-                        const aluno = window.localDb.data.alunos[alunoId];
+                    // USAR SISTEMA HÍBRIDO em vez de localDb diretamente
+                    const alunosSnapshot = await window.db.collection('alunos').get();
+                    alunosSnapshot.docs.forEach(doc => {
+                        const aluno = doc.data();
                         if (aluno.nome_completo && aluno.turma) {
                             todosAlunosMedidas.push({
-                                id: aluno.id || alunoId,
-                                codigo: aluno.codigo || alunoId,
+                                id: aluno.id || doc.id,
+                                codigo: aluno.codigo || doc.id,
                                 nome: aluno.nome_completo,
                                 turma: aluno.turma
                             });
