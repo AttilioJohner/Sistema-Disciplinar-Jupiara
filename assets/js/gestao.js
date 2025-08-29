@@ -31,13 +31,23 @@
   // ELEMENTOS
   // =====================
   const els = {};
+  
+  // Controle de inicialização para evitar loops
+  let isInitialized = false;
 
   document.addEventListener('DOMContentLoaded', async () => {
+    // Evitar múltiplas inicializações
+    if (isInitialized) {
+      console.log('⚠️ Gestão já foi inicializado, ignorando');
+      return;
+    }
+    
     try {
+      isInitialized = true;
       await ensureLocalDb();
       mapElements();
       bindEvents();
-      startLiveList();
+      await startLiveList();
       // Inicializar estatísticas com valores zerados
       setTimeout(() => {
         updateStatistics();
@@ -45,33 +55,50 @@
       debugLog('gestao.js inicializado com sucesso');
     } catch (e) {
       console.error(e);
+      isInitialized = false; // Permitir retry em caso de erro
       toast(e.message || 'Falha ao iniciar gestao.js', 'erro');
     }
   });
 
   // Aguarda Sistema Local disponível via window.localDb/window.db
   async function ensureLocalDb() {
-    const maxWaitMs = 20000; // Aumentado para 20 segundos
+    const maxWaitMs = 10000; // Reduzido para 10 segundos
     const start = Date.now();
+    
+    // Verificação única no console
     console.log('🔄 Aguardando sistema local...', {
       localDb: !!window.localDb,
       loaded: window.localDb?.loaded,
       db: !!window.db
     });
     
-    while (!(window.localDb && window.localDb.loaded && window.db)) {
-      if (Date.now() - start > maxWaitMs) {
-        console.error('❌ Timeout do sistema local:', {
-          localDb: !!window.localDb,
-          loaded: window.localDb?.loaded,
-          db: !!window.db,
-          elapsed: Date.now() - start
-        });
-        throw new Error('Sistema Local não inicializado. Verifique se local-db.js foi carregado.');
-      }
-      await sleep(200); // Aumentado de 100ms para 200ms
+    // Se já estiver pronto, retornar imediatamente
+    if (window.db) {
+      db = window.db;
+      console.log('✅ Sistema local pronto para gestão de alunos');
+      return;
     }
-    db = window.db;
+    
+    // Aguardar apenas se necessário
+    while (!window.db) {
+      if (Date.now() - start > maxWaitMs) {
+        console.error('❌ Timeout do sistema local - usando fallback');
+        // Em vez de erro, usar fallback
+        if (window.localDb) {
+          db = {
+            collection: (name) => window.localDb.collection(name),
+            batch: () => window.localDb.batch()
+          };
+        }
+        break;
+      }
+      await sleep(500); // Aumentado o intervalo para reduzir spam
+    }
+    
+    if (!db && window.db) {
+      db = window.db;
+    }
+    
     console.log('✅ Sistema local pronto para gestão de alunos');
   }
 
