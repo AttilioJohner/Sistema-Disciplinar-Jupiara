@@ -1,4 +1,13 @@
 // gestao.js — CRUD de Alunos com Sistema Local + Modo Debug
+
+// ===== PROTEÇÃO TOTAL CONTRA RECARREGAMENTO =====
+if (window.GESTAO_SCRIPT_LOADED) {
+  console.log('🛑 GESTAO.JS JÁ CARREGADO - ABORTAR EXECUÇÃO');
+  throw new Error('Script gestao.js já foi carregado');
+}
+window.GESTAO_SCRIPT_LOADED = true;
+console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
+
 // Requisitos no HTML:
 // - <form id="alunoForm"> com inputs name="id", "nome", "turma", "nascimento", "responsavel", "cpf", "telefone", "email"
 // - <tbody id="alunosTableBody"></tbody>
