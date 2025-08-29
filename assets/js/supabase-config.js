@@ -5,9 +5,6 @@ class SupabaseConfig {
     this.supabaseUrl = window.SUPABASE_URL || '';
     this.supabaseKey = window.SUPABASE_ANON_KEY || '';
     
-    console.log('🔍 SupabaseConfig Debug - URL:', !!this.supabaseUrl);
-    console.log('🔍 SupabaseConfig Debug - Key:', !!this.supabaseKey);
-    
     // Verificar se as variáveis estão configuradas
     if (!this.supabaseUrl || !this.supabaseKey) {
       console.warn('⚠️ Variáveis do Supabase não configuradas. Usando modo local.');
@@ -15,7 +12,6 @@ class SupabaseConfig {
       return;
     }
     
-    console.log('✅ SupabaseConfig - Configurado corretamente, useLocal = false');
     this.useLocal = false;
     this.supabase = null;
     this.initSupabase();
@@ -130,16 +126,11 @@ class SupabaseCollection {
 
   // Obter todos os documentos
   async get() {
-    console.log(`🔍 SupabaseCollection.get(${this.tableName}) - isLocal: ${this.config.isLocal()}`);
-    
     if (this.config.isLocal()) {
-      console.log(`📁 Usando fallback local para ${this.tableName}`);
       // Fallback para sistema local
       return window.localDb?.collection(this.tableName)?.get() || { docs: [], size: 0, empty: true };
     }
 
-    console.log(`🔍 Executando query Supabase para ${this.tableName}`);
-    
     try {
       const { data, error } = await this.config.getClient()
         .from(this.tableName)

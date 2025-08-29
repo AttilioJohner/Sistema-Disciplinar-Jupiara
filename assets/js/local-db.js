@@ -13,14 +13,6 @@ class LocalDatabase {
     try {
       console.log('🔄 Carregando banco de dados local...');
       
-      // Debug: verificar estado das variáveis
-      console.log('🔍 Debug - SUPABASE_URL:', !!window.SUPABASE_URL);
-      console.log('🔍 Debug - SUPABASE_ANON_KEY:', !!window.SUPABASE_ANON_KEY);
-      console.log('🔍 Debug - isSupabaseConfigured função:', typeof window.isSupabaseConfigured);
-      if (window.isSupabaseConfigured) {
-        console.log('🔍 Debug - isSupabaseConfigured retorno:', window.isSupabaseConfigured());
-      }
-      
       // Se Supabase estiver configurado, usar localStorage apenas como fallback
       if (window.isSupabaseConfigured && window.isSupabaseConfigured()) {
         console.log('⚡ Supabase configurado - usando localStorage apenas como fallback');
@@ -418,15 +410,12 @@ const localDb = new LocalDatabase();
 // Compatibilidade com código existente do Sistema Local
 // Só definir window.db se Supabase não estiver configurado
 if (!window.isSupabaseConfigured || !window.isSupabaseConfigured()) {
-  console.log('🔧 Definindo window.db para sistema local');
   window.db = {
     collection: (name) => localDb.collection(name),
     batch: () => new LocalBatch(localDb),
     enableNetwork: () => Promise.resolve(),
     disableNetwork: () => Promise.resolve()
   };
-} else {
-  console.log('⚡ Supabase configurado - mantendo window.db do SupabaseAdapter');
 }
 
 // Função para verificar se está pronto
