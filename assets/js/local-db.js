@@ -8,12 +8,23 @@ class LocalDatabase {
       : 'https://raw.githubusercontent.com/AttilioJohner/sistema-disciplinar-revisado/main/data/db.json';
   }
 
-  // Carregar dados do localStorage primeiro, depois do arquivo JSON como backup
+  // Carregar dados priorizando Supabase quando configurado
   async loadData() {
     try {
       console.log('🔄 Carregando banco de dados local...');
       
-      // Primeiro tenta carregar do localStorage
+      // Se Supabase estiver configurado, usar localStorage apenas como fallback
+      if (window.isSupabaseConfigured && window.isSupabaseConfigured()) {
+        console.log('⚡ Supabase configurado - usando localStorage apenas como fallback');
+        // Não carregar dados do localStorage quando Supabase estiver ativo
+        this.data = { alunos: {}, medidas_disciplinares: {}, frequencia_diaria: {} };
+        this.loaded = true;
+        
+        console.log('✅ Banco de dados local inicializado (dados virão do Supabase)');
+        return this.data;
+      }
+      
+      // Primeiro tenta carregar do localStorage (apenas quando Supabase não estiver configurado)
       const localData = localStorage.getItem('db');
       if (localData) {
         try {
