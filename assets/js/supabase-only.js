@@ -283,7 +283,7 @@ const alunosDB = {
                     const { data, error } = await supabase
                         .from('alunos')
                         .select('*')
-                        .eq('codigo', id)
+                        .eq('"código (matrícula)"', id)
                         .single();
                     
                     if (error && error.code !== 'PGRST116') throw error;
@@ -354,7 +354,7 @@ const alunosDB = {
                         ...data,
                         atualizado_em: new Date().toISOString()
                     })
-                    .eq('codigo', id);
+                    .eq('"código (matrícula)"', id);
                 
                 if (error) throw error;
                 return true;
@@ -364,7 +364,7 @@ const alunosDB = {
                 const { error } = await supabase
                     .from('alunos')
                     .delete()
-                    .eq('codigo', id);
+                    .eq('"código (matrícula)"', id);
                 
                 if (error) throw error;
                 return true;
