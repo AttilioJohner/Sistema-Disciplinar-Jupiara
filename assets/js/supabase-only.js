@@ -281,11 +281,18 @@ const alunosDB = {
                         return { id, exists: false, data: () => ({}) };
                     }
                     
-                    const { data, error } = await supabase
+                    // Buscar pelo código usando RPC ou busca geral
+                    const { data: allData, error } = await supabase
                         .from('alunos')
-                        .select('*')
-                        .filter('código (matrícula)', 'eq', parseInt(id))
-                        .single();
+                        .select('*');
+                    
+                    if (error) throw error;
+                    
+                    const data = allData?.find(item => 
+                        item['código (matrícula)'] === parseInt(id) ||
+                        item.codigo === parseInt(id) ||
+                        item.id === parseInt(id)
+                    ) || null;
                     
                     if (error && error.code !== 'PGRST116') throw error;
                     
@@ -359,23 +366,52 @@ const alunosDB = {
             },
             
             async update(data) {
+                // Buscar o registro primeiro para obter o ID interno
+                const { data: allData } = await supabase
+                    .from('alunos')
+                    .select('*');
+                
+                const record = allData?.find(item => 
+                    item['código (matrícula)'] === parseInt(id) ||
+                    item.codigo === parseInt(id)
+                );
+                
+                if (!record) {
+                    throw new Error('Registro não encontrado');
+                }
+                
+                // Usar o ID interno para update
                 const { error } = await supabase
                     .from('alunos')
                     .update({
                         ...data,
                         atualizado_em: new Date().toISOString()
                     })
-                    .filter('código (matrícula)', 'eq', parseInt(id));
+                    .eq('id', record.id);
                 
                 if (error) throw error;
                 return true;
             },
             
             async delete() {
+                // Buscar o registro primeiro para obter o ID interno
+                const { data: allData } = await supabase
+                    .from('alunos')
+                    .select('*');
+                
+                const record = allData?.find(item => 
+                    item['código (matrícula)'] === parseInt(id) ||
+                    item.codigo === parseInt(id)
+                );
+                
+                if (!record) {
+                    throw new Error('Registro não encontrado');
+                }
+                
                 const { error } = await supabase
                     .from('alunos')
                     .delete()
-                    .filter('código (matrícula)', 'eq', parseInt(id));
+                    .eq('id', record.id);
                 
                 if (error) throw error;
                 return true;
