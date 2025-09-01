@@ -10,20 +10,13 @@
   <link rel="stylesheet" href="../assets/css/components.css">
   <link rel="stylesheet" href="../assets/css/dashboard.css">
 
-  <!-- Sistema Híbrido de Banco de Dados (Supabase + Local) -->
-  <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas - usando modo local')"></script>
+  <!-- APENAS SUPABASE -->
+  <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
   <script src="../assets/js/env-config.js"></script>
-  <script src="../assets/js/config.js"></script>
-  <script src="../assets/js/supabase-config.js"></script>
-  <script src="../assets/js/local-db.js"></script>
-  <script src="../assets/js/local-auth.js"></script>
-  <script src="../assets/js/supabase-auth.js"></script>
-  <script src="../assets/js/populate-db.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="../assets/js/supabase-only.js"></script>
 
-  <!-- Scripts da aplicação (opcional) -->
-  <script defer src="../assets/js/main.js"></script>
-
-  <!-- CRUD de Alunos (integra com Firestore) -->
+  <!-- CRUD de Alunos (integra com Supabase) -->
   <script defer src="../assets/js/gestao.js"></script>
 </head>
 

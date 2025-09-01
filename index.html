@@ -38,13 +38,18 @@
           const stats = await window.supabaseSystem.stats();
           
           // Atualizar elementos
-          const totalAlunosEl = document.getElementById('totalAlunosAtivos');
+          const totalAlunosEl = document.getElementById('totalAlunos');
+          const totalFaltasEl = document.getElementById('totalFaltas');
           const totalMedidasEl = document.getElementById('totalMedidas');
-          const totalTurmasEl = document.getElementById('totalTurmas');
+          const mediaFaltasEl = document.getElementById('mediaFaltas');
           
-          if (totalAlunosEl) totalAlunosEl.textContent = stats.totalAlunos;
-          if (totalMedidasEl) totalMedidasEl.textContent = stats.totalMedidas;
-          if (totalTurmasEl) totalTurmasEl.textContent = stats.totalTurmas + '/12';
+          if (totalAlunosEl) totalAlunosEl.textContent = stats.totalAlunos || 0;
+          if (totalFaltasEl) totalFaltasEl.textContent = stats.totalFaltas || 0;
+          if (totalMedidasEl) totalMedidasEl.textContent = stats.totalMedidas || 0;
+          if (mediaFaltasEl) {
+            const media = stats.totalAlunos > 0 ? (stats.totalFaltas / stats.totalAlunos).toFixed(1) : '0.0';
+            mediaFaltasEl.textContent = media;
+          }
           
           console.log('✅ Dashboard carregado:', stats);
           

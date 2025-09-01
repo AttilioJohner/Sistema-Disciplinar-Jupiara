@@ -222,6 +222,12 @@ async function getStatistics() {
             .from('medidas')
             .select('*', { count: 'exact', head: true });
         
+        // Total faltas (assumindo que faltas são um tipo de medida ou campo específico)
+        const { count: totalFaltas } = await supabase
+            .from('medidas')
+            .select('*', { count: 'exact', head: true })
+            .or('tipo.eq.falta,motivo.ilike.%falta%,descricao.ilike.%falta%');
+        
         // Turmas únicas
         const { data: turmas } = await supabase
             .from('alunos')
@@ -233,6 +239,7 @@ async function getStatistics() {
         return {
             totalAlunos: totalAlunos || 0,
             totalMedidas: totalMedidas || 0,
+            totalFaltas: totalFaltas || 0,
             totalTurmas: turmasUnicas
         };
         

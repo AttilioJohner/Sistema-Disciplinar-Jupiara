@@ -92,11 +92,11 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     console.log('🔧 Configurando DB (versão simples)');
     
     // APENAS usar o que estiver disponível IMEDIATAMENTE
-    if (window.db) {
-      db = window.db;
-      console.log('✅ DB configurado:', typeof db);
+    if (window.supabaseSystem) {
+      db = window.supabaseSystem.db.alunos;
+      console.log('✅ Supabase DB configurado:', typeof db);
     } else {
-      console.error('❌ window.db não encontrado');
+      console.error('❌ window.supabaseSystem não encontrado');
       // DB dummy para não quebrar
       db = {
         collection: () => ({ get: async () => ({ docs: [], size: 0, empty: true }) })
@@ -185,7 +185,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       }
       
       console.log('📡 Fazendo query para coleção:', COLLECTION);
-      const snap = await db.collection(COLLECTION).get();
+      const snap = await db.get();
       console.log('📊 Resultado da query:', {
         size: snap.size,
         empty: snap.empty,
@@ -290,7 +290,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   }
 
   async function createAluno(docId, data) {
-    const ref = db.collection(COLLECTION).doc(docId);
+    const ref = db.doc(docId);
     const snap = await ref.get();
     if (snap.exists) {
       throw new Error('Já existe um aluno com ID "' + docId + '".');
@@ -301,7 +301,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   }
 
   async function updateAluno(docId, data) {
-    const ref = db.collection(COLLECTION).doc(docId);
+    const ref = db.doc(docId);
     const snap = await ref.get();
     if (!snap.exists) {
       throw new Error('Aluno com ID "' + docId + '" não encontrado para atualização.');
@@ -313,7 +313,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
 
   async function onEdit(id) {
     try {
-      const ref = db.collection(COLLECTION).doc(id);
+      const ref = db.doc(id);
       const snap = await ref.get();
       if (!snap.exists) {
         toast('Registro não encontrado.', 'erro');
@@ -426,7 +426,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     const ok = confirm('Excluir definitivamente o aluno ID "' + id + '"?');
     if (!ok) return;
     try {
-      await db.collection(COLLECTION).doc(id).delete();
+      await db.doc(id).delete();
       toast('Aluno excluído.');
       if (editingId === id) resetForm();
       debugLog('DELETE ok', { id: id });
@@ -675,19 +675,19 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         const out = { ready: false, read: null, write: null };
         try {
           out.ready = !!(window.localDbReady && window.localDbReady() && db);
-          const r = await db.collection(COLLECTION).limit(1).get();
+          const r = await db.limit(1).get();
           out.read = { ok: true, size: r.size };
         } catch (e) {
           out.read = { ok: false, code: e.code, msg: e.message };
         }
         try {
-          await db.collection(COLLECTION).doc('DEBUG_CHECK').set({
+          await db.doc('DEBUG_CHECK').set({
             nome: 'Debug Check', turma: 'DZ',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           });
           out.write = { ok: true };
-          await db.collection(COLLECTION).doc('DEBUG_CHECK').delete();
+          await db.doc('DEBUG_CHECK').delete();
         } catch (e2) {
           out.write = { ok: false, code: e2.code, msg: e2.message };
         }
@@ -696,7 +696,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       },
       readOnce: async function() {
         try {
-          const snap = await db.collection(COLLECTION).get();
+          const snap = await db.get();
           const rows = snap.docs.map(function(d){ return { id: d.id, ...d.data() }; });
           
           // Debug: verificar estrutura dos telefones
@@ -724,7 +724,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       test: {
         writeSample: async function() {
           const id = 'DEBUG_SAMPLE';
-          await db.collection(COLLECTION).doc(id).set({
+          await db.doc(id).set({
             id: id,
             nome: 'Aluno de Teste',
             turma: '1A',
@@ -739,7 +739,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
           console.log('DEBUG_SAMPLE gravado');
         },
         clearSample: async function() {
-          await db.collection(COLLECTION).doc('DEBUG_SAMPLE').delete();
+          await db.doc('DEBUG_SAMPLE').delete();
           console.log('DEBUG_SAMPLE removido');
         }
       },
@@ -782,7 +782,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   window.migrarDadosExistentes = async function() {
     try {
       console.log('Iniciando migração de dados...');
-      const snapshot = await db.collection(COLLECTION).get();
+      const snapshot = await db.get();
       let updated = 0;
       
       for (const doc of snapshot.docs) {
