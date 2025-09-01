@@ -100,69 +100,40 @@ function isValidTelefone(valor) {
     return true;
 }
 
-// Contador para limitar logs de debug
-let debugCount = 0;
-
 // Função para distribuir telefones de forma inteligente
 function distribuirTelefones(tel1, tel2) {
-    // Debug: log apenas os primeiros 3 casos
-    if (debugCount < 3) {
-        console.log('🔍 Debug telefones:', { 
-            tel1: tel1, 
-            tel2: tel2, 
-            tipo1: typeof tel1, 
-            tipo2: typeof tel2 
-        });
-        debugCount++;
-    }
-    
     const telefone1Valido = isValidTelefone(tel1);
     const telefone2Valido = isValidTelefone(tel2);
     
-    if (debugCount <= 3) {
-        console.log('📞 Validação:', { 
-            tel1Valido: telefone1Valido, 
-            tel2Valido: telefone2Valido 
-        });
-    }
-    
     // Se ambos são válidos, manter como estão
     if (telefone1Valido && telefone2Valido) {
-        const result = {
+        return {
             telefone1: tel1.toString(),
             telefone2: tel2.toString()
         };
-        console.log('✅ Ambos válidos:', result);
-        return result;
     }
     
     // Se só o primeiro é válido
     if (telefone1Valido && !telefone2Valido) {
-        const result = {
+        return {
             telefone1: tel1.toString(),
             telefone2: ''
         };
-        console.log('✅ Só tel1 válido:', result);
-        return result;
     }
     
     // Se só o segundo é válido, mover para o primeiro
     if (!telefone1Valido && telefone2Valido) {
-        const result = {
+        return {
             telefone1: tel2.toString(),
             telefone2: ''
         };
-        console.log('🔄 Movendo tel2 → tel1:', result);
-        return result;
     }
     
     // Se nenhum é válido
-    const result = {
+    return {
         telefone1: '',
         telefone2: ''
     };
-    console.log('❌ Nenhum válido:', result);
-    return result;
 }
 
 // Função auxiliar para converter telefones (Interface → Supabase)
