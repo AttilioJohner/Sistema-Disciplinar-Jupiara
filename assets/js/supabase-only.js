@@ -283,7 +283,7 @@ const alunosDB = {
                     const { data, error } = await supabase
                         .from('alunos')
                         .select('*')
-                        .eq('"código (matrícula)"', id)
+                        .eq('"código (matrícula)"', parseInt(id))
                         .single();
                     
                     if (error && error.code !== 'PGRST116') throw error;
@@ -330,8 +330,14 @@ const alunosDB = {
                 }
                 
                 // Mapear campos do formulário para Supabase
+                // Garantir que código seja 7 dígitos
+                const codigo = parseInt(data.id || id);
+                if (isNaN(codigo) || codigo < 1000000 || codigo > 9999999) {
+                    throw new Error('Código de matrícula deve ter exatamente 7 dígitos (ex: 2025001)');
+                }
+                
                 const mappedData = {
-                    'código (matrícula)': parseInt(data.id || id),
+                    'código (matrícula)': codigo,
                     'Nome completo': data.nome || data['Nome completo'],
                     'turma': data.turma,
                     'responsável': data.responsavel || data.responsável,
@@ -354,7 +360,7 @@ const alunosDB = {
                         ...data,
                         atualizado_em: new Date().toISOString()
                     })
-                    .eq('"código (matrícula)"', id);
+                    .eq('"código (matrícula)"', parseInt(id));
                 
                 if (error) throw error;
                 return true;
@@ -364,7 +370,7 @@ const alunosDB = {
                 const { error } = await supabase
                     .from('alunos')
                     .delete()
-                    .eq('"código (matrícula)"', id);
+                    .eq('"código (matrícula)"', parseInt(id));
                 
                 if (error) throw error;
                 return true;
