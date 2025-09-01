@@ -524,12 +524,18 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     if (!els.form) return {};
     const fd = new FormData(els.form);
     const data = Object.fromEntries(fd.entries());
+    
+    // DEBUG: ver dados coletados do formulário
+    console.log('🔍 Dados coletados do formulário:', data);
+    
     if (data.id != null) data.id = String(data.id).trim();
     if (data.nome != null) data.nome = cleanSpaces(data.nome);
     if (data.turma != null) data.turma = cleanSpaces(data.turma).toUpperCase();
     if (data.cpf != null) data.cpf = data.cpf.replace(/\D/g, '');
     if (data.telefone != null) data.telefone = data.telefone.trim();
     if (data.email != null) data.email = data.email.trim().toLowerCase();
+    
+    console.log('🔍 Dados após limpeza:', data);
     return data;
   }
 
