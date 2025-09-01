@@ -85,20 +85,55 @@ function requireAuth() {
     return false;
 }
 
-// Função auxiliar para formatar telefones (Supabase → Interface)
-function formatTelefone(valor) {
-    if (!valor || valor === null) return '';
+// Função auxiliar para validar telefone
+function isValidTelefone(valor) {
+    if (!valor || valor === null) return false;
     
-    // Se é número, converter para string
     const str = valor.toString();
     
-    // Se começa com +55 mas é muito curto ou é só +55, considerar vazio
-    if (str.startsWith('+55') && str.length <= 5) return '';
+    // Se começa com +55 mas é muito curto ou é só +55, considerar inválido
+    if (str.startsWith('+55') && str.length <= 5) return false;
     
-    // Se é só números mas muito curto (menos de 8 dígitos), considerar vazio  
-    if (/^\d+$/.test(str) && str.length < 8) return '';
+    // Se é só números mas muito curto (menos de 8 dígitos), considerar inválido  
+    if (/^\d+$/.test(str) && str.length < 8) return false;
     
-    return str;
+    return true;
+}
+
+// Função para distribuir telefones de forma inteligente
+function distribuirTelefones(tel1, tel2) {
+    const telefone1Valido = isValidTelefone(tel1);
+    const telefone2Valido = isValidTelefone(tel2);
+    
+    // Se ambos são válidos, manter como estão
+    if (telefone1Valido && telefone2Valido) {
+        return {
+            telefone1: tel1.toString(),
+            telefone2: tel2.toString()
+        };
+    }
+    
+    // Se só o primeiro é válido
+    if (telefone1Valido && !telefone2Valido) {
+        return {
+            telefone1: tel1.toString(),
+            telefone2: ''
+        };
+    }
+    
+    // Se só o segundo é válido, mover para o primeiro
+    if (!telefone1Valido && telefone2Valido) {
+        return {
+            telefone1: tel2.toString(),
+            telefone2: ''
+        };
+    }
+    
+    // Se nenhum é válido
+    return {
+        telefone1: '',
+        telefone2: ''
+    };
 }
 
 // Função auxiliar para converter telefones (Interface → Supabase)
@@ -147,19 +182,27 @@ const alunosDB = {
         const data = await this.getAll();
         const docs = data.map(item => ({
             id: item['código (matrícula)'] || item.id,
-            data: () => ({
-                // Mapear de volta para formato esperado pelo gestao.js
-                id: item['código (matrícula)'],
-                codigo: item['código (matrícula)'],
-                nome: item['Nome completo'],
-                turma: item.turma,
-                responsavel: item.responsável,
-                telefone1: formatTelefone(item['Telefone do responsável']),
-                telefone2: formatTelefone(item['Telefone do responsável 2']),
-                status: 'ativo', // default
-                // Manter dados originais também
-                ...item
-            }),
+            data: () => {
+                // Distribuir telefones de forma inteligente
+                const telefones = distribuirTelefones(
+                    item['Telefone do responsável'], 
+                    item['Telefone do responsável 2']
+                );
+                
+                return {
+                    // Mapear de volta para formato esperado pelo gestao.js
+                    id: item['código (matrícula)'],
+                    codigo: item['código (matrícula)'],
+                    nome: item['Nome completo'],
+                    turma: item.turma,
+                    responsavel: item.responsável,
+                    telefone1: telefones.telefone1,
+                    telefone2: telefones.telefone2,
+                    status: 'ativo', // default
+                    // Manter dados originais também
+                    ...item
+                };
+            },
             exists: true
         }));
         
@@ -248,18 +291,28 @@ const alunosDB = {
                     return {
                         id,
                         exists: !!data,
-                        data: () => data ? {
-                            // Mapear para formato esperado pelo gestao.js
-                            id: data['código (matrícula)'],
-                            codigo: data['código (matrícula)'],
-                            nome: data['Nome completo'],
-                            turma: data.turma,
-                            responsavel: data.responsável,
-                            telefone1: formatTelefone(data['Telefone do responsável']),
-                            telefone2: formatTelefone(data['Telefone do responsável 2']),
-                            status: 'ativo', // default
-                            ...data
-                        } : {}
+                        data: () => {
+                            if (!data) return {};
+                            
+                            // Distribuir telefones de forma inteligente
+                            const telefones = distribuirTelefones(
+                                data['Telefone do responsável'], 
+                                data['Telefone do responsável 2']
+                            );
+                            
+                            return {
+                                // Mapear para formato esperado pelo gestao.js
+                                id: data['código (matrícula)'],
+                                codigo: data['código (matrícula)'],
+                                nome: data['Nome completo'],
+                                turma: data.turma,
+                                responsavel: data.responsável,
+                                telefone1: telefones.telefone1,
+                                telefone2: telefones.telefone2,
+                                status: 'ativo', // default
+                                ...data
+                            };
+                        }
                     };
                 } catch (error) {
                     return { id, exists: false, data: () => ({}) };
