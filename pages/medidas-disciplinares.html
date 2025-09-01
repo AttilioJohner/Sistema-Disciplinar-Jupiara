@@ -1302,9 +1302,10 @@
                     nota += pontosRecuperacao;
                     diasSemMedidasNegativas = diasSemNegativas;
                 }
-            } else if (medidas.length === 0) {
-                // Se nunca teve medidas negativas, começa a recuperar desde o início
-                diasSemMedidasNegativas = Math.floor((hoje - new Date('2024-01-01')) / (1000 * 60 * 60 * 24));
+            } else {
+                // Se nunca teve medidas negativas (ou só teve positivas), só começa a recuperar após 60 dias da data inicial
+                const dataInicial = new Date('2024-07-28'); // Data de início do sistema de notas (28 de julho de 2024)
+                diasSemMedidasNegativas = Math.floor((hoje - dataInicial) / (1000 * 60 * 60 * 24));
                 if (diasSemMedidasNegativas >= 60) {
                     const pontosRecuperacao = (diasSemMedidasNegativas - 60) * 0.2;
                     nota += pontosRecuperacao;
@@ -1313,6 +1314,11 @@
             
             // Limitar a nota entre 0 e 10
             nota = Math.max(0, Math.min(10, nota));
+            
+            // Debug para verificar cálculos
+            if (medidas.length <= 2) { // Só mostrar debug para poucos registros
+                console.log(`🔍 Debug nota: base=8.0, medidas=${medidas.length}, nota_final=${nota.toFixed(2)}, dias_desde_28jul=${diasSemMedidasNegativas}, ultima_negativa=${ultimaMedidaNegativa ? 'sim' : 'não'}`);
+            }
             
             return {
                 nota: parseFloat(nota.toFixed(2)),
