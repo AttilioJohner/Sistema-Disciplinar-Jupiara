@@ -19,7 +19,7 @@
     <script src="../assets/js/supabase-only.js"></script>
     
     <!-- jsPDF para exportação em PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     
     <!-- Estilos específicos para ficha disciplinar -->
     <style>
@@ -700,7 +700,6 @@
     
     <script src="../assets/js/main.js" defer></script>
     <script src="../assets/js/gestao.js" defer></script>
-    <script src="../assets/js/medidas.js" defer></script>
     
     <script>
         // Inicialização da página
@@ -712,43 +711,33 @@
         // Carregar alunos para os selects dos formulários
         async function carregarSelectsAlunos() {
             try {
-                if (!window.db) {
-                    if (typeof window.localDb !== "undefined" && window.localDb.loaded) {
-                        window.db = window.db;
-                    } else {
-                        console.error('Sistema Local não carregado');
-                        return;
-                    }
-                }
+                console.log('🔄 Carregando alunos do Supabase...');
+                const { data: alunosData, error } = await supabase
+                    .from('alunos')
+                    .select('codigo, "Nome completo", turma')
+                    .order('"Nome completo"');
 
-                const snapshot = await db.collection('alunos').get();
-                const alunos = [];
-                
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    alunos.push({
-                        id: doc.id,
-                        codigo: data.codigo || doc.id,
-                        nome: data.nome_completo || data.nome || '',
-                        turma: data.turma || ''
-                    });
-                });
+                if (error) throw error;
 
-                // Ordenar por nome
-                alunos.sort((a, b) => a.nome.localeCompare(b.nome));
+                const alunos = alunosData.map(item => ({
+                    id: item.codigo,
+                    codigo: item.codigo,
+                    nome: item['Nome completo'],
+                    turma: item.turma
+                }));
 
                 // Preencher select de medidas disciplinares
                 const selectMedida = document.getElementById('alunoMedida');
                 if (selectMedida) {
                     selectMedida.innerHTML = '<option value="">Selecione um aluno...</option>';
                     alunos.forEach(aluno => {
-                        selectMedida.innerHTML += `<option value="${aluno.id}">${aluno.nome} (${aluno.turma})</option>`;
+                        selectMedida.innerHTML += `<option value="${aluno.codigo}">${aluno.nome} (${aluno.turma})</option>`;
                     });
                 }
 
-                console.log(`${alunos.length} alunos carregados nos selects`);
+                console.log(`✅ ${alunos.length} alunos carregados nos selects`);
             } catch (error) {
-                console.error('Erro ao carregar alunos para os selects:', error);
+                console.error('❌ Erro ao carregar alunos para os selects:', error);
             }
         }
 
@@ -800,39 +789,28 @@
                 btn.disabled = true;
                 btn.textContent = 'Salvando...';
                 
-                // Buscar dados do aluno
-                const alunoDoc = await window.db.collection('alunos').doc(alunoId).get();
-                if (!alunoDoc.exists) {
+                // Buscar dados do aluno do Supabase
+                const { data: dadosAluno, error: alunoError } = await supabase
+                    .from('alunos')
+                    .select('codigo, "Nome completo", turma')
+                    .eq('codigo', parseInt(alunoId))
+                    .single();
+                    
+                if (alunoError || !dadosAluno) {
                     throw new Error('Aluno não encontrado');
                 }
-                const dadosAluno = alunoDoc.data();
                 
-                // Preparar dados da medida
-                const medidaData = {
-                    codigo_aluno: dadosAluno.codigo || alunoId,
-                    nome_aluno: dadosAluno.nome_completo || dadosAluno.nome,
-                    turma: dadosAluno.turma,
-                    tipo_medida: tipoMedida,
-                    data: data,
-                    gravidade: gravidade,
-                    especificacao: motivo,
-                    observacao: acoes,
-                    dias_suspensao: tipoMedida === 'Suspensão' ? parseInt(diasSuspensao) : null,
-                    created_at: new Date(),
-                    usuario_responsavel: 'Sistema' // Você pode pegar do usuário logado
-                };
-                
-                // Salvar medida no Supabase
+                // Salvar medida diretamente no Supabase
                 const { data: result, error: saveError } = await supabase
                     .from('medidas')
                     .insert([{
-                        codigo_matricula: medidaData.codigo_aluno,
-                        nome_completo: medidaData.nome_aluno,
-                        turma: medidaData.turma,
-                        data: medidaData.data,
-                        especificacao: medidaData.especificacao,
-                        observacao: medidaData.observacao,
-                        tipo_medida: medidaData.tipo_medida,
+                        codigo_matricula: dadosAluno.codigo.toString(),
+                        nome_completo: dadosAluno['Nome completo'],
+                        turma: dadosAluno.turma,
+                        data: data,
+                        especificacao: motivo,
+                        observacao: acoes,
+                        tipo_medida: tipoMedida,
                         criado_em: new Date().toISOString()
                     }]);
                 
@@ -887,12 +865,12 @@
                     dataMedida.value = hoje;
                 }
                 
-                // Verificar se sistema está pronto (sem espera desnecessária)
-                if (!window.localDb.loaded) {
-                    showMessage('⚠️ Sistema Local não conectado - aguardando...', 'warning');
+                // Verificar se sistema Supabase está pronto
+                if (!window.supabase) {
+                    showMessage('⚠️ Supabase não conectado - aguardando...', 'warning');
                     await new Promise(resolve => {
                         const check = setInterval(() => {
-                            if (window.localDb.loaded) {
+                            if (window.supabase) {
                                 clearInterval(check);
                                 resolve();
                             }
@@ -1076,31 +1054,29 @@
         
         async function carregarTurmasEAlunos() {
             try {
-                console.log('🔄 Carregando alunos via sistema híbrido...');
-                
-                // Usar sistema híbrido diretamente
-                if (!window.db) {
-                    console.warn('Sistema híbrido não disponível');
-                    return;
-                }
+                console.log('🔄 Carregando alunos do Supabase...');
                 
                 todosAlunosMedidas = [];
                 
-                // USAR SISTEMA HÍBRIDO diretamente
-                const alunosSnapshot = await window.db.collection('alunos').get();
-                alunosSnapshot.docs.forEach(doc => {
-                    const aluno = doc.data();
-                    if (aluno.nome_completo && aluno.turma) {
+                // Carregar diretamente do Supabase
+                const { data: alunosData, error } = await supabase
+                    .from('alunos')
+                    .select('codigo, "Nome completo", turma');
+                    
+                if (error) throw error;
+                
+                alunosData.forEach(aluno => {
+                    if (aluno['Nome completo'] && aluno.turma) {
                         todosAlunosMedidas.push({
-                            id: aluno.id || doc.id,
-                            codigo: aluno.codigo || doc.id,
-                            nome: aluno.nome_completo,
+                            id: aluno.codigo,
+                            codigo: aluno.codigo,
+                            nome: aluno['Nome completo'],
                             turma: aluno.turma
                         });
                     }
                 });
                 
-                console.log('✅ Sistema híbrido:', todosAlunosMedidas.length, 'alunos carregados');
+                console.log('✅ Supabase direto:', todosAlunosMedidas.length, 'alunos carregados');
                 
                 /* CÓDIGO ANTIGO COMENTADO
                 try {
