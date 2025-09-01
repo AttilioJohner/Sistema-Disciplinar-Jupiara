@@ -770,11 +770,11 @@
         // Carregar alunos para os selects dos formulários
         async function carregarSelectsAlunos() {
             try {
-                // Aguardar supabase estar disponível
-                if (!window.supabase) {
+                // Aguardar supabaseClient estar disponível
+                if (!window.supabaseClient) {
                     await new Promise(resolve => {
                         const check = setInterval(() => {
-                            if (window.supabase) {
+                            if (window.supabaseClient) {
                                 clearInterval(check);
                                 resolve();
                             }
@@ -783,7 +783,7 @@
                 }
                 
                 console.log('🔄 Carregando alunos do Supabase...');
-                const { data: alunosData, error } = await window.supabase
+                const { data: alunosData, error } = await window.supabaseClient
                     .from('alunos')
                     .select('codigo, "Nome completo", turma')
                     .order('"Nome completo"');
@@ -860,11 +860,11 @@
                 btn.disabled = true;
                 btn.textContent = 'Salvando...';
                 
-                // Aguardar supabase estar disponível
-                if (!window.supabase) {
+                // Aguardar supabaseClient estar disponível
+                if (!window.supabaseClient) {
                     await new Promise(resolve => {
                         const check = setInterval(() => {
-                            if (window.supabase) {
+                            if (window.supabaseClient) {
                                 clearInterval(check);
                                 resolve();
                             }
@@ -873,7 +873,7 @@
                 }
                 
                 // Buscar dados do aluno do Supabase
-                const { data: dadosAluno, error: alunoError } = await window.supabase
+                const { data: dadosAluno, error: alunoError } = await window.supabaseClient
                     .from('alunos')
                     .select('codigo, "Nome completo", turma')
                     .eq('codigo', parseInt(alunoId))
@@ -884,7 +884,7 @@
                 }
                 
                 // Salvar medida diretamente no Supabase
-                const { data: result, error: saveError } = await window.supabase
+                const { data: result, error: saveError } = await window.supabaseClient
                     .from('medidas')
                     .insert([{
                         codigo_matricula: dadosAluno.codigo.toString(),
@@ -945,11 +945,11 @@
                 }
                 
                 // Verificar se sistema Supabase está pronto
-                if (!window.supabase) {
+                if (!window.supabaseClient) {
                     showMessage('⚠️ Supabase não conectado - aguardando...', 'warning');
                     await new Promise(resolve => {
                         const check = setInterval(() => {
-                            if (window.supabase) {
+                            if (window.supabaseClient) {
                                 clearInterval(check);
                                 resolve();
                             }
@@ -1103,11 +1103,11 @@
         // Carregar estatísticas de medidas disciplinares
         async function carregarEstatisticasMedidas() {
             try {
-                // Aguardar supabase estar disponível
-                if (!window.supabase) {
+                // Aguardar supabaseClient estar disponível
+                if (!window.supabaseClient) {
                     await new Promise(resolve => {
                         const check = setInterval(() => {
-                            if (window.supabase) {
+                            if (window.supabaseClient) {
                                 clearInterval(check);
                                 resolve();
                             }
@@ -1118,7 +1118,7 @@
                 console.log('📊 Carregando estatísticas de medidas...');
                 
                 // Carregar todas as medidas
-                const { data: todasMedidas, error } = await window.supabase
+                const { data: todasMedidas, error } = await window.supabaseClient
                     .from('medidas')
                     .select('id, codigo_matricula, criado_em');
                 
@@ -1167,11 +1167,11 @@
         // Carregar registros recentes de medidas
         async function carregarRegistrosRecentes() {
             try {
-                // Aguardar supabase estar disponível
-                if (!window.supabase) {
+                // Aguardar supabaseClient estar disponível
+                if (!window.supabaseClient) {
                     await new Promise(resolve => {
                         const check = setInterval(() => {
-                            if (window.supabase) {
+                            if (window.supabaseClient) {
                                 clearInterval(check);
                                 resolve();
                             }
@@ -1182,7 +1182,7 @@
                 console.log('📋 Carregando registros recentes...');
                 
                 // Carregar últimas 10 medidas
-                const { data: medidas, error } = await window.supabase
+                const { data: medidas, error } = await window.supabaseClient
                     .from('medidas')
                     .select('*')
                     .order('criado_em', { ascending: false })
@@ -1265,11 +1265,11 @@
         
         async function carregarTurmasEAlunos() {
             try {
-                // Aguardar supabase estar disponível
-                if (!window.supabase) {
+                // Aguardar supabaseClient estar disponível
+                if (!window.supabaseClient) {
                     await new Promise(resolve => {
                         const check = setInterval(() => {
-                            if (window.supabase) {
+                            if (window.supabaseClient) {
                                 clearInterval(check);
                                 resolve();
                             }
@@ -1282,7 +1282,7 @@
                 todosAlunosMedidas = [];
                 
                 // Carregar diretamente do Supabase
-                const { data: alunosData, error } = await window.supabase
+                const { data: alunosData, error } = await window.supabaseClient
                     .from('alunos')
                     .select('codigo, "Nome completo", turma');
                     
@@ -1459,11 +1459,11 @@
                 let medidas = [];
                 
                 try {
-                    // Aguardar supabase estar disponível
-                    if (!window.supabase) {
+                    // Aguardar supabaseClient estar disponível
+                    if (!window.supabaseClient) {
                         await new Promise(resolve => {
                             const check = setInterval(() => {
-                                if (window.supabase) {
+                                if (window.supabaseClient) {
                                     clearInterval(check);
                                     resolve();
                                 }
@@ -1472,7 +1472,7 @@
                     }
                     
                     console.log('FICHA: Tentando carregar medidas do Supabase...');
-                    const { data: medidasData, error } = await window.supabase
+                    const { data: medidasData, error } = await window.supabaseClient
                         .from('medidas')
                         .select('*')
                         .eq('codigo_matricula', selectAluno.value)
@@ -1505,7 +1505,7 @@
                 
                 // Debug: Listar todas as medidas disponíveis
                 try {
-                    const { data: todasMedidas, error: debugError } = await window.supabase
+                    const { data: todasMedidas, error: debugError } = await window.supabaseClient
                         .from('medidas')
                         .select('id, codigo_matricula, nome_completo');
                         
