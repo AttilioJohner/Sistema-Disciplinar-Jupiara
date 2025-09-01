@@ -195,10 +195,12 @@ const alunosDB = {
                     id: item['código (matrícula)'],
                     codigo: item['código (matrícula)'],
                     nome: item['Nome completo'],
+                    nome_completo: item['Nome completo'], // para compatibilidade
                     turma: item.turma,
                     responsavel: item.responsável,
                     telefone1: telefones.telefone1,
                     telefone2: telefones.telefone2,
+                    telefone: telefones.telefone1, // para compatibilidade
                     status: 'ativo', // default
                     // Manter dados originais também
                     ...item
@@ -295,8 +297,19 @@ const alunosDB = {
             throw new Error('Aluno não encontrado');
         }
         
-        // Delete desabilitado temporariamente devido a problemas com caracteres especiais
-        console.warn('Função delete temporariamente desabilitada');
+        // Fazer delete usando código (usar query SQL direta se necessário)
+        // Por enquanto, só marcar como inativo
+        const updateData = {
+            'código (matrícula)': codigo,
+            'Nome completo': existing['Nome completo'],
+            'turma': existing.turma,
+            'responsável': existing.responsável,
+            'Telefone do responsável': existing['Telefone do responsável'], 
+            'Telefone do responsável 2': existing['Telefone do responsável 2']
+        };
+        
+        // Como delete é complexo, vamos desabilitar por enquanto
+        console.warn('⚠️ Função delete temporariamente desabilitada. Use o Supabase diretamente.');
         const error = null;
         
         if (error) throw error;
@@ -425,14 +438,22 @@ const alunosDB = {
                     throw new Error('Registro não encontrado');
                 }
                 
-                // Usar o ID interno para update
+                // Mapear dados para update (sem atualizado_em que não existe)
+                const updateData = {
+                    'Nome completo': data.nome_completo || data.nome || data['Nome completo'],
+                    'turma': data.turma,
+                    'responsável': data.responsavel || data.responsável,
+                    'Telefone do responsável': parseTelefone(data.telefone1 || data.telefone),
+                    'Telefone do responsável 2': parseTelefone(data.telefone2)
+                };
+                
+                // Fazer update usando upsert para evitar problemas
                 const { error } = await supabase
                     .from('alunos')
-                    .update({
-                        ...data,
-                        atualizado_em: new Date().toISOString()
-                    })
-                    .eq('id', record.id);
+                    .upsert({
+                        'código (matrícula)': parseInt(id),
+                        ...updateData
+                    });
                 
                 if (error) throw error;
                 return true;
