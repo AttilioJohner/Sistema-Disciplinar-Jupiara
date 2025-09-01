@@ -85,6 +85,41 @@ function requireAuth() {
     return false;
 }
 
+// Função auxiliar para formatar telefones (Supabase → Interface)
+function formatTelefone(valor) {
+    if (!valor || valor === null) return '';
+    
+    // Se é número, converter para string
+    const str = valor.toString();
+    
+    // Se começa com +55 mas é muito curto ou é só +55, considerar vazio
+    if (str.startsWith('+55') && str.length <= 5) return '';
+    
+    // Se é só números mas muito curto (menos de 8 dígitos), considerar vazio  
+    if (/^\d+$/.test(str) && str.length < 8) return '';
+    
+    return str;
+}
+
+// Função auxiliar para converter telefones (Interface → Supabase)
+function parseTelefone(valor) {
+    if (!valor || valor === '') return null;
+    
+    // Remover espaços e caracteres não numéricos exceto +
+    const cleaned = valor.toString().replace(/[^\d+]/g, '');
+    
+    // Se está vazio ou muito curto, retornar null
+    if (!cleaned || cleaned.length < 8) return null;
+    
+    // Tentar converter para número
+    const num = parseInt(cleaned.replace(/\D/g, ''));
+    
+    // Se não é um número válido, retornar null
+    if (isNaN(num)) return null;
+    
+    return num;
+}
+
 // Database - Alunos
 const alunosDB = {
     async getAll() {
@@ -119,8 +154,8 @@ const alunosDB = {
                 nome: item['Nome completo'],
                 turma: item.turma,
                 responsavel: item.responsável,
-                telefone1: item['Telefone do responsável'],
-                telefone2: item['Telefone do responsável 2'],
+                telefone1: formatTelefone(item['Telefone do responsável']),
+                telefone2: formatTelefone(item['Telefone do responsável 2']),
                 status: 'ativo', // default
                 // Manter dados originais também
                 ...item
@@ -220,8 +255,8 @@ const alunosDB = {
                             nome: data['Nome completo'],
                             turma: data.turma,
                             responsavel: data.responsável,
-                            telefone1: data['Telefone do responsável'],
-                            telefone2: data['Telefone do responsável 2'],
+                            telefone1: formatTelefone(data['Telefone do responsável']),
+                            telefone2: formatTelefone(data['Telefone do responsável 2']),
                             status: 'ativo', // default
                             ...data
                         } : {}
@@ -247,8 +282,8 @@ const alunosDB = {
                     'Nome completo': data.nome || data['Nome completo'],
                     'turma': data.turma,
                     'responsável': data.responsavel || data.responsável,
-                    'Telefone do responsável': data.telefone1 ? parseInt(data.telefone1) : null,
-                    'Telefone do responsável 2': data.telefone2 ? parseInt(data.telefone2) : null
+                    'Telefone do responsável': parseTelefone(data.telefone1),
+                    'Telefone do responsável 2': parseTelefone(data.telefone2)
                 };
                 
                 const { error } = await supabase
