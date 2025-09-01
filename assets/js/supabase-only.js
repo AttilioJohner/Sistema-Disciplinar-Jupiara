@@ -88,6 +88,16 @@ function requireAuth() {
 // Database - Alunos
 const alunosDB = {
     async getAll() {
+        // Garantir que Supabase está inicializado
+        if (!supabase) {
+            await initSupabase();
+        }
+        
+        if (!supabase) {
+            console.error('❌ Supabase não disponível em alunosDB.getAll()');
+            return [];
+        }
+        
         const { data, error } = await supabase
             .from('alunos')
             .select('*')
@@ -115,6 +125,15 @@ const alunosDB = {
     },
     
     async getById(codigo) {
+        if (!supabase) {
+            await initSupabase();
+        }
+        
+        if (!supabase) {
+            console.error('❌ Supabase não disponível em alunosDB.getById()');
+            return null;
+        }
+        
         const { data, error } = await supabase
             .from('alunos')
             .select('*')
@@ -162,6 +181,15 @@ const alunosDB = {
         return {
             async get() {
                 try {
+                    if (!supabase) {
+                        await initSupabase();
+                    }
+                    
+                    if (!supabase) {
+                        console.error('❌ Supabase não disponível em doc().get()');
+                        return { id, exists: false, data: () => ({}) };
+                    }
+                    
                     const { data, error } = await supabase
                         .from('alunos')
                         .select('*')
@@ -181,6 +209,15 @@ const alunosDB = {
             },
             
             async set(data, options = {}) {
+                if (!supabase) {
+                    await initSupabase();
+                }
+                
+                if (!supabase) {
+                    console.error('❌ Supabase não disponível em doc().set()');
+                    throw new Error('Supabase não inicializado');
+                }
+                
                 const { error } = await supabase
                     .from('alunos')
                     .upsert({
@@ -221,6 +258,15 @@ const alunosDB = {
     limit(count) {
         return {
             async get() {
+                if (!supabase) {
+                    await initSupabase();
+                }
+                
+                if (!supabase) {
+                    console.error('❌ Supabase não disponível em limit().get()');
+                    return { docs: [], size: 0, empty: true };
+                }
+                
                 const { data, error } = await supabase
                     .from('alunos')
                     .select('*')
