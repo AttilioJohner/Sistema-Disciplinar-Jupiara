@@ -1,0 +1,59 @@
+SCHEMAS DAS TABELAS SUPABASE - SISTEMA DISCIPLINAR JUPIARA
+===========================================================
+
+TABELA: alunos
+--------------
+create table public.alunos (
+  código (matrícula) bigint not null,
+  "Nome completo" text null,
+  turma text null,
+  responsável text null,
+  "Telefone do responsável" bigint null,
+  "Telefone do responsável 2" bigint null,
+  constraint Alunos_pkey primary key ("código (matrícula)")
+) TABLESPACE pg_default;
+
+NOTA: Primary key é "código (matrícula)" (com aspas e parênteses)
+
+TABELA: frequencia
+------------------
+create table public.frequencia (
+  id bigserial not null,
+  codigo_matricula text not null,
+  nome_completo text not null,
+  turma text not null,
+  data date not null,
+  status text not null,
+  criado_em timestamp with time zone not null default now(),
+  constraint frequencia_pkey primary key (id),
+  constraint frequencia_status_ck check (
+    (
+      status = any (array['P'::text, 'F'::text, 'A'::text])
+    )
+  )
+) TABLESPACE pg_default;
+
+create unique INDEX IF not exists ux_frequencia_aluno_data on public.frequencia using btree (codigo_matricula, data) TABLESPACE pg_default;
+
+TABELA: medidas
+---------------
+create table public.medidas (
+  id bigserial not null,
+  codigo_matricula text not null,
+  nome_completo text not null,
+  turma text not null,
+  data date not null,
+  especificacao text null,
+  observacao text null,
+  tipo_medida text null,
+  criado_em timestamp with time zone not null default now(),
+  constraint medidas_pkey primary key (id)
+) TABLESPACE pg_default;
+
+PONTOS IMPORTANTES:
+==================
+1. A tabela 'alunos' usa "código (matrícula)" como chave primária (bigint)
+2. Campos com nomes em português e caracteres especiais têm aspas duplas
+3. As tabelas 'frequencia' e 'medidas' usam 'codigo_matricula' (text) como referência
+4. Telefones são bigint (números grandes)
+5. Status da frequência: 'P' (Presente), 'F' (Falta), 'A' (Atestado)
