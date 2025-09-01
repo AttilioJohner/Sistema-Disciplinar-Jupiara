@@ -112,7 +112,19 @@ const alunosDB = {
         const data = await this.getAll();
         const docs = data.map(item => ({
             id: item['código (matrícula)'] || item.id,
-            data: () => item,
+            data: () => ({
+                // Mapear de volta para formato esperado pelo gestao.js
+                id: item['código (matrícula)'],
+                codigo: item['código (matrícula)'],
+                nome: item['Nome completo'],
+                turma: item.turma,
+                responsavel: item.responsável,
+                telefone1: item['Telefone do responsável'],
+                telefone2: item['Telefone do responsável 2'],
+                status: 'ativo', // default
+                // Manter dados originais também
+                ...item
+            }),
             exists: true
         }));
         
@@ -201,7 +213,18 @@ const alunosDB = {
                     return {
                         id,
                         exists: !!data,
-                        data: () => data || {}
+                        data: () => data ? {
+                            // Mapear para formato esperado pelo gestao.js
+                            id: data['código (matrícula)'],
+                            codigo: data['código (matrícula)'],
+                            nome: data['Nome completo'],
+                            turma: data.turma,
+                            responsavel: data.responsável,
+                            telefone1: data['Telefone do responsável'],
+                            telefone2: data['Telefone do responsável 2'],
+                            status: 'ativo', // default
+                            ...data
+                        } : {}
                     };
                 } catch (error) {
                     return { id, exists: false, data: () => ({}) };
@@ -218,12 +241,19 @@ const alunosDB = {
                     throw new Error('Supabase não inicializado');
                 }
                 
+                // Mapear campos do formulário para Supabase
+                const mappedData = {
+                    'código (matrícula)': parseInt(data.id || id),
+                    'Nome completo': data.nome || data['Nome completo'],
+                    'turma': data.turma,
+                    'responsável': data.responsavel || data.responsável,
+                    'Telefone do responsável': data.telefone1 ? parseInt(data.telefone1) : null,
+                    'Telefone do responsável 2': data.telefone2 ? parseInt(data.telefone2) : null
+                };
+                
                 const { error } = await supabase
                     .from('alunos')
-                    .upsert({
-                        ...data,
-                        'código (matrícula)': id
-                    });
+                    .upsert(mappedData);
                 
                 if (error) throw error;
                 return true;
