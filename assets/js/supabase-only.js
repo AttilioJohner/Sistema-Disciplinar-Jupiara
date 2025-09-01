@@ -622,122 +622,6 @@ async function getStatistics() {
     }
 }
 
-// ===== MEDIDAS DISCIPLINARES =====
-const medidasDB = {
-    collection(name) {
-        if (name === 'medidas') {
-            return {
-                async add(data) {
-                    try {
-                        const mappedData = {
-                            codigo_matricula: data.codigo_aluno || data.codigo_matricula,
-                            nome_completo: data.nome_aluno || data.nome_completo,
-                            turma: data.turma,
-                            data: data.data,
-                            especificacao: data.especificacao || data.motivo,
-                            observacao: data.observacao || data.acoes,
-                            tipo_medida: data.tipo_medida,
-                            criado_em: new Date().toISOString()
-                        };
-
-                        const { data: result, error } = await supabase
-                            .from('medidas')
-                            .insert([mappedData])
-                            .select();
-
-                        if (error) throw error;
-                        return { id: result[0].id };
-                    } catch (error) {
-                        console.error('Erro ao adicionar medida:', error);
-                        throw error;
-                    }
-                },
-
-                where(field, operator, value) {
-                    return {
-                        async get() {
-                            try {
-                                let query = supabase.from('medidas').select('*');
-                                
-                                if (field === 'codigo_aluno') {
-                                    query = query.eq('codigo_matricula', value);
-                                } else {
-                                    query = query.eq(field, value);
-                                }
-
-                                const { data, error } = await query;
-                                if (error) throw error;
-
-                                return {
-                                    size: data?.length || 0,
-                                    empty: !data || data.length === 0,
-                                    forEach: (callback) => {
-                                        if (data) {
-                                            data.forEach(item => callback({
-                                                id: item.id,
-                                                data: () => ({
-                                                    codigo_aluno: item.codigo_matricula,
-                                                    nome_aluno: item.nome_completo,
-                                                    turma: item.turma,
-                                                    data: item.data,
-                                                    especificacao: item.especificacao,
-                                                    observacao: item.observacao,
-                                                    tipo_medida: item.tipo_medida,
-                                                    data_registro: item.criado_em
-                                                })
-                                            }));
-                                        }
-                                    }
-                                };
-                            } catch (error) {
-                                console.error('Erro ao buscar medidas:', error);
-                                throw error;
-                            }
-                        }
-                    };
-                },
-
-                async get() {
-                    try {
-                        const { data, error } = await supabase
-                            .from('medidas')
-                            .select('*')
-                            .order('criado_em', { ascending: false });
-
-                        if (error) throw error;
-
-                        return {
-                            size: data?.length || 0,
-                            empty: !data || data.length === 0,
-                            forEach: (callback) => {
-                                if (data) {
-                                    data.forEach(item => callback({
-                                        id: item.id,
-                                        data: () => ({
-                                            codigo_aluno: item.codigo_matricula,
-                                            nome_aluno: item.nome_completo,
-                                            turma: item.turma,
-                                            data: item.data,
-                                            especificacao: item.especificacao,
-                                            observacao: item.observacao,
-                                            tipo_medida: item.tipo_medida,
-                                            data_registro: item.criado_em
-                                        })
-                                    }));
-                                }
-                            }
-                        };
-                    } catch (error) {
-                        console.error('Erro ao carregar medidas:', error);
-                        throw error;
-                    }
-                }
-            };
-        }
-        return null;
-    }
-};
-
 // Exportar globalmente
 window.supabaseSystem = {
     init: initSupabase,
@@ -748,24 +632,9 @@ window.supabaseSystem = {
         getCurrentUser: () => currentUser
     },
     db: {
-        alunos: alunosDB,
-        medidas: medidasDB
+        alunos: alunosDB
     },
     stats: getStatistics
-};
-
-// ===== SISTEMA HÍBRIDO =====
-// Compatibilidade com código que espera Firebase
-window.db = {
-    collection(name) {
-        if (name === 'alunos') {
-            return alunosDB.collection('alunos');
-        }
-        if (name === 'medidas_disciplinares' || name === 'medidas') {
-            return medidasDB.collection('medidas');
-        }
-        return null;
-    }
 };
 
 // Auto-inicializar

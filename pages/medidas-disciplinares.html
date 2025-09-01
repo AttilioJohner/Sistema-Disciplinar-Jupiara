@@ -822,8 +822,21 @@
                     usuario_responsavel: 'Sistema' // Você pode pegar do usuário logado
                 };
                 
-                // Salvar medida no banco local
-                await window.db.collection('medidas_disciplinares').add(medidaData);
+                // Salvar medida no Supabase
+                const { data: result, error: saveError } = await supabase
+                    .from('medidas')
+                    .insert([{
+                        codigo_matricula: medidaData.codigo_aluno,
+                        nome_completo: medidaData.nome_aluno,
+                        turma: medidaData.turma,
+                        data: medidaData.data,
+                        especificacao: medidaData.especificacao,
+                        observacao: medidaData.observacao,
+                        tipo_medida: medidaData.tipo_medida,
+                        criado_em: new Date().toISOString()
+                    }]);
+                
+                if (saveError) throw saveError;
                 
                 // Atualizar nota disciplinar do aluno
                 if (typeof window.atualizarNotaDisciplinar === 'function') {
@@ -1247,29 +1260,48 @@
                 let medidas = [];
                 
                 try {
-                    if (window.db && window.db.collection) {
-                        console.log('FICHA: Tentando carregar medidas do Sistema Local...');
-                        const medidasSnapshot = await window.db.collection('medidas_disciplinares').where('codigo_aluno', '==', selectAluno.value).get();
-                        console.log(`FICHA: Query retornou ${medidasSnapshot.size} medidas para código ${selectAluno.value}`);
+                    console.log('FICHA: Tentando carregar medidas do Supabase...');
+                    const { data: medidasData, error } = await supabase
+                        .from('medidas')
+                        .select('*')
+                        .eq('codigo_matricula', selectAluno.value)
+                        .order('criado_em', { ascending: false });
                         
-                        medidasSnapshot.forEach(doc => {
-                            const medidaData = { id: doc.id, ...doc.data() };
+                    if (error) throw error;
+                    
+                    console.log(`FICHA: Query retornou ${medidasData?.length || 0} medidas para código ${selectAluno.value}`);
+                    
+                    if (medidasData) {
+                        medidasData.forEach(item => {
+                            const medidaData = {
+                                id: item.id,
+                                codigo_aluno: item.codigo_matricula,
+                                nome_aluno: item.nome_completo,
+                                turma: item.turma,
+                                data: item.data,
+                                especificacao: item.especificacao,
+                                observacao: item.observacao,
+                                tipo_medida: item.tipo_medida,
+                                data_registro: item.criado_em
+                            };
                             console.log('FICHA: Medida encontrada:', medidaData);
                             medidas.push(medidaData);
                         });
                     }
-                } catch (fbError) {
-                    console.log('FICHA: Sistema Local não disponível ou erro:', fbError.message);
+                } catch (supaError) {
+                    console.log('FICHA: Erro ao carregar medidas do Supabase:', supaError.message);
                 }
                 
                 // Debug: Listar todas as medidas disponíveis
                 try {
-                    if (window.db && window.db.collection) {
-                        const todasMedidas = await window.db.collection('medidas_disciplinares').get();
-                        console.log(`DEBUG: Total de medidas na coleção: ${todasMedidas.size}`);
-                        todasMedidas.forEach(doc => {
-                            const data = doc.data();
-                            console.log(`DEBUG: Medida ID ${doc.id} - Código: ${data.codigo_aluno}, Nome: ${data.nome_aluno}`);
+                    const { data: todasMedidas, error: debugError } = await supabase
+                        .from('medidas')
+                        .select('id, codigo_matricula, nome_completo');
+                        
+                    if (!debugError && todasMedidas) {
+                        console.log(`DEBUG: Total de medidas na tabela: ${todasMedidas.length}`);
+                        todasMedidas.forEach(item => {
+                            console.log(`DEBUG: Medida ID ${item.id} - Código: ${item.codigo_matricula}, Nome: ${item.nome_completo}`);
                         });
                     }
                 } catch (debugError) {
