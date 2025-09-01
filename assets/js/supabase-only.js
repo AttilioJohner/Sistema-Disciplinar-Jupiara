@@ -386,16 +386,17 @@ const alunosDB = {
                 // DEBUG: verificar dados recebidos
                 console.log('🔍 Dados recebidos para salvamento:', {
                     'data.nome': data.nome,
+                    'data.nome_completo': data.nome_completo,
                     'data[Nome completo]': data['Nome completo'],
                     'todos_os_dados': data
                 });
                 
                 const mappedData = {
                     'código (matrícula)': codigo,
-                    'Nome completo': data.nome || data['Nome completo'],
+                    'Nome completo': data.nome_completo || data.nome || data['Nome completo'],
                     'turma': data.turma,
                     'responsável': data.responsavel || data.responsável,
-                    'Telefone do responsável': parseTelefone(data.telefone1),
+                    'Telefone do responsável': parseTelefone(data.telefone1 || data.telefone),
                     'Telefone do responsável 2': parseTelefone(data.telefone2)
                 };
                 
