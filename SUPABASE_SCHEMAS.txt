@@ -4,16 +4,16 @@ SCHEMAS DAS TABELAS SUPABASE - SISTEMA DISCIPLINAR JUPIARA
 TABELA: alunos
 --------------
 create table public.alunos (
-  código (matrícula) bigint not null,
+  codigo bigint not null,
   "Nome completo" text null,
   turma text null,
   responsável text null,
   "Telefone do responsável" bigint null,
   "Telefone do responsável 2" bigint null,
-  constraint Alunos_pkey primary key ("código (matrícula)")
+  constraint alunos_pkey primary key (codigo)
 ) TABLESPACE pg_default;
 
-NOTA: Primary key é "código (matrícula)" (com aspas e parênteses)
+NOTA: Primary key é "codigo" (nome simples, sem caracteres especiais)
 
 TABELA: frequencia
 ------------------

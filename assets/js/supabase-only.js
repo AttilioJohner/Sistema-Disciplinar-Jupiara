@@ -192,8 +192,8 @@ const alunosDB = {
                 
                 return {
                     // Mapear de volta para formato esperado pelo gestao.js
-                    id: item['código (matrícula)'],
-                    codigo: item['código (matrícula)'],
+                    id: item.codigo,
+                    codigo: item.codigo,
                     nome: item['Nome completo'],
                     nome_completo: item['Nome completo'], // para compatibilidade
                     turma: item.turma,
@@ -330,17 +330,11 @@ const alunosDB = {
                     }
                     
                     // Buscar pelo código usando RPC ou busca geral
-                    const { data: allData, error } = await supabase
+                    const { data, error } = await supabase
                         .from('alunos')
-                        .select('*');
-                    
-                    if (error) throw error;
-                    
-                    const data = allData?.find(item => 
-                        item['código (matrícula)'] === parseInt(id) ||
-                        item.codigo === parseInt(id) ||
-                        item.id === parseInt(id)
-                    ) || null;
+                        .select('*')
+                        .eq('codigo', parseInt(id))
+                        .single();
                     
                     if (error && error.code !== 'PGRST116') throw error;
                     
@@ -405,7 +399,7 @@ const alunosDB = {
                 });
                 
                 const mappedData = {
-                    'código (matrícula)': codigo,
+                    'codigo': codigo,
                     'Nome completo': data.nome_completo || data.nome || data['Nome completo'],
                     'turma': data.turma,
                     'responsável': data.responsavel || data.responsável,
@@ -438,8 +432,9 @@ const alunosDB = {
                     throw new Error('Registro não encontrado');
                 }
                 
-                // Mapear dados para update (sem atualizado_em que não existe)
+                // Mapear dados para update
                 const updateData = {
+                    'codigo': parseInt(id),
                     'Nome completo': data.nome_completo || data.nome || data['Nome completo'],
                     'turma': data.turma,
                     'responsável': data.responsavel || data.responsável,
@@ -447,36 +442,33 @@ const alunosDB = {
                     'Telefone do responsável 2': parseTelefone(data.telefone2)
                 };
                 
-                // Fazer update usando upsert para evitar problemas
                 const { error } = await supabase
                     .from('alunos')
-                    .upsert({
-                        'código (matrícula)': parseInt(id),
-                        ...updateData
-                    });
+                    .update(updateData)
+                    .eq('codigo', parseInt(id));
                 
                 if (error) throw error;
                 return true;
             },
             
             async delete() {
-                // Buscar o registro primeiro para obter o ID interno
-                const { data: allData } = await supabase
+                // Buscar o registro primeiro para verificar se existe
+                const { data, error: fetchError } = await supabase
                     .from('alunos')
-                    .select('*');
+                    .select('*')
+                    .eq('codigo', parseInt(id))
+                    .single();
                 
-                const record = allData?.find(item => 
-                    item['código (matrícula)'] === parseInt(id) ||
-                    item.codigo === parseInt(id)
-                );
+                if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
                 
-                if (!record) {
+                if (!data) {
                     throw new Error('Registro não encontrado');
                 }
                 
-                // DELETE temporariamente desabilitado - problema com caracteres especiais na primary key
-                console.warn('⚠️ Delete desabilitado no método doc().delete(). Use o painel do Supabase.');
-                const error = null;
+                const { error } = await supabase
+                    .from('alunos')
+                    .delete()
+                    .eq('codigo', parseInt(id));
                 
                 if (error) throw error;
                 return true;
