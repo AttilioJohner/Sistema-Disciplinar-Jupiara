@@ -189,6 +189,15 @@ const alunosDB = {
                     item['Telefone do responsável 2']
                 );
                 
+                // Debug temporário para novos alunos
+                if (item['código (matrícula)'] < 1000000) {
+                    console.log('🔍 Debug novo aluno:', {
+                        codigo: item['código (matrícula)'],
+                        nome_campo: item['Nome completo'],
+                        dados_completos: item
+                    });
+                }
+                
                 return {
                     // Mapear de volta para formato esperado pelo gestao.js
                     id: item['código (matrícula)'],
