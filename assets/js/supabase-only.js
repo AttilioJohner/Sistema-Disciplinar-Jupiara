@@ -145,7 +145,7 @@ const alunosDB = {
 const medidasDB = {
     async getAll() {
         const { data, error } = await supabase
-            .from('medidas_disciplinares')
+            .from('medidas')
             .select('*')
             .order('data_ocorrencia', { ascending: false });
         
@@ -155,7 +155,7 @@ const medidasDB = {
     
     async getByAluno(alunoId) {
         const { data, error } = await supabase
-            .from('medidas_disciplinares')
+            .from('medidas')
             .select('*')
             .eq('aluno_codigo', alunoId)
             .order('data_ocorrencia', { ascending: false });
@@ -166,7 +166,7 @@ const medidasDB = {
     
     async create(medida) {
         const { data, error } = await supabase
-            .from('medidas_disciplinares')
+            .from('medidas')
             .insert(medida)
             .select()
             .single();
@@ -177,7 +177,7 @@ const medidasDB = {
     
     async update(id, medida) {
         const { data, error } = await supabase
-            .from('medidas_disciplinares')
+            .from('medidas')
             .update(medida)
             .eq('id', id)
             .select()
@@ -189,7 +189,7 @@ const medidasDB = {
     
     async delete(id) {
         const { error } = await supabase
-            .from('medidas_disciplinares')
+            .from('medidas')
             .delete()
             .eq('id', id);
         
@@ -219,7 +219,7 @@ async function getStatistics() {
         
         // Total medidas
         const { count: totalMedidas } = await supabase
-            .from('medidas_disciplinares')
+            .from('medidas')
             .select('*', { count: 'exact', head: true });
         
         // Turmas únicas

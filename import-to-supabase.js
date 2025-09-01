@@ -129,7 +129,7 @@ async function importarMedidas(medidas, supabase) {
       
       // Inserir no Supabase
       const { error } = await supabase
-        .from('medidas_disciplinares')
+        .from('medidas')
         .upsert(medidaData, {
           onConflict: 'id'
         });
@@ -211,7 +211,7 @@ async function atualizarEstatisticas(supabase) {
     
     // Contar medidas
     const { count: totalMedidas } = await supabase
-      .from('medidas_disciplinares')
+      .from('medidas')
       .select('*', { count: 'exact', head: true });
     
     console.log('📊 Estatísticas finais:');

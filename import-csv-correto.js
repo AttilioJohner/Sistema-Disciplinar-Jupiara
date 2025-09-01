@@ -114,7 +114,7 @@ async function importarMedidasCorretas() {
     );
     
     console.log('🗑️ Limpando tabela de medidas...');
-    await supabase.from('medidas_disciplinares').delete().neq('id', '');
+    await supabase.from('medidas').delete().neq('id', '');
     
     let importadas = 0;
     let erros = 0;
@@ -143,7 +143,7 @@ async function importarMedidasCorretas() {
         
         // Inserir no Supabase
         const { error } = await supabase
-          .from('medidas_disciplinares')
+          .from('medidas')
           .upsert(medidaLimpa, { onConflict: 'id' });
           
         if (error) {

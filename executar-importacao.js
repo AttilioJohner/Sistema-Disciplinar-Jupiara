@@ -29,7 +29,7 @@ async function executarImportacaoSupabase() {
         if (window.localDb && window.localDb.data) {
             console.log('📊 Dados locais encontrados:');
             const alunos = window.localDb.data.alunos || {};
-            const medidas = window.localDb.data.medidas_disciplinares || {};
+            const medidas = window.localDb.data.medidas || {};
             
             console.log('- Alunos:', Object.keys(alunos).length);
             console.log('- Medidas:', Object.keys(medidas).length);
@@ -130,7 +130,7 @@ async function importarMedidasParaSupabase(supabase, medidas) {
             };
             
             const { error } = await supabase
-                .from('medidas_disciplinares')
+                .from('medidas')
                 .upsert(medidaLimpa, { onConflict: 'id' });
             
             if (error) {
@@ -168,7 +168,7 @@ async function carregarEImportarDoDb(supabase) {
         }
         
         // Carregar medidas
-        const medidasSnap = await window.db.collection('medidas_disciplinares').get();
+        const medidasSnap = await window.db.collection('medidas').get();
         if (medidasSnap.size > 0) {
             console.log(`📊 Encontradas ${medidasSnap.size} medidas no sistema local`);
             const medidasObj = {};
@@ -192,7 +192,7 @@ async function verificarResultados(supabase) {
         
         // Contar medidas
         const { count: totalMedidas } = await supabase
-            .from('medidas_disciplinares')
+            .from('medidas')
             .select('*', { count: 'exact', head: true });
         
         console.log('📈 Resultados finais:');
@@ -227,7 +227,7 @@ async function limparDadosSupabase() {
     console.log('🗑️ Limpando dados...');
     
     try {
-        await supabase.from('medidas_disciplinares').delete().neq('id', '');
+        await supabase.from('medidas').delete().neq('id', '');
         await supabase.from('alunos').delete().neq('codigo', '');
         console.log('✅ Dados limpos com sucesso');
     } catch (error) {
