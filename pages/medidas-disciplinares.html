@@ -381,6 +381,56 @@
             font-size: 0.9em;
             line-height: 1.4;
         }
+        
+        /* Comparações */
+        .comparison-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .comparison-section h5 {
+            margin: 0 0 15px 0;
+            color: #495057;
+            font-weight: 600;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        
+        .comparison-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .comparison-good {
+            border-left-color: #28a745;
+        }
+        
+        .comparison-alert {
+            border-left-color: #dc3545;
+        }
+        
+        .comparison-label {
+            font-weight: 500;
+            color: #495057;
+            flex: 1;
+        }
+        
+        .comparison-value {
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-left: 15px;
+        }
 
         /* Responsividade */
         @media (max-width: 768px) {
@@ -1611,8 +1661,10 @@
                         <div class="medida-data">${dataFormatada}</div>
                         <div class="medida-content">
                             <div class="medida-tipo">${medida.tipo_medida || 'N/A'}</div>
-                            <div class="medida-descricao">${medida.descricao_falta || 'N/A'}</div>
-                            ${medida.providencias_tomadas ? `<div class="medida-providencias"><strong>Providências:</strong> ${medida.providencias_tomadas}</div>` : ''}
+                            <div class="medida-descricao">
+                                <strong>Especificação:</strong> ${medida.especificacao || 'N/A'}
+                            </div>
+                            ${medida.observacao ? `<div class="medida-providencias"><strong>Observações:</strong> ${medida.observacao}</div>` : ''}
                         </div>
                     </div>
                 `;
@@ -1626,41 +1678,164 @@
             const container = document.getElementById('resumoEstatistico');
             const totalMedidas = medidas.length;
             
-            container.innerHTML = `
-                <div class="stats-grid">
-                    <div class="stat-card stat-primary">
-                        <div class="stat-icon">👤</div>
-                        <div class="stat-content">
-                            <div class="stat-number">${aluno.turma || 'N/A'}</div>
-                            <div class="stat-label">Turma</div>
+            try {
+                // Aguardar supabaseClient estar disponível
+                if (!window.supabaseClient) {
+                    await new Promise(resolve => {
+                        const check = setInterval(() => {
+                            if (window.supabaseClient) {
+                                clearInterval(check);
+                                resolve();
+                            }
+                        }, 100);
+                    });
+                }
+                
+                // Calcular estatísticas avançadas
+                let mediasRecentes = 0;
+                let tipoMaisComum = 'N/A';
+                let mediaGeral = 0;
+                let posicaoRanking = 'N/A';
+                
+                if (medidas.length > 0) {
+                    // Medidas nos últimos 30 dias
+                    const dataLimite = new Date();
+                    dataLimite.setDate(dataLimite.getDate() - 30);
+                    mediasRecentes = medidas.filter(m => 
+                        new Date(m.data_registro) >= dataLimite
+                    ).length;
+                    
+                    // Tipo mais comum
+                    const tiposCount = {};
+                    medidas.forEach(m => {
+                        tiposCount[m.tipo_medida] = (tiposCount[m.tipo_medida] || 0) + 1;
+                    });
+                    tipoMaisComum = Object.keys(tiposCount).reduce((a, b) => 
+                        tiposCount[a] > tiposCount[b] ? a : b, 'N/A'
+                    );
+                }
+                
+                // Buscar dados gerais para comparação
+                const { data: todasMedidas } = await window.supabaseClient
+                    .from('medidas')
+                    .select('codigo_matricula, criado_em');
+                
+                if (todasMedidas) {
+                    // Calcular média geral por aluno
+                    const alunosCount = {};
+                    todasMedidas.forEach(m => {
+                        alunosCount[m.codigo_matricula] = (alunosCount[m.codigo_matricula] || 0) + 1;
+                    });
+                    
+                    const medidasPorAluno = Object.values(alunosCount);
+                    mediaGeral = medidasPorAluno.length > 0 ? 
+                        (medidasPorAluno.reduce((a, b) => a + b, 0) / medidasPorAluno.length).toFixed(1) : 0;
+                    
+                    // Calcular posição no ranking (quantos alunos têm mais medidas)
+                    const alunosComMais = medidasPorAluno.filter(count => count > totalMedidas).length;
+                    posicaoRanking = `${alunosComMais + 1}º de ${medidasPorAluno.length}`;
+                }
+                
+                container.innerHTML = `
+                    <div class="stats-grid">
+                        <div class="stat-card stat-warning">
+                            <div class="stat-icon">⚖️</div>
+                            <div class="stat-content">
+                                <div class="stat-number">${totalMedidas}</div>
+                                <div class="stat-label">Total de Medidas</div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card stat-info">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-content">
+                                <div class="stat-number">${mediaGeral}</div>
+                                <div class="stat-label">Média Geral (por aluno)</div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card stat-danger">
+                            <div class="stat-icon">📈</div>
+                            <div class="stat-content">
+                                <div class="stat-number">${mediasRecentes}</div>
+                                <div class="stat-label">Últimos 30 dias</div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card stat-primary">
+                            <div class="stat-icon">🏆</div>
+                            <div class="stat-content">
+                                <div class="stat-number">${posicaoRanking}</div>
+                                <div class="stat-label">Ranking Disciplinar</div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card stat-success">
+                            <div class="stat-icon">🎯</div>
+                            <div class="stat-content">
+                                <div class="stat-number">${aluno.codigo || aluno.id || 'N/A'}</div>
+                                <div class="stat-label">Código do Aluno</div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card stat-secondary">
+                            <div class="stat-icon">📋</div>
+                            <div class="stat-content">
+                                <div class="stat-number" style="font-size: 0.8em;">${tipoMaisComum.length > 15 ? tipoMaisComum.substring(0, 15) + '...' : tipoMaisComum}</div>
+                                <div class="stat-label">Tipo Mais Comum</div>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="stat-card stat-warning">
-                        <div class="stat-icon">⚖️</div>
-                        <div class="stat-content">
-                            <div class="stat-number">${totalMedidas}</div>
-                            <div class="stat-label">Medidas Disciplinares</div>
+                    <div class="comparison-section" style="margin-top: 20px;">
+                        <h5>📊 Análise Comparativa</h5>
+                        <div class="comparison-grid">
+                            <div class="comparison-item ${totalMedidas > mediaGeral ? 'comparison-alert' : 'comparison-good'}">
+                                <span class="comparison-label">Situação vs Média Geral:</span>
+                                <span class="comparison-value">
+                                    ${totalMedidas > mediaGeral ? 
+                                        `⚠️ Acima da média (+${(totalMedidas - mediaGeral).toFixed(1)})` : 
+                                        `✅ Abaixo da média (-${(mediaGeral - totalMedidas).toFixed(1)})`
+                                    }
+                                </span>
+                            </div>
+                            
+                            <div class="comparison-item ${mediasRecentes > 2 ? 'comparison-alert' : 'comparison-good'}">
+                                <span class="comparison-label">Tendência Recente:</span>
+                                <span class="comparison-value">
+                                    ${mediasRecentes === 0 ? '✅ Sem ocorrências recentes' :
+                                      mediasRecentes <= 2 ? '🟡 Situação controlada' :
+                                      '🔴 Requer atenção'
+                                    }
+                                </span>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="stat-card stat-info">
-                        <div class="stat-icon">📅</div>
-                        <div class="stat-content">
-                            <div class="stat-number">Ago/2025</div>
-                            <div class="stat-label">Período Frequência</div>
+                `;
+                
+            } catch (error) {
+                console.error('Erro ao calcular estatísticas avançadas:', error);
+                // Fallback para exibição simples
+                container.innerHTML = `
+                    <div class="stats-grid">
+                        <div class="stat-card stat-warning">
+                            <div class="stat-icon">⚖️</div>
+                            <div class="stat-content">
+                                <div class="stat-number">${totalMedidas}</div>
+                                <div class="stat-label">Total de Medidas</div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card stat-success">
+                            <div class="stat-icon">🎯</div>
+                            <div class="stat-content">
+                                <div class="stat-number">${aluno.codigo || aluno.id || 'N/A'}</div>
+                                <div class="stat-label">Código do Aluno</div>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="stat-card stat-success">
-                        <div class="stat-icon">🎯</div>
-                        <div class="stat-content">
-                            <div class="stat-number">${aluno.codigo || 'N/A'}</div>
-                            <div class="stat-label">Código do Aluno</div>
-                        </div>
-                    </div>
-                </div>
-            `;
+                `;
+            }
         }
         
 
