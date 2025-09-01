@@ -1,0 +1,9 @@
+# Redirecionamentos para o Netlify
+
+# Redirecionamentos de conveniência
+/admin       /pages/login.html       302
+/dashboard   /index.html             302
+/login       /pages/login.html       302
+
+# Fallback para páginas não encontradas (SPA)
+/*           /index.html             200
