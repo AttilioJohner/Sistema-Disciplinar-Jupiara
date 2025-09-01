@@ -228,7 +228,7 @@ const alunosDB = {
         const { data, error } = await supabase
             .from('alunos')
             .select('*')
-            .eq('"código (matrícula)"', codigo)
+            .filter('código (matrícula)', 'eq', codigo)
             .single();
         
         if (error) throw error;
@@ -250,7 +250,7 @@ const alunosDB = {
         const { data, error } = await supabase
             .from('alunos')
             .update(aluno)
-            .eq('"código (matrícula)"', codigo)
+            .filter('código (matrícula)', 'eq', codigo)
             .select()
             .single();
         
@@ -262,7 +262,7 @@ const alunosDB = {
         const { error } = await supabase
             .from('alunos')
             .delete()
-            .eq('"código (matrícula)"', codigo);
+            .filter('código (matrícula)', 'eq', codigo);
         
         if (error) throw error;
     },
@@ -284,7 +284,7 @@ const alunosDB = {
                     const { data, error } = await supabase
                         .from('alunos')
                         .select('*')
-                        .eq('"código (matrícula)"', parseInt(id))
+                        .filter('código (matrícula)', 'eq', parseInt(id))
                         .single();
                     
                     if (error && error.code !== 'PGRST116') throw error;
@@ -365,7 +365,7 @@ const alunosDB = {
                         ...data,
                         atualizado_em: new Date().toISOString()
                     })
-                    .eq('"código (matrícula)"', parseInt(id));
+                    .filter('código (matrícula)', 'eq', parseInt(id));
                 
                 if (error) throw error;
                 return true;
@@ -375,7 +375,7 @@ const alunosDB = {
                 const { error } = await supabase
                     .from('alunos')
                     .delete()
-                    .eq('"código (matrícula)"', parseInt(id));
+                    .filter('código (matrícula)', 'eq', parseInt(id));
                 
                 if (error) throw error;
                 return true;
