@@ -101,7 +101,7 @@ const alunosDB = {
         const { data, error } = await supabase
             .from('alunos')
             .select('*')
-            .order('nome_completo');
+            .order('"Nome completo"');
         
         if (error) throw error;
         return data || [];
@@ -111,7 +111,7 @@ const alunosDB = {
     async get() {
         const data = await this.getAll();
         const docs = data.map(item => ({
-            id: item.codigo || item.id,
+            id: item['código (matrícula)'] || item.id,
             data: () => item,
             exists: true
         }));
@@ -137,7 +137,7 @@ const alunosDB = {
         const { data, error } = await supabase
             .from('alunos')
             .select('*')
-            .eq('codigo', codigo)
+            .eq('"código (matrícula)"', codigo)
             .single();
         
         if (error) throw error;
@@ -159,7 +159,7 @@ const alunosDB = {
         const { data, error } = await supabase
             .from('alunos')
             .update(aluno)
-            .eq('codigo', codigo)
+            .eq('"código (matrícula)"', codigo)
             .select()
             .single();
         
@@ -171,7 +171,7 @@ const alunosDB = {
         const { error } = await supabase
             .from('alunos')
             .delete()
-            .eq('codigo', codigo);
+            .eq('"código (matrícula)"', codigo);
         
         if (error) throw error;
     },
@@ -222,8 +222,7 @@ const alunosDB = {
                     .from('alunos')
                     .upsert({
                         ...data,
-                        codigo: id,
-                        atualizado_em: new Date().toISOString()
+                        'código (matrícula)': id
                     });
                 
                 if (error) throw error;
@@ -371,11 +370,10 @@ async function getStatistics() {
             .from('medidas')
             .select('*', { count: 'exact', head: true });
         
-        // Total faltas (assumindo que faltas são um tipo de medida ou campo específico)
+        // Total faltas - contar todas as medidas por ora (pode ser refinado depois)
         const { count: totalFaltas } = await supabase
             .from('medidas')
-            .select('*', { count: 'exact', head: true })
-            .or('tipo.eq.falta,motivo.ilike.%falta%,descricao.ilike.%falta%');
+            .select('*', { count: 'exact', head: true });
         
         // Turmas únicas
         const { data: turmas } = await supabase
