@@ -383,6 +383,13 @@ const alunosDB = {
                     console.warn('⚠️ Código menor que 7 dígitos. Recomenda-se usar formato: 2025001');
                 }
                 
+                // DEBUG: verificar dados recebidos
+                console.log('🔍 Dados recebidos para salvamento:', {
+                    'data.nome': data.nome,
+                    'data[Nome completo]': data['Nome completo'],
+                    'todos_os_dados': data
+                });
+                
                 const mappedData = {
                     'código (matrícula)': codigo,
                     'Nome completo': data.nome || data['Nome completo'],
@@ -391,6 +398,8 @@ const alunosDB = {
                     'Telefone do responsável': parseTelefone(data.telefone1),
                     'Telefone do responsável 2': parseTelefone(data.telefone2)
                 };
+                
+                console.log('🔍 Dados mapeados para Supabase:', mappedData);
                 
                 const { error } = await supabase
                     .from('alunos')
