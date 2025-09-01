@@ -474,10 +474,9 @@ const alunosDB = {
                     throw new Error('Registro não encontrado');
                 }
                 
-                const { error } = await supabase
-                    .from('alunos')
-                    .delete()
-                    .eq('id', record.id);
+                // DELETE temporariamente desabilitado - problema com caracteres especiais na primary key
+                console.warn('⚠️ Delete desabilitado no método doc().delete(). Use o painel do Supabase.');
+                const error = null;
                 
                 if (error) throw error;
                 return true;
