@@ -189,14 +189,6 @@ const alunosDB = {
                     item['Telefone do responsável 2']
                 );
                 
-                // Debug temporário para novos alunos
-                if (item['código (matrícula)'] < 1000000) {
-                    console.log('🔍 Debug novo aluno:', {
-                        codigo: item['código (matrícula)'],
-                        nome_campo: item['Nome completo'],
-                        dados_completos: item
-                    });
-                }
                 
                 return {
                     // Mapear de volta para formato esperado pelo gestao.js
@@ -339,10 +331,14 @@ const alunosDB = {
                 }
                 
                 // Mapear campos do formulário para Supabase
-                // Garantir que código seja 7 dígitos
+                // Validar código (permitir edição de códigos existentes menores)
                 const codigo = parseInt(data.id || id);
-                if (isNaN(codigo) || codigo < 1000000 || codigo > 9999999) {
-                    throw new Error('Código de matrícula deve ter exatamente 7 dígitos (ex: 2025001)');
+                if (isNaN(codigo) || codigo <= 0) {
+                    throw new Error('Código de matrícula deve ser um número válido');
+                }
+                // Para novos cadastros, preferir 7 dígitos
+                if (codigo < 1000000 && !options.merge) {
+                    console.warn('⚠️ Código menor que 7 dígitos. Recomenda-se usar formato: 2025001');
                 }
                 
                 const mappedData = {
