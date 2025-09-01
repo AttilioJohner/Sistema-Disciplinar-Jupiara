@@ -97,6 +97,23 @@ const alunosDB = {
         return data || [];
     },
     
+    // Compatibilidade com gestao.js - simula interface Firestore
+    async get() {
+        const data = await this.getAll();
+        const docs = data.map(item => ({
+            id: item.codigo || item.id,
+            data: () => item,
+            exists: true
+        }));
+        
+        return {
+            docs,
+            size: docs.length,
+            empty: docs.length === 0,
+            forEach: (callback) => docs.forEach(callback)
+        };
+    },
+    
     async getById(codigo) {
         const { data, error } = await supabase
             .from('alunos')
@@ -138,6 +155,92 @@ const alunosDB = {
             .eq('codigo', codigo);
         
         if (error) throw error;
+    },
+    
+    // Métodos de compatibilidade Firestore para gestao.js
+    doc(id) {
+        return {
+            async get() {
+                try {
+                    const { data, error } = await supabase
+                        .from('alunos')
+                        .select('*')
+                        .eq('codigo', id)
+                        .single();
+                    
+                    if (error && error.code !== 'PGRST116') throw error;
+                    
+                    return {
+                        id,
+                        exists: !!data,
+                        data: () => data || {}
+                    };
+                } catch (error) {
+                    return { id, exists: false, data: () => ({}) };
+                }
+            },
+            
+            async set(data, options = {}) {
+                const { error } = await supabase
+                    .from('alunos')
+                    .upsert({
+                        ...data,
+                        codigo: id,
+                        atualizado_em: new Date().toISOString()
+                    });
+                
+                if (error) throw error;
+                return true;
+            },
+            
+            async update(data) {
+                const { error } = await supabase
+                    .from('alunos')
+                    .update({
+                        ...data,
+                        atualizado_em: new Date().toISOString()
+                    })
+                    .eq('codigo', id);
+                
+                if (error) throw error;
+                return true;
+            },
+            
+            async delete() {
+                const { error } = await supabase
+                    .from('alunos')
+                    .delete()
+                    .eq('codigo', id);
+                
+                if (error) throw error;
+                return true;
+            }
+        };
+    },
+    
+    limit(count) {
+        return {
+            async get() {
+                const { data, error } = await supabase
+                    .from('alunos')
+                    .select('*')
+                    .limit(count);
+                
+                if (error) throw error;
+                
+                const docs = (data || []).map(item => ({
+                    id: item.codigo || item.id,
+                    data: () => item,
+                    exists: true
+                }));
+                
+                return {
+                    docs,
+                    size: docs.length,
+                    empty: docs.length === 0
+                };
+            }
+        };
     }
 };
 
