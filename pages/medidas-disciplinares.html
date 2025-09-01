@@ -640,6 +640,14 @@
 
                 <!-- SEÇÃO: ESTATÍSTICAS RÁPIDAS -->
                 <div class="quick-stats">
+                    <div class="stat-card stat-highlight" style="background: linear-gradient(135deg, #28a74520, #17a2b820); border: 2px solid #28a745;">
+                        <div class="stat-icon">🎯</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="mediaNotaEscola" style="color: #28a745;">0.0</div>
+                            <div class="stat-label">Média Disciplinar da Escola</div>
+                        </div>
+                    </div>
+                    
                     <div class="stat-card stat-warning">
                         <div class="stat-icon">⚖️</div>
                         <div class="stat-content">
@@ -1374,13 +1382,48 @@
                 const alunosUnicos = new Set(todasMedidas.map(medida => medida.codigo_matricula));
                 const alunosAfetados = alunosUnicos.size;
                 
+                // Calcular média de nota disciplinar da escola
+                let mediaNotaEscola = 8.0;
+                try {
+                    // Buscar todos os alunos
+                    const { data: todosAlunos } = await window.supabaseClient
+                        .from('alunos')
+                        .select('codigo');
+                    
+                    if (todosAlunos && todosAlunos.length > 0) {
+                        let somaNotas = 0;
+                        const totalAlunos = todosAlunos.length;
+                        
+                        // Agrupar medidas por aluno
+                        const medidasPorAluno = {};
+                        todasMedidas.forEach(medida => {
+                            if (!medidasPorAluno[medida.codigo_matricula]) {
+                                medidasPorAluno[medida.codigo_matricula] = [];
+                            }
+                            medidasPorAluno[medida.codigo_matricula].push(medida);
+                        });
+                        
+                        // Calcular nota para cada aluno
+                        todosAlunos.forEach(aluno => {
+                            const medidasDoAluno = medidasPorAluno[aluno.codigo] || [];
+                            const notaAluno = calcularNotaDisciplinar(medidasDoAluno);
+                            somaNotas += notaAluno.nota;
+                        });
+                        
+                        mediaNotaEscola = (somaNotas / totalAlunos).toFixed(2);
+                    }
+                } catch (error) {
+                    console.error('Erro ao calcular média da escola:', error);
+                }
+                
                 // Atualizar interface
                 document.getElementById('totalMedidas').textContent = totalMedidas;
                 document.getElementById('medidasMes').textContent = medidasMes;
                 document.getElementById('medidasSemana').textContent = medidasSemana;
                 document.getElementById('alunosAfetados').textContent = alunosAfetados;
+                document.getElementById('mediaNotaEscola').textContent = mediaNotaEscola;
                 
-                console.log(`📊 Estatísticas: ${totalMedidas} total, ${medidasMes} mês, ${medidasSemana} semana, ${alunosAfetados} alunos`);
+                console.log(`📊 Estatísticas: ${totalMedidas} total, ${medidasMes} mês, ${medidasSemana} semana, ${alunosAfetados} alunos, média escola: ${mediaNotaEscola}`);
                 
             } catch (error) {
                 console.error('❌ Erro ao carregar estatísticas:', error);
@@ -1389,6 +1432,7 @@
                 document.getElementById('medidasMes').textContent = '0';
                 document.getElementById('medidasSemana').textContent = '0';
                 document.getElementById('alunosAfetados').textContent = '0';
+                document.getElementById('mediaNotaEscola').textContent = '8.0';
             }
         }
 
@@ -1786,11 +1830,7 @@
                     </div>
                     <div class="dado-item">
                         <span class="dado-label">Turma:</span>
-                        <span class="dado-valor">${aluno.turma || 'N/A'}</span>
-                    </div>
-                    <div class="dado-item">
-                        <span class="dado-label">Data de Nascimento:</span>
-                        <span class="dado-valor">${aluno.data_nascimento || 'N/A'}</span>
+                        <span class="dado-valor">${aluno.turma}</span>
                     </div>
                 </div>
             `;
