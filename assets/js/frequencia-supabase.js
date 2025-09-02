@@ -125,10 +125,18 @@ class FrequenciaSupabaseManager {
               nome: registro.nome_completo,
               dias: {}
             });
+            console.log(`👤 DEBUG - Novo aluno criado: ${codigoAluno} (${registro.nome_completo}) na turma ${registro.turma}`);
           }
           
           // Adicionar status do dia
           grupo.alunos.get(codigoAluno).dias[dia] = registro.status;
+          
+          // Debug mais frequente para ver acumulação de dias
+          if (Math.random() < 0.05) { // 5% dos registros
+            const alunoAtual = grupo.alunos.get(codigoAluno);
+            const totalDiasAluno = Object.keys(alunoAtual.dias).length;
+            console.log(`📅 DEBUG acumulação: ${registro.turma} - Aluno ${codigoAluno} agora tem ${totalDiasAluno} dias: [${Object.keys(alunoAtual.dias).sort().join(', ')}]`);
+          }
           
           // Debug para ver como os dados estão sendo processados
           if (Math.random() < 0.01) { // 1% dos registros para não poluir o log
@@ -136,9 +144,21 @@ class FrequenciaSupabaseManager {
           }
         });
         
-        // Converter Maps de alunos para arrays
+        // Converter Maps de alunos para arrays e debug final
         for (const [chave, grupo] of gruposDados) {
-          grupo.alunos = Array.from(grupo.alunos.values());
+          const alunosArray = Array.from(grupo.alunos.values());
+          
+          // Debug: mostrar quantos dias cada aluno tem
+          console.log(`📊 DEBUG FINAL - Turma ${grupo.turma} (${chave}): ${alunosArray.length} alunos`);
+          alunosArray.forEach((aluno, index) => {
+            const diasCount = Object.keys(aluno.dias).length;
+            const diasList = Object.keys(aluno.dias).sort().join(', ');
+            if (index < 3) { // Mostrar apenas os primeiros 3 alunos para não poluir
+              console.log(`  👤 Aluno ${aluno.codigo} (${aluno.nome}): ${diasCount} dias [${diasList}]`);
+            }
+          });
+          
+          grupo.alunos = alunosArray;
         }
       }
       
@@ -403,12 +423,22 @@ class FrequenciaSupabaseManager {
   }
 
   mostrarTabelaDias() {
+    console.log('🔍 DEBUG - mostrarTabelaDias() iniciado');
+    console.log(`📊 DEBUG - Turma atual: ${this.turmaAtual}, Mês: ${this.mesAtual}, Ano: ${this.anoAtual}`);
+    
     const container = document.getElementById('frequenciaContainer');
     const tabelaContainer = document.getElementById('tabela-container');
     
-    if (!container || !tabelaContainer) return;
+    console.log(`🎯 DEBUG - Container encontrado:`, !!container);
+    console.log(`🎯 DEBUG - Tabela container encontrado:`, !!tabelaContainer);
+    
+    if (!container || !tabelaContainer) {
+      console.error('❌ DEBUG - Containers não encontrados!');
+      return;
+    }
     
     if (!this.turmaAtual || !this.mesAtual || !this.anoAtual) {
+      console.warn('⚠️ DEBUG - Dados de turma/mês/ano faltando');
       showToast('Selecione uma turma primeiro', 'warning');
       return;
     }
@@ -682,8 +712,12 @@ async function inicializarModuloFrequencia() {
 
 // Funções globais para os botões HTML
 function mostrarTabelaDiaria() {
+  console.log('🔍 DEBUG - mostrarTabelaDiaria() chamada');
   if (window.frequenciaManager) {
+    console.log('✅ DEBUG - frequenciaManager encontrado, chamando mostrarTabelaDias');
     window.frequenciaManager.mostrarTabelaDias();
+  } else {
+    console.error('❌ DEBUG - frequenciaManager não encontrado!');
   }
 }
 
