@@ -197,65 +197,6 @@
                     </div>
                 </div>
 
-                <!-- FILTROS E CONFIGURAÇÕES -->
-                <div class="management-section">
-                    <div class="management-title">
-                        🔍 Filtros e Configurações
-                    </div>
-                    
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label">🎯 Filtrar por Turma:</label>
-                            <select id="filtroTurmaRelatorio" class="form-select" onchange="aplicarFiltrosRelatorio()">
-                                <option value="">Todas as turmas</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">📅 Período de Análise:</label>
-                            <select id="filtroPeriodoRelatorio" class="form-select" onchange="aplicarFiltrosRelatorio()">
-                                <option value="30">Últimos 30 dias</option>
-                                <option value="60">Últimos 2 meses</option>
-                                <option value="90">Últimos 3 meses</option>
-                                <option value="180">Últimos 6 meses</option>
-                                <option value="365">Último ano</option>
-                                <option value="todos">Todos os registros</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">📊 Tipo de Relatório:</label>
-                            <select id="tipoRelatorio" class="form-select" onchange="aplicarFiltrosRelatorio()">
-                                <option value="geral">Relatório Geral</option>
-                                <option value="frequencia">Apenas Frequência</option>
-                                <option value="medidas">Apenas Medidas</option>
-                                <option value="ficai">Alertas FICAI</option>
-                                <option value="criticos">Casos Críticos</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">🔍 Pesquisar Aluno:</label>
-                            <input type="text" id="pesquisaAlunoRelatorio" class="form-input" 
-                                placeholder="Nome do aluno..." onkeyup="aplicarFiltrosRelatorio()">
-                        </div>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button class="btn btn-primary" onclick="aplicarFiltrosRelatorio()">
-                            🔍 Aplicar Filtros
-                        </button>
-                        <button class="btn btn-secondary" onclick="limparFiltrosRelatorio()">
-                            🔄 Limpar Filtros
-                        </button>
-                        <button class="btn btn-success" onclick="exportarRelatorioCompleto()">
-                            📊 Exportar CSV
-                        </button>
-                        <button class="btn btn-info" onclick="gerarRelatorioPDF()">
-                            📄 Gerar PDF
-                        </button>
-                    </div>
-                </div>
 
                 <!-- DASHBOARD PRINCIPAL DE GRÁFICOS -->
                 <div class="analytics-dashboard">
@@ -282,8 +223,10 @@
                             </div>
                         </div>
                         
-                        <div class="charts-comparative-grid">
-                            <div class="chart-card-medium">
+                        <!-- GRID EXPANDIDO DE ANÁLISE COMPARATIVA -->
+                        <div class="comparative-analysis-grid">
+                            <!-- Comparação Específica -->
+                            <div class="chart-card-large">
                                 <div class="chart-header">
                                     <h3>⚖️ Comparação Específica</h3>
                                     <p id="comparacaoTitulo">Selecione duas turmas para comparar</p>
@@ -293,13 +236,58 @@
                                 </div>
                             </div>
                             
+                            <!-- Dados de Frequência por Turma -->
                             <div class="chart-card-medium">
                                 <div class="chart-header">
-                                    <h3>🏆 Ranking Geral</h3>
-                                    <p>Top 5 turmas por desempenho</p>
+                                    <h3>📅 Frequência por Turma</h3>
+                                    <p>Percentual de presença média</p>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="chartFrequenciaTurmas"></canvas>
+                                </div>
+                            </div>
+                            
+                            <!-- Medidas Disciplinares por Turma -->
+                            <div class="chart-card-medium">
+                                <div class="chart-header">
+                                    <h3>📋 Medidas Disciplinares por Turma</h3>
+                                    <p>Total de medidas aplicadas</p>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="chartMedidasTurmas"></canvas>
+                                </div>
+                            </div>
+                            
+                            <!-- Ranking Estático -->
+                            <div class="chart-card-medium">
+                                <div class="chart-header">
+                                    <h3>🏆 Ranking de Desempenho</h3>
+                                    <p>Turmas ordenadas por frequência</p>
                                 </div>
                                 <div id="rankingTurmasLista" class="ranking-static">
                                     <!-- Ranking será populado aqui -->
+                                </div>
+                            </div>
+                            
+                            <!-- Resumo Estatístico -->
+                            <div class="stats-summary-card">
+                                <div class="chart-header">
+                                    <h3>📊 Resumo Estatístico</h3>
+                                    <p>Métricas consolidadas por turma</p>
+                                </div>
+                                <div id="resumoEstatisticoTurmas" class="stats-grid">
+                                    <!-- Estatísticas serão populadas aqui -->
+                                </div>
+                            </div>
+                            
+                            <!-- Alunos em Situação de Risco -->
+                            <div class="chart-card-medium">
+                                <div class="chart-header">
+                                    <h3>⚠️ Alunos em Risco por Turma</h3>
+                                    <p>Distribuição de níveis de risco</p>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="chartRiscoTurmas"></canvas>
                                 </div>
                             </div>
                         </div>

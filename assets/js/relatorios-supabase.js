@@ -752,6 +752,12 @@ class RelatoriosSupabaseManager {
         
         if (!dadosRelatorios.analytics) return;
         
+        // Gráficos principais da análise comparativa
+        this.gerarGraficoFrequenciaTurmas();
+        this.gerarGraficoMedidasTurmas(); 
+        this.gerarGraficoRiscoTurmas();
+        this.atualizarResumoEstatistico();
+        
         // Sistema de comparação inteligente
         this.gerarRankingTurmasEstatico();
         this.inicializarComparacao();
@@ -1028,6 +1034,170 @@ class RelatoriosSupabaseManager {
             }
         });
         
+    }
+
+    gerarGraficoFrequenciaTurmas() {
+        const canvas = document.getElementById('chartFrequenciaTurmas');
+        if (!canvas || typeof Chart === 'undefined') return;
+
+        this.destruirGrafico('frequenciaTurmas');
+
+        const turmas = dadosRelatorios.analytics.turmas;
+        const labels = Object.keys(turmas).sort();
+        const data = labels.map(t => turmas[t].frequenciaMedia);
+
+        const ctx = canvas.getContext('2d');
+        chartsInstances.frequenciaTurmas = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Frequência Média (%)',
+                    data: data,
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) { return value + '%'; }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    gerarGraficoMedidasTurmas() {
+        const canvas = document.getElementById('chartMedidasTurmas');
+        if (!canvas || typeof Chart === 'undefined') return;
+
+        this.destruirGrafico('medidasTurmas');
+
+        const turmas = dadosRelatorios.analytics.turmas;
+        const labels = Object.keys(turmas).sort();
+        const data = labels.map(t => turmas[t].totalMedidas);
+
+        const ctx = canvas.getContext('2d');
+        chartsInstances.medidasTurmas = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Total de Medidas',
+                    data: data,
+                    backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    gerarGraficoRiscoTurmas() {
+        const canvas = document.getElementById('chartRiscoTurmas');
+        if (!canvas || typeof Chart === 'undefined') return;
+
+        this.destruirGrafico('riscoTurmas');
+
+        const turmas = dadosRelatorios.analytics.turmas;
+        const labels = Object.keys(turmas).sort();
+        const data = labels.map(t => turmas[t].alunosRisco);
+
+        const ctx = canvas.getContext('2d');
+        chartsInstances.riscoTurmas = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Alunos em Risco',
+                    data: data,
+                    backgroundColor: 'rgba(255, 193, 7, 0.7)',
+                    borderColor: 'rgba(255, 193, 7, 1)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    atualizarResumoEstatistico() {
+        const container = document.getElementById('resumoEstatisticoTurmas');
+        if (!container) return;
+
+        const turmas = dadosRelatorios.analytics.turmas;
+        const totalTurmas = Object.keys(turmas).length;
+        
+        // Calcular médias gerais
+        const frequenciaGeral = Object.values(turmas).reduce((sum, t) => sum + t.frequenciaMedia, 0) / totalTurmas;
+        const medidasGeral = Object.values(turmas).reduce((sum, t) => sum + t.totalMedidas, 0);
+        const alunosRiscoGeral = Object.values(turmas).reduce((sum, t) => sum + t.alunosRisco, 0);
+        const totalAlunos = Object.values(turmas).reduce((sum, t) => sum + t.totalAlunos, 0);
+
+        // Encontrar melhor e pior turma
+        const turmasArray = Object.entries(turmas).map(([nome, dados]) => ({ nome, ...dados }));
+        const melhorTurma = turmasArray.sort((a, b) => b.frequenciaMedia - a.frequenciaMedia)[0];
+        const piorTurma = turmasArray.sort((a, b) => a.frequenciaMedia - b.frequenciaMedia)[0];
+
+        container.innerHTML = `
+            <div class="stat-item">
+                <div class="stat-value">${totalTurmas}</div>
+                <div class="stat-label">Turmas Ativas</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">${frequenciaGeral.toFixed(1)}%</div>
+                <div class="stat-label">Frequência Média</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">${medidasGeral}</div>
+                <div class="stat-label">Total de Medidas</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">${alunosRiscoGeral}</div>
+                <div class="stat-label">Alunos em Risco</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">${totalAlunos}</div>
+                <div class="stat-label">Total de Alunos</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">${melhorTurma.nome}</div>
+                <div class="stat-label">Melhor Turma</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">${piorTurma.nome}</div>
+                <div class="stat-label">Precisa Atenção</div>
+            </div>
+        `;
     }
 
     recalcularAnalytics() {
