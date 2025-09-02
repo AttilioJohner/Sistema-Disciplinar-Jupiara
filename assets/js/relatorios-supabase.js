@@ -3,6 +3,220 @@
 
 console.log('📊 DASHBOARD AVANÇADO: Inicializando sistema analítico v2.1...');
 
+// ===============================================
+// FUNÇÕES PURAS DE CÁLCULO ESTATÍSTICO
+// Implementação exata conforme especificações técnicas
+// ===============================================
+
+/**
+ * Computa estatísticas exatas de frequência por aluno
+ * @param {number} f - Faltas
+ * @param {number} fc - Faltas Controladas  
+ * @param {number} p - Presenças
+ * @param {number} a - Atestados
+ * @returns {Object} Estatísticas calculadas
+ */
+function computeAlunoStats(f, fc, p, a) {
+    // Validação de entrada
+    f = parseInt(f) || 0;
+    fc = parseInt(fc) || 0;
+    p = parseInt(p) || 0;
+    a = parseInt(a) || 0;
+    
+    // Cálculos conforme especificação EXATA
+    const TOTAL = f + fc + p + a;
+    const PRESENCA_VALIDA = p + a;
+    const FALTAS_TOTAIS = f + fc;
+    
+    // Percentuais (tratando divisão por zero)
+    const PCT_PRESENCA = TOTAL > 0 ? (PRESENCA_VALIDA / TOTAL) : 0;
+    const PCT_FALTAS = TOTAL > 0 ? (FALTAS_TOTAIS / TOTAL) : 0;
+    
+    return {
+        totals: {
+            TOTAL,
+            PRESENCA_VALIDA, 
+            FALTAS_TOTAIS,
+            F: f,
+            FC: fc,
+            P: p,
+            A: a
+        },
+        pctPresenca: PCT_PRESENCA,
+        pctFaltas: PCT_FALTAS,
+        temDados: TOTAL > 0
+    };
+}
+
+/**
+ * Agrega estatísticas por turma (média aritmética simples)
+ * @param {Array} alunosStats - Array de estatísticas por aluno
+ * @param {boolean} excluirSemDados - Se deve excluir alunos sem dados do cálculo
+ * @returns {Object} Estatísticas agregadas da turma
+ */
+function aggregateByTurma(alunosStats, excluirSemDados = true) {
+    const alunosParaCalculo = excluirSemDados 
+        ? alunosStats.filter(aluno => aluno.temDados)
+        : alunosStats;
+    
+    if (alunosParaCalculo.length === 0) {
+        return {
+            mediasTurma: { pctPresenca: 0, pctFaltas: 0 },
+            somatorios: { F: 0, FC: 0, P: 0, A: 0, TOTAL: 0 },
+            alunosComputados: 0,
+            alunosSemDados: alunosStats.length - alunosParaCalculo.length
+        };
+    }
+    
+    // Média aritmética simples dos percentuais
+    const somaPctPresenca = alunosParaCalculo.reduce((sum, a) => sum + a.pctPresenca, 0);
+    const somaPctFaltas = alunosParaCalculo.reduce((sum, a) => sum + a.pctFaltas, 0);
+    
+    // Somatórios absolutos de todos os alunos (incluindo sem dados)
+    const somatorios = alunosStats.reduce((acc, aluno) => ({
+        F: acc.F + aluno.totals.F,
+        FC: acc.FC + aluno.totals.FC,
+        P: acc.P + aluno.totals.P,
+        A: acc.A + aluno.totals.A,
+        TOTAL: acc.TOTAL + aluno.totals.TOTAL
+    }), { F: 0, FC: 0, P: 0, A: 0, TOTAL: 0 });
+    
+    return {
+        mediasTurma: {
+            pctPresenca: somaPctPresenca / alunosParaCalculo.length,
+            pctFaltas: somaPctFaltas / alunosParaCalculo.length
+        },
+        somatorios,
+        alunosComputados: alunosParaCalculo.length,
+        alunosSemDados: alunosStats.length - alunosParaCalculo.length
+    };
+}
+
+/**
+ * Agrega estatísticas gerais (todas as turmas)
+ * @param {Object} turmasStats - Objeto com estatísticas por turma
+ * @param {Array} todosAlunos - Array com todos os alunos para cálculo direto
+ * @param {string} criterio - 'media_turmas' ou 'media_alunos'
+ * @returns {Object} Estatísticas globais
+ */
+function aggregateGeral(turmasStats, todosAlunos, criterio = 'media_alunos') {
+    const turmasArray = Object.values(turmasStats);
+    
+    if (criterio === 'media_turmas') {
+        // Média das médias das turmas (cada turma tem peso igual)
+        const turmасomDados = turmasArray.filter(t => t.alunosComputados > 0);
+        
+        if (turmасomDados.length === 0) {
+            return { mediasGlobais: { pctPresenca: 0, pctFaltas: 0 }, somatorios: {} };
+        }
+        
+        const somaPctPresenca = turmасomDados.reduce((sum, t) => sum + t.mediasTurma.pctPresenca, 0);
+        const somaPctFaltas = turmасomDados.reduce((sum, t) => sum + t.mediasTurma.pctFaltas, 0);
+        
+        return {
+            mediasGlobais: {
+                pctPresenca: somaPctPresenca / turmасomDados.length,
+                pctFaltas: somaPctFaltas / turmасomDados.length
+            },
+            criterioUsado: 'media_turmas',
+            turmasComputadas: turmасomDados.length
+        };
+    } else {
+        // Média direta de todos os alunos (cada aluno tem peso igual)
+        const alunosComDados = todosAlunos.filter(a => a.temDados);
+        
+        if (alunosComDados.length === 0) {
+            return { mediasGlobais: { pctPresenca: 0, pctFaltas: 0 }, somatorios: {} };
+        }
+        
+        const somaPctPresenca = alunosComDados.reduce((sum, a) => sum + a.pctPresenca, 0);
+        const somaPctFaltas = alunosComDados.reduce((sum, a) => sum + a.pctFaltas, 0);
+        
+        return {
+            mediasGlobais: {
+                pctPresenca: somaPctPresenca / alunosComDados.length,
+                pctFaltas: somaPctFaltas / alunosComDados.length
+            },
+            criterioUsado: 'media_alunos',
+            alunosComputados: alunosComDados.length
+        };
+    }
+}
+
+/**
+ * Soma pontuações de medidas disciplinares por aluno
+ * @param {Array} medidasAluno - Array de medidas do aluno
+ * @param {Object} tabelaPontos - Tabela de pontos por tipo de medida
+ * @returns {number} Pontuação total
+ */
+function sumDisciplineScoresByAluno(medidasAluno, tabelaPontos = null) {
+    if (!medidasAluno || medidasAluno.length === 0) {
+        return 0;
+    }
+    
+    // Tabela padrão de pontuação se não fornecida
+    const pontosPadrao = {
+        'Advertência': 1,
+        'Advertência Verbal': 1,
+        'Advertência Escrita': 2,
+        'Suspensão': 3,
+        'Suspensão 1 dia': 3,
+        'Suspensão 2 dias': 4,
+        'Suspensão 3 dias': 5,
+        'Transferência': 6,
+        'default': 1 // Para tipos não mapeados
+    };
+    
+    const tabela = tabelaPontos || pontosPadrao;
+    
+    return medidasAluno.reduce((total, medida) => {
+        const tipo = medida.tipo_medida || 'default';
+        const pontos = tabela[tipo] !== undefined ? tabela[tipo] : tabela.default;
+        return total + pontos;
+    }, 0);
+}
+
+// ===============================================
+// TESTES AUTOMATIZADOS - CASOS DE VALIDAÇÃO
+// ===============================================
+
+/**
+ * Executa testes de validação dos cálculos
+ */
+function executarTestesCalculos() {
+    console.log('🧪 EXECUTANDO TESTES DE VALIDAÇÃO...');
+    
+    // TESTE OBRIGATÓRIO: 5F + 5FC + 9P + 1A = 50%
+    const testeCaso1 = computeAlunoStats(5, 5, 9, 1);
+    const esperado = 0.50; // 50%
+    const obtido = testeCaso1.pctPresenca;
+    
+    console.log(`📊 TESTE CASO 1: 5F + 5FC + 9P + 1A`);
+    console.log(`   Expected: ${esperado * 100}%`);
+    console.log(`   Obtained: ${obtido * 100}%`);
+    console.log(`   Status: ${Math.abs(obtido - esperado) < 0.001 ? '✅ PASSOU' : '❌ FALHOU'}`);
+    
+    // Teste casos extremos
+    const testeZero = computeAlunoStats(0, 0, 0, 0);
+    console.log(`📊 TESTE ZERO: ${testeZero.pctPresenca === 0 ? '✅ PASSOU' : '❌ FALHOU'}`);
+    
+    const teste100 = computeAlunoStats(0, 0, 10, 0);
+    console.log(`📊 TESTE 100%: ${teste100.pctPresenca === 1.0 ? '✅ PASSOU' : '❌ FALHOU'}`);
+    
+    // Teste medidas disciplinares
+    const medidasTeste = [
+        { tipo_medida: 'Advertência' },
+        { tipo_medida: 'Suspensão' },
+        { tipo_medida: 'Advertência' }
+    ];
+    const pontosTest = sumDisciplineScoresByAluno(medidasTeste);
+    console.log(`📊 TESTE MEDIDAS: ${pontosTest} pontos (esperado: 5)`);
+    console.log(`   Status: ${pontosTest === 5 ? '✅ PASSOU' : '❌ FALHOU'}`);
+    
+    console.log('🧪 TESTES CONCLUÍDOS');
+    return true;
+}
+
 // Variáveis globais expandidas
 let dadosRelatorios = {
     alunos: [],
@@ -71,6 +285,9 @@ class RelatoriosSupabaseManager {
             
             // Inicializar gráfico de comparação
             this.inicializarComparacao();
+            
+            // Executar testes de validação dos cálculos
+            executarTestesCalculos();
             
             showSuccessToast('Relatórios carregados com sucesso!');
             
