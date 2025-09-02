@@ -261,7 +261,7 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">🎯 Filtrar por Turma:</label>
-                            <select id="filtroTurmaFreq" class="form-select" onchange="aplicarFiltrosFrequencia()">
+                            <select id="filtro-turma" class="form-select" onchange="aplicarFiltrosFrequencia()">
                                 <option value="">Todas as turmas</option>
                             </select>
                         </div>
@@ -275,7 +275,7 @@
                         
                         <div class="form-group">
                             <label class="form-label">📅 Mês:</label>
-                            <select id="filtroMesFreq" class="form-select" onchange="aplicarFiltrosFrequencia()">
+                            <select id="filtro-mes" class="form-select" onchange="aplicarFiltrosFrequencia()">
                                 <option value="">Todos os meses</option>
                                 <option value="01">Janeiro</option>
                                 <option value="02">Fevereiro</option>
@@ -289,6 +289,13 @@
                                 <option value="10">Outubro</option>
                                 <option value="11">Novembro</option>
                                 <option value="12">Dezembro</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">📅 Ano:</label>
+                            <select id="filtro-ano" class="form-select" onchange="aplicarFiltrosFrequencia()">
+                                <option value="">Todos os anos</option>
                             </select>
                         </div>
                         
@@ -364,6 +371,18 @@
                             <div class="loading-spinner"></div>
                             <p>Carregando dados de frequência...</p>
                         </div>
+                        
+                        <!-- Tabela detalhada (será exibida pelo JavaScript) -->
+                        <div id="tabela-container" style="display: none;">
+                            <table class="data-table">
+                                <thead id="tabela-head">
+                                    <!-- Cabeçalho será inserido dinamicamente -->
+                                </thead>
+                                <tbody id="tabela-body">
+                                    <!-- Dados serão inseridos dinamicamente -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -433,61 +452,6 @@
                     </div>
                 </div>
 
-            </div>
-        </div>
-        
-        <!-- SEÇÃO DE RELATÓRIOS POR TURMA -->
-        <div class="dashboard-section">
-            <div class="section-header">
-                <h2>📊 Relatórios por Turma</h2>
-                <small>Visão geral da frequência por turma</small>
-            </div>
-            
-            <div id="relatorios-turmas" class="cards-grid">
-                <!-- Cards das turmas serão inseridos aqui -->
-            </div>
-        </div>
-        
-        <!-- SEÇÃO DE FILTROS E VISUALIZAÇÃO -->
-        <div class="dashboard-section">
-            <div class="section-header">
-                <h2>🔍 Visualização Detalhada</h2>
-                <small>Filtrar e visualizar frequência por período</small>
-            </div>
-            
-            <div class="filters-row">
-                <div class="filter-group">
-                    <label>Turma</label>
-                    <select id="filtro-turma">
-                        <option value="">Selecione uma turma</option>
-                    </select>
-                </div>
-                
-                <div class="filter-group">
-                    <label>Mês</label>
-                    <select id="filtro-mes">
-                        <option value="">Selecione um mês</option>
-                    </select>
-                </div>
-                
-                <div class="filter-group">
-                    <label>Ano</label>
-                    <select id="filtro-ano">
-                        <option value="">Selecione um ano</option>
-                    </select>
-                </div>
-            </div>
-            
-            <!-- TABELA DE FREQUÊNCIA -->
-            <div id="tabela-container" class="table-container" style="display: none;">
-                <table class="data-table">
-                    <thead id="tabela-head">
-                        <!-- Cabeçalho será inserido dinamicamente -->
-                    </thead>
-                    <tbody id="tabela-body">
-                        <!-- Dados serão inseridos dinamicamente -->
-                    </tbody>
-                </table>
             </div>
         </div>
     </div>

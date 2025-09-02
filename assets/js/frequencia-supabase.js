@@ -214,7 +214,7 @@ class FrequenciaSupabaseManager {
   }
 
   renderizarRelatorios() {
-    const container = document.getElementById('relatorios-turmas');
+    const container = document.getElementById('resumoTurmas');
     if (!container) return;
     
     container.innerHTML = '';
@@ -242,15 +242,13 @@ class FrequenciaSupabaseManager {
     // Renderizar cards
     for (const [turma, relatorio] of relatoriosPorTurma) {
       const card = document.createElement('div');
-      card.className = 'turma-card';
+      card.className = 'stat-card stat-info';
       card.innerHTML = `
-        <h3>Turma ${turma}</h3>
-        <div class="turma-stats">
-          <span>👥 ${relatorio.totalAlunos} alunos</span>
-          <span>📅 ${relatorio.totalPeriodos} períodos</span>
-        </div>
-        <div class="turma-stats">
-          <span>📆 Último: ${relatorio.ultimoMes}</span>
+        <div class="stat-icon">🎓</div>
+        <div class="stat-content">
+          <div class="stat-number">${relatorio.totalAlunos}</div>
+          <div class="stat-label">Turma ${turma}</div>
+          <div class="stat-detail">${relatorio.totalPeriodos} períodos • ${relatorio.ultimoMes}</div>
         </div>
       `;
       
