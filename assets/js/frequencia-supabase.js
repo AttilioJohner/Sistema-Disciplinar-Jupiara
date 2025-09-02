@@ -35,11 +35,19 @@ class FrequenciaSupabaseManager {
   }
 
   setupEventListeners() {
-    // Botão importar (opcional - só se existir)
-    const btnImportar = document.getElementById('btn-importar');
-    if (btnImportar) {
-      btnImportar.addEventListener('click', () => {
-        this.importarDadosCSV();
+    // Filtro avançado de turmas
+    const filtroTurmaAvancado = document.getElementById('filtro-turma-avancado');
+    if (filtroTurmaAvancado) {
+      filtroTurmaAvancado.addEventListener('change', (e) => {
+        this.atualizarListaAlunos(e.target.value);
+      });
+    }
+    
+    // Filtro de alunos
+    const filtroAluno = document.getElementById('filtro-aluno');
+    if (filtroAluno) {
+      filtroAluno.addEventListener('change', (e) => {
+        this.mostrarEstatisticasAluno(e.target.value);
       });
     }
 
@@ -377,6 +385,164 @@ class FrequenciaSupabaseManager {
       
       cardsGrid.appendChild(card);
     }
+    
+    // Atualizar filtro avançado de turmas
+    this.atualizarFiltroTurmas(Array.from(relatoriosPorTurma.keys()));
+  }
+
+  atualizarFiltroTurmas(turmas) {
+    const selectTurma = document.getElementById('filtro-turma-avancado');
+    if (!selectTurma) return;
+    
+    selectTurma.innerHTML = '<option value="">Selecione uma turma...</option>';
+    turmas.sort().forEach(turma => {
+      const option = document.createElement('option');
+      option.value = turma;
+      option.textContent = `Turma ${turma}`;
+      selectTurma.appendChild(option);
+    });
+  }
+
+  atualizarListaAlunos(turma) {
+    const selectAluno = document.getElementById('filtro-aluno');
+    if (!selectAluno) return;
+    
+    selectAluno.innerHTML = '<option value="">Selecione um aluno...</option>';
+    
+    if (!turma) {
+      selectAluno.disabled = true;
+      return;
+    }
+    
+    const alunosUnicos = new Map();
+    this.dadosFrequencia.forEach((periodo, chave) => {
+      if (periodo.turma === turma) {
+        periodo.alunos.forEach(aluno => {
+          if (!alunosUnicos.has(aluno.codigo)) {
+            alunosUnicos.set(aluno.codigo, { codigo: aluno.codigo, nome: aluno.nome });
+          }
+        });
+      }
+    });
+    
+    const alunosOrdenados = Array.from(alunosUnicos.values()).sort((a, b) => a.nome.localeCompare(b.nome));
+    alunosOrdenados.forEach(aluno => {
+      const option = document.createElement('option');
+      option.value = aluno.codigo;
+      option.textContent = `${aluno.codigo} - ${aluno.nome}`;
+      selectAluno.appendChild(option);
+    });
+    
+    selectAluno.disabled = false;
+  }
+
+  mostrarEstatisticasAluno(codigoAluno) {
+    const container = document.getElementById('estatisticas-aluno');
+    if (!container) return;
+    
+    if (!codigoAluno) {
+      container.innerHTML = '<div class="info-text">Selecione um aluno para ver suas estatísticas</div>';
+      return;
+    }
+    
+    const dadosAluno = { codigo: codigoAluno, nome: '', turma: '', totais: { P: 0, F: 0, A: 0, FC: 0 }, totalRegistros: 0, periodos: [] };
+    
+    this.dadosFrequencia.forEach((periodo, chave) => {
+      const alunoNoPeriodo = periodo.alunos.find(a => a.codigo === codigoAluno);
+      if (alunoNoPeriodo) {
+        dadosAluno.nome = alunoNoPeriodo.nome;
+        dadosAluno.turma = periodo.turma;
+        
+        const totalPeriodo = { P: 0, F: 0, A: 0, FC: 0 };
+        if (alunoNoPeriodo.dias) {
+          Object.values(alunoNoPeriodo.dias).forEach(status => {
+            if (dadosAluno.totais.hasOwnProperty(status)) {
+              dadosAluno.totais[status]++;
+              totalPeriodo[status]++;
+              dadosAluno.totalRegistros++;
+            }
+          });
+        }
+        
+        dadosAluno.periodos.push({
+          periodo: `${this.getNomeMes(periodo.mes)}/${periodo.ano}`,
+          totais: totalPeriodo,
+          totalDias: Object.values(totalPeriodo).reduce((a, b) => a + b, 0)
+        });
+      }
+    });
+    
+    const percentualPresenca = dadosAluno.totalRegistros > 0 ? ((dadosAluno.totais.P / dadosAluno.totalRegistros) * 100).toFixed(1) : 0;
+    const corPresenca = percentualPresenca >= 75 ? '#28a745' : percentualPresenca >= 50 ? '#ffc107' : '#dc3545';
+    
+    container.innerHTML = `
+      <div class="container">
+        <h2>📊 Estatísticas - ${dadosAluno.nome}</h2>
+        
+        <div class="aluno-header" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 1.5rem; font-weight: 700;">${dadosAluno.codigo}</div>
+            <div style="opacity: 0.9;">Turma ${dadosAluno.turma}</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 2rem; font-weight: 700; color: ${corPresenca};">${percentualPresenca}%</div>
+            <div style="font-size: 0.8rem; opacity: 0.9;">PRESENÇA</div>
+          </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="stat-card" style="background: white; border-radius: 12px; padding: 1.25rem; text-align: center; border-left: 4px solid #28a745; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+            <div style="font-size: 2rem;">✅</div>
+            <div style="font-size: 2rem; font-weight: 700; color: #28a745; margin: 0.5rem 0;">${dadosAluno.totais.P}</div>
+            <div style="color: #6c757d; text-transform: uppercase; font-size: 0.9rem;">Presenças</div>
+          </div>
+          
+          <div class="stat-card" style="background: white; border-radius: 12px; padding: 1.25rem; text-align: center; border-left: 4px solid #dc3545; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+            <div style="font-size: 2rem;">❌</div>
+            <div style="font-size: 2rem; font-weight: 700; color: #dc3545; margin: 0.5rem 0;">${dadosAluno.totais.F}</div>
+            <div style="color: #6c757d; text-transform: uppercase; font-size: 0.9rem;">Faltas</div>
+          </div>
+          
+          <div class="stat-card" style="background: white; border-radius: 12px; padding: 1.25rem; text-align: center; border-left: 4px solid #ffc107; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+            <div style="font-size: 2rem;">📋</div>
+            <div style="font-size: 2rem; font-weight: 700; color: #ffc107; margin: 0.5rem 0;">${dadosAluno.totais.A}</div>
+            <div style="color: #6c757d; text-transform: uppercase; font-size: 0.9rem;">Atestados</div>
+          </div>
+          
+          <div class="stat-card" style="background: white; border-radius: 12px; padding: 1.25rem; text-align: center; border-left: 4px solid #17a2b8; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+            <div style="font-size: 2rem;">⚠️</div>
+            <div style="font-size: 2rem; font-weight: 700; color: #17a2b8; margin: 0.5rem 0;">${dadosAluno.totais.FC}</div>
+            <div style="color: #6c757d; text-transform: uppercase; font-size: 0.9rem;">F. Controladas</div>
+          </div>
+        </div>
+        
+        <div style="background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+          <h4 style="margin: 0 0 1.5rem 0; color: #495057;">📈 Frequência por Período</h4>
+          ${dadosAluno.periodos.map(periodo => {
+            const percentualPeriodo = periodo.totalDias > 0 ? ((periodo.totais.P / periodo.totalDias) * 100).toFixed(1) : 0;
+            const corBarra = parseFloat(percentualPeriodo) >= 75 ? '#28a745' : '#dc3545';
+            
+            return `
+              <div style="margin-bottom: 1.25rem; background: #f8f9fa; border-radius: 8px; padding: 1rem; border-left: 4px solid #007bff;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                  <span style="font-weight: 600; color: #495057;">${periodo.periodo}</span>
+                  <span style="font-weight: 700; font-size: 1.1rem; color: #007bff;">${percentualPeriodo}%</span>
+                </div>
+                <div style="background: #e9ecef; border-radius: 10px; height: 8px; margin-bottom: 0.75rem; overflow: hidden;">
+                  <div style="height: 100%; width: ${percentualPeriodo}%; background: ${corBarra}; border-radius: 10px; transition: width 0.3s ease;"></div>
+                </div>
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                  <span class="freq-P" style="font-size: 0.8rem; padding: 0.2rem 0.4rem;">${periodo.totais.P}P</span>
+                  <span class="freq-F" style="font-size: 0.8rem; padding: 0.2rem 0.4rem;">${periodo.totais.F}F</span>
+                  <span class="freq-A" style="font-size: 0.8rem; padding: 0.2rem 0.4rem;">${periodo.totais.A}A</span>
+                  <span class="freq-FC" style="font-size: 0.8rem; padding: 0.2rem 0.4rem;">${periodo.totais.FC}FC</span>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
   }
 
   selecionarTurma(turma) {
