@@ -1846,7 +1846,7 @@ async function renderizarAlertasFrequencia() {
                 </select>
             </div>
         </div>
-        <div id="alertasContainer" class="alertas-grid">
+        <div id="alertasContainer" class="alertas-grid" style="display: none;">
             <div class="loading-alertas">
                 <div class="loading-spinner"></div>
                 <p>Analisando frequências...</p>
@@ -1857,8 +1857,8 @@ async function renderizarAlertasFrequencia() {
     // Definir mês atual como selecionado
     document.getElementById('alertasMes').value = mesAtual;
     
-    // Carregar alertas do mês atual
-    await atualizarAlertasMes();
+    // Não carregar alertas automaticamente - apenas quando usuário clicar em "Mostrar Lista"
+    console.log('🚨 ALERTAS: Interface renderizada. Use "Mostrar Lista" para carregar alertas.');
 }
 
 async function atualizarAlertasMes() {
@@ -1954,6 +1954,9 @@ async function atualizarAlertasMes() {
             ).join('');
             
             alertasContainer.innerHTML = alertasHtml;
+            
+            // Carregar providências já salvas após renderizar os cards
+            await carregarProvidenciasSalvas(problemasEncontrados, mesSelecionado, anoAtual);
         }
 
     } catch (error) {
@@ -2240,13 +2243,50 @@ async function salvarProvidencias(codigoAluno) {
         botaoSalvar.disabled = true;
         botaoSalvar.textContent = '💾 Salvando...';
         
-        // Aqui você salvaria no Supabase (tabela de providências FICAI)
-        // Por enquanto, simular salvamento
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Obter dados do aluno do card
+        const alertaCard = document.getElementById(`alerta-${codigoAluno}`);
+        const nomeAluno = alertaCard?.querySelector('.alerta-aluno')?.textContent || '';
+        const turmaAluno = alertaCard?.querySelector('.alerta-codigo')?.textContent?.split(' - ')[1] || '';
         
+        // Obter mês de referência atual
+        const mesSelect = document.getElementById('alertasMes');
+        const mesReferencia = mesSelect ? `${new Date().getFullYear()}-${mesSelect.value}` : `${new Date().getFullYear()}-${(new Date().getMonth() + 1).toString().padStart(2, '0')}`;
+        
+        console.log('💾 PROVIDÊNCIAS: Dados para salvar:', {
+            codigo: codigoAluno,
+            nome: nomeAluno,
+            turma: turmaAluno,
+            mes: mesReferencia,
+            status,
+            providencias
+        });
+        
+        // Preparar dados para inserção/atualização
+        const dadosFicai = {
+            codigo_matricula: codigoAluno,
+            nome_completo: nomeAluno,
+            turma: turmaAluno,
+            mes_referencia: mesReferencia,
+            status_ficai: status || null,
+            providencias: providencias || null,
+            data_abertura_ficai: new Date().toISOString().split('T')[0] // YYYY-MM-DD
+        };
+        
+        // Salvar no Supabase usando upsert (insert ou update)
+        const { data, error } = await supabaseClient
+            .from('ficai_providencias')
+            .upsert(dadosFicai, { 
+                onConflict: 'codigo_matricula,mes_referencia',
+                returning: 'minimal'
+            });
+        
+        if (error) {
+            console.error('❌ PROVIDÊNCIAS: Erro do Supabase:', error);
+            throw error;
+        }
+        
+        console.log('✅ PROVIDÊNCIAS: Salvo no Supabase com sucesso');
         showSuccessToast('Providências salvas com sucesso!');
-        
-        console.log('💾 PROVIDÊNCIAS: Salvo - Status:', status, 'Providências:', providencias);
         
         // Se foi marcado como resolvido, aplicar visual
         if (status === 'resolvido') {
@@ -2258,7 +2298,18 @@ async function salvarProvidencias(codigoAluno) {
         
     } catch (error) {
         console.error('❌ PROVIDÊNCIAS: Erro ao salvar:', error);
-        showErrorToast('Erro ao salvar providências: ' + error.message);
+        
+        // Tratar diferentes tipos de erro
+        let mensagemErro = 'Erro desconhecido';
+        if (error.message) {
+            if (error.message.includes('relation') && error.message.includes('does not exist')) {
+                mensagemErro = 'Tabela FICAI não encontrada no banco. Execute o script SQL primeiro.';
+            } else {
+                mensagemErro = error.message;
+            }
+        }
+        
+        showErrorToast('Erro ao salvar: ' + mensagemErro);
         
     } finally {
         botaoSalvar.disabled = false;
@@ -2266,18 +2317,95 @@ async function salvarProvidencias(codigoAluno) {
     }
 }
 
+// Função para carregar providências já salvas no Supabase
+async function carregarProvidenciasSalvas(problemasEncontrados, mes, ano) {
+    console.log('📋 PROVIDÊNCIAS: Carregando dados salvos...');
+    
+    try {
+        const mesReferencia = `${ano}-${mes}`;
+        const codigosAlunos = problemasEncontrados.map(p => p.codigo);
+        
+        if (codigosAlunos.length === 0) {
+            console.log('📋 PROVIDÊNCIAS: Nenhum aluno para carregar dados');
+            return;
+        }
+        
+        // Buscar providências salvas no Supabase
+        const { data: providencias, error } = await supabaseClient
+            .from('ficai_providencias')
+            .select('*')
+            .in('codigo_matricula', codigosAlunos)
+            .eq('mes_referencia', mesReferencia);
+        
+        if (error) {
+            console.error('❌ PROVIDÊNCIAS: Erro ao carregar dados:', error);
+            // Não mostrar erro para o usuário se a tabela não existir ainda
+            return;
+        }
+        
+        console.log('📋 PROVIDÊNCIAS: Dados carregados:', providencias?.length || 0, 'registros');
+        
+        // Preencher formulários com dados salvos
+        if (providencias && providencias.length > 0) {
+            providencias.forEach(prov => {
+                const codigoAluno = prov.codigo_matricula;
+                
+                // Preencher status FICAI
+                const statusSelect = document.getElementById(`ficai-status-${codigoAluno}`);
+                if (statusSelect && prov.status_ficai) {
+                    statusSelect.value = prov.status_ficai;
+                    
+                    // Aplicar visual e prazo conforme status
+                    mostrarPrazoFicai(codigoAluno);
+                }
+                
+                // Preencher campo de providências
+                const providenciasTextarea = document.getElementById(`providencias-${codigoAluno}`);
+                if (providenciasTextarea && prov.providencias) {
+                    providenciasTextarea.value = prov.providencias;
+                }
+                
+                console.log('📋 PROVIDÊNCIAS: Dados carregados para aluno', codigoAluno);
+            });
+        }
+        
+    } catch (error) {
+        console.error('❌ PROVIDÊNCIAS: Erro geral ao carregar:', error);
+        // Não mostrar erro para usuário em caso de tabela não existir
+    }
+}
+
 // Função para alternar lista detalhada de alertas
 function toggleListaAlertas() {
-    const lista = document.getElementById('listaAlertasDetalhada');
+    console.log('👁️ TOGGLE: Alternando visualização de alertas');
+    
+    const alertasContainer = document.getElementById('alertasContainer');
     const botao = document.getElementById('toggleAlertas');
     
-    if (lista.style.display === 'none') {
-        lista.style.display = 'block';
-        botao.textContent = '👁️ Ocultar Lista';
-        // Aqui você pode carregar mais detalhes se necessário
+    if (!alertasContainer || !botao) {
+        console.error('❌ TOGGLE: Elementos não encontrados');
+        return;
+    }
+    
+    // Verificar estado atual baseado no display
+    const isVisible = alertasContainer.style.display !== 'none';
+    
+    if (isVisible) {
+        // Esconder lista
+        alertasContainer.style.display = 'none';
+        botao.innerHTML = '👁️ Mostrar Lista';
+        console.log('👁️ TOGGLE: Lista ocultada');
     } else {
-        lista.style.display = 'none';
-        botao.textContent = '👁️ Mostrar Lista';
+        // Mostrar lista
+        alertasContainer.style.display = 'grid';
+        botao.innerHTML = '👁️ Ocultar Lista';
+        console.log('👁️ TOGGLE: Lista exibida');
+        
+        // Se a lista estiver vazia, recarregar alertas
+        if (alertasContainer.innerHTML.trim() === '' || alertasContainer.querySelector('.loading-alertas')) {
+            console.log('👁️ TOGGLE: Lista vazia, recarregando alertas...');
+            atualizarAlertasMes();
+        }
     }
 }
 
