@@ -304,6 +304,30 @@
             flex-grow: 1;
         }
         
+        .medida-actions {
+            margin-left: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .btn-excluir-medida {
+            background: #dc3545;
+            border: none;
+            color: white;
+            padding: 8px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            opacity: 0.7;
+        }
+        
+        .btn-excluir-medida:hover {
+            background: #c82333;
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        
         .medida-tipo {
             font-weight: bold;
             color: #dc3545;
@@ -1871,6 +1895,80 @@
         
         
         
+        // Função para excluir medida disciplinar
+        async function excluirMedida(medidaId, botao) {
+            if (!confirm('⚠️ Tem certeza que deseja excluir esta medida disciplinar?\n\nEsta ação não pode ser desfeita.')) {
+                return;
+            }
+            
+            try {
+                botao.disabled = true;
+                botao.style.opacity = '0.5';
+                botao.textContent = '⏳';
+                
+                // Aguardar supabaseClient estar disponível
+                if (!window.supabaseClient) {
+                    await new Promise(resolve => {
+                        const check = setInterval(() => {
+                            if (window.supabaseClient) {
+                                clearInterval(check);
+                                resolve();
+                            }
+                        }, 100);
+                    });
+                }
+                
+                console.log('🗑️ Excluindo medida ID:', medidaId);
+                
+                // Excluir do Supabase
+                const { error } = await window.supabaseClient
+                    .from('medidas')
+                    .delete()
+                    .eq('id', medidaId);
+                
+                if (error) throw error;
+                
+                // Remover o item da interface
+                const medidaItem = document.querySelector(`[data-medida-id="${medidaId}"]`);
+                if (medidaItem) {
+                    medidaItem.style.transition = 'all 0.3s ease';
+                    medidaItem.style.opacity = '0';
+                    medidaItem.style.transform = 'translateX(-100%)';
+                    
+                    setTimeout(() => {
+                        medidaItem.remove();
+                        
+                        // Verificar se ainda há medidas
+                        const medidasRestantes = document.querySelectorAll('.medida-item');
+                        if (medidasRestantes.length === 0) {
+                            document.getElementById('historicoMedidas').innerHTML = `
+                                <div class="info-box info-success">
+                                    <h4>✅ Comportamento exemplar!</h4>
+                                    <p>Este aluno não possui medidas disciplinares registradas</p>
+                                </div>
+                            `;
+                        }
+                    }, 300);
+                }
+                
+                showMessage('✅ Medida disciplinar excluída com sucesso!', 'success');
+                
+                // Recarregar estatísticas
+                await carregarEstatisticasMedidas();
+                
+                console.log('✅ Medida excluída com sucesso');
+                
+            } catch (error) {
+                console.error('❌ Erro ao excluir medida:', error);
+                showMessage('❌ Erro ao excluir medida: ' + error.message, 'error');
+                
+                // Restaurar botão em caso de erro
+                botao.disabled = false;
+                botao.style.opacity = '0.7';
+                botao.textContent = '🗑️';
+            }
+        }
+
         async function exibirFichaDisciplinar(aluno, medidas) {
             // Dados pessoais
             document.getElementById('dadosPessoais').innerHTML = `
@@ -1930,7 +2028,7 @@
                 const dataFormatada = new Date(medida.data_registro).toLocaleDateString('pt-BR');
                 
                 html += `
-                    <div class="medida-item">
+                    <div class="medida-item" data-medida-id="${medida.id}">
                         <div class="medida-data">${dataFormatada}</div>
                         <div class="medida-content">
                             <div class="medida-tipo">${medida.tipo_medida || 'N/A'}</div>
@@ -1938,6 +2036,11 @@
                                 <strong>Especificação:</strong> ${medida.especificacao || 'N/A'}
                             </div>
                             ${medida.observacao ? `<div class="medida-providencias"><strong>Observações:</strong> ${medida.observacao}</div>` : ''}
+                        </div>
+                        <div class="medida-actions">
+                            <button class="btn-excluir-medida" onclick="excluirMedida('${medida.id}', this)" title="Excluir medida">
+                                🗑️
+                            </button>
                         </div>
                     </div>
                 `;
