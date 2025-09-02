@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS ficai_providencias (
     codigo_matricula VARCHAR(50) NOT NULL,
     nome_completo VARCHAR(255) NOT NULL,
     turma VARCHAR(100) NOT NULL,
-    mes_referencia VARCHAR(7) NOT NULL, -- formato: YYYY-MM (ex: 2025-08)
+    mes_referencia VARCHAR(7) NOT NULL, -- formato: YYYY-MM (exemplo: '2025-08')
     
     -- Status do FICAI
     status_ficai VARCHAR(50) DEFAULT NULL,
