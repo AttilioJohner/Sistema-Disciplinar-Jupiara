@@ -484,7 +484,7 @@ class FrequenciaSupabaseManager {
     showToast(`Estatísticas compiladas: ${alunosComTotais.length} alunos da turma ${this.turmaAtual}`, 'success');
   }
 
-  mostrarTabelaDias() {
+  mostrarTabelaDias(mesEscolhido = null, anoEscolhido = null) {
     console.log('🔍 DEBUG - mostrarTabelaDias() iniciado - Substituindo por visualização diária');
     
     if (!this.turmaAtual) {
@@ -499,71 +499,82 @@ class FrequenciaSupabaseManager {
       return;
     }
     
-    console.log(`🎯 DEBUG - Compilando visualização diária para turma: ${this.turmaAtual}`);
+    // Se não foi especificado mês/ano, usar agosto/2025 como padrão
+    const mesVisualizacao = mesEscolhido || '08';
+    const anoVisualizacao = anoEscolhido || '2025';
     
-    // Compilar TODOS os dados da turma (todos os meses/anos) - igual ao resumo
-    const alunosDaTurma = new Map();
+    console.log(`🎯 DEBUG - Compilando visualização diária para turma: ${this.turmaAtual} - ${mesVisualizacao}/${anoVisualizacao}`);
     
-    // Percorrer todos os períodos carregados
+    // Encontrar períodos disponíveis para esta turma
+    const periodosDisponiveis = [];
     this.dadosFrequencia.forEach((periodo, chave) => {
       if (periodo.turma === this.turmaAtual) {
-        console.log(`📊 DEBUG - Processando período: ${chave} com ${periodo.alunos.length} alunos`);
-        
-        periodo.alunos.forEach(aluno => {
-          // Se aluno não existe no Map, criar
-          if (!alunosDaTurma.has(aluno.codigo)) {
-            alunosDaTurma.set(aluno.codigo, {
-              codigo: aluno.codigo,
-              nome: aluno.nome,
-              diasDetalhados: new Map() // Map com dia -> status
-            });
-          }
-          
-          const alunoCompilado = alunosDaTurma.get(aluno.codigo);
-          
-          // Adicionar todos os dias deste período
-          if (aluno.dias) {
-            Object.entries(aluno.dias).forEach(([dia, status]) => {
-              alunoCompilado.diasDetalhados.set(dia, status);
-            });
-          }
+        periodosDisponiveis.push({
+          chave: chave,
+          mes: periodo.mes,
+          ano: periodo.ano,
+          mesNome: this.getNomeMes(periodo.mes)
         });
       }
     });
     
-    if (alunosDaTurma.size === 0) {
+    // Compilar dados do mês específico
+    const chaveEscolhida = `${this.turmaAtual}_${mesVisualizacao}_${anoVisualizacao}`;
+    const dadosPeriodo = this.dadosFrequencia.get(chaveEscolhida);
+    
+    if (!dadosPeriodo) {
       container.innerHTML = `
-        <div class="info-text">
-          ⚠️ Nenhum dado encontrado para a turma ${this.turmaAtual}
+        <div style="margin-bottom: 15px;">
+          <h3>📅 Visualização por Dias - Turma ${this.turmaAtual}</h3>
+          <div class="filters-row">
+            <div class="filter-group">
+              <label>Período:</label>
+              <select id="seletorPeriodoDias" onchange="selecionarPeriodoDias()">
+                ${periodosDisponiveis.map(periodo => `
+                  <option value="${periodo.mes}_${periodo.ano}" ${periodo.mes === mesVisualizacao && periodo.ano === anoVisualizacao ? 'selected' : ''}>
+                    ${periodo.mesNome}/${periodo.ano}
+                  </option>
+                `).join('')}
+              </select>
+            </div>
+            <button class="btn btn-secondary btn-small" onclick="voltarResumoAlunos()" style="margin-left: 15px;">
+              ◀ Voltar às Estatísticas
+            </button>
+          </div>
+          <div class="info-text">
+            ⚠️ Nenhum dado encontrado para ${this.getNomeMes(mesVisualizacao)}/${anoVisualizacao}
+          </div>
         </div>
       `;
       return;
     }
     
-    // Coletar todos os dias únicos e ordenar
-    const todosOsDias = new Set();
-    alunosDaTurma.forEach(aluno => {
-      aluno.diasDetalhados.forEach((status, dia) => {
-        todosOsDias.add(dia);
-      });
-    });
-    
-    const diasOrdenados = Array.from(todosOsDias).sort((a, b) => parseInt(a) - parseInt(b));
-    console.log(`📅 DEBUG - Dias encontrados: ${diasOrdenados.join(', ')}`);
-    
-    // Converter Map para Array
-    const alunosArray = Array.from(alunosDaTurma.values());
+    // Gerar todos os dias úteis do mês (seg-sex)
+    const diasUteis = this.gerarDiasUteis(parseInt(mesVisualizacao), parseInt(anoVisualizacao));
+    console.log(`📅 DEBUG - Dias úteis de ${mesVisualizacao}/${anoVisualizacao}:`, diasUteis.map(d => `${d.dia}(${d.diaSemana})`).join(', '));
     
     // Renderizar tabela por dias
     container.innerHTML = `
       <div style="margin-bottom: 15px;">
         <h3>📅 Visualização por Dias - Turma ${this.turmaAtual}</h3>
+        <div class="filters-row">
+          <div class="filter-group">
+            <label>Período:</label>
+            <select id="seletorPeriodoDias" onchange="selecionarPeriodoDias()">
+              ${periodosDisponiveis.map(periodo => `
+                <option value="${periodo.mes}_${periodo.ano}" ${periodo.mes === mesVisualizacao && periodo.ano === anoVisualizacao ? 'selected' : ''}>
+                  ${periodo.mesNome}/${periodo.ano}
+                </option>
+              `).join('')}
+            </select>
+          </div>
+          <button class="btn btn-secondary btn-small" onclick="voltarResumoAlunos()" style="margin-left: 15px;">
+            ◀ Voltar às Estatísticas
+          </button>
+        </div>
         <p style="color: #666; font-size: 0.9rem;">
-          ${alunosArray.length} alunos • ${diasOrdenados.length} dias registrados
+          ${dadosPeriodo.alunos.length} alunos • ${diasUteis.length} dias úteis de ${this.getNomeMes(mesVisualizacao)}/${anoVisualizacao}
         </p>
-        <button class="btn btn-secondary btn-small" onclick="voltarResumoAlunos()" style="margin-top: 10px;">
-          ◀ Voltar às Estatísticas
-        </button>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
@@ -571,18 +582,23 @@ class FrequenciaSupabaseManager {
             <tr>
               <th>Código</th>
               <th>Nome</th>
-              ${diasOrdenados.map(dia => `<th>Dia ${dia}</th>`).join('')}
+              ${diasUteis.map(diaInfo => `
+                <th style="text-align: center; min-width: 60px;">
+                  <div>${diaInfo.dia}</div>
+                  <div style="font-size: 0.8em; color: #666;">(${diaInfo.diaSemana})</div>
+                </th>
+              `).join('')}
             </tr>
           </thead>
           <tbody>
-            ${alunosArray.map(aluno => `
+            ${dadosPeriodo.alunos.map(aluno => `
               <tr>
                 <td><strong>${aluno.codigo}</strong></td>
                 <td>${aluno.nome}</td>
-                ${diasOrdenados.map(dia => {
-                  const status = aluno.diasDetalhados.get(dia) || '';
+                ${diasUteis.map(diaInfo => {
+                  const status = aluno.dias && aluno.dias[diaInfo.dia] ? aluno.dias[diaInfo.dia] : '';
                   const classe = status ? `freq-${status}` : '';
-                  return `<td class="${classe}">${status || '-'}</td>`;
+                  return `<td class="${classe}" style="text-align: center;">${status || '-'}</td>`;
                 }).join('')}
               </tr>
             `).join('')}
@@ -591,8 +607,29 @@ class FrequenciaSupabaseManager {
       </div>
     `;
     
-    console.log(`✅ DEBUG - Tabela diária renderizada: ${alunosArray.length} alunos x ${diasOrdenados.length} dias`);
-    showToast(`Visualização por dias: ${diasOrdenados.length} dias de ${this.getNomeMes(this.mesAtual) || 'todos os meses'}`, 'success');
+    console.log(`✅ DEBUG - Tabela diária renderizada: ${dadosPeriodo.alunos.length} alunos x ${diasUteis.length} dias úteis`);
+    showToast(`Visualização: ${diasUteis.length} dias úteis de ${this.getNomeMes(mesVisualizacao)}/${anoVisualizacao}`, 'success');
+  }
+  
+  gerarDiasUteis(mes, ano) {
+    const diasUteis = [];
+    const diasSemana = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+    const diasDoMes = new Date(ano, mes, 0).getDate(); // último dia do mês
+    
+    for (let dia = 1; dia <= diasDoMes; dia++) {
+      const data = new Date(ano, mes - 1, dia); // mês é 0-indexed em Date
+      const diaSemana = data.getDay(); // 0 = domingo, 1 = segunda, etc
+      
+      // Apenas dias úteis (segunda=1 a sexta=5)
+      if (diaSemana >= 1 && diaSemana <= 5) {
+        diasUteis.push({
+          dia: String(dia).padStart(2, '0'),
+          diaSemana: diasSemana[diaSemana]
+        });
+      }
+    }
+    
+    return diasUteis;
   }
   
   _executarTabelaDias(container, tabelaContainer) {
@@ -887,6 +924,15 @@ function mostrarTabelaDiaria() {
     window.frequenciaManager.mostrarTabelaDias();
   } else {
     console.error('❌ DEBUG - frequenciaManager não encontrado!');
+  }
+}
+
+function selecionarPeriodoDias() {
+  const seletor = document.getElementById('seletorPeriodoDias');
+  if (seletor && window.frequenciaManager) {
+    const [mes, ano] = seletor.value.split('_');
+    console.log('🔄 DEBUG - Mudando período para:', mes, ano);
+    window.frequenciaManager.mostrarTabelaDias(mes, ano);
   }
 }
 
