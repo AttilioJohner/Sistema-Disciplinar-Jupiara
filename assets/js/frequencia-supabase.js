@@ -75,11 +75,10 @@ class FrequenciaSupabaseManager {
     try {
       console.log('📂 Carregando dados do Supabase...');
       
-      // Buscar todas as frequências
+      // Buscar todas as frequências - removendo limitações
       const { data: frequencias, error } = await this.supabase
         .from('frequencia')
-        .select('*')
-        .order('data', { ascending: false });
+        .select('*');
       
       if (error) {
         console.error('❌ Erro ao buscar frequências:', error);
@@ -479,6 +478,15 @@ class FrequenciaSupabaseManager {
     
     const thead = document.getElementById('tabela-head');
     const tbody = document.getElementById('tabela-body');
+    
+    console.log(`🎯 DEBUG - thead encontrado:`, !!thead);
+    console.log(`🎯 DEBUG - tbody encontrado:`, !!tbody);
+    
+    if (!thead || !tbody) {
+      console.error('❌ DEBUG - Elementos de tabela não encontrados!');
+      showToast('Erro: Elementos de tabela não encontrados', 'error');
+      return;
+    }
     
     // Cabeçalho
     thead.innerHTML = `
