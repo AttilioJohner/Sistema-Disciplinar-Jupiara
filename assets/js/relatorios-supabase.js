@@ -20,7 +20,7 @@ let dadosRelatorios = {
 
 let chartsInstances = {};
 let filtrosAtivos = {};
-let periodoAnalise = 60; // Default: 2 meses
+let periodoAnalise = 'anual'; // Default: Período Anual
 let visualizacaoAtual = 'comparativo';
 
 // Classe principal do sistema de relatórios
@@ -446,12 +446,70 @@ class RelatoriosSupabaseManager {
         console.log('📊 ANALYTICS: Concluídas -', analytics);
     }
 
+    calcularPeriodoData() {
+        const hoje = new Date();
+        let dataInicio, dataFim = hoje;
+
+        switch (periodoAnalise) {
+            case 'mes_atual':
+                dataInicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+                dataFim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+                break;
+                
+            case 'mes_anterior':
+                dataInicio = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+                dataFim = new Date(hoje.getFullYear(), hoje.getMonth(), 0);
+                break;
+                
+            case 'todos_meses':
+                dataInicio = new Date(hoje.getFullYear(), 0, 1); // Janeiro do ano atual
+                dataFim = hoje;
+                break;
+                
+            case 'bimestre_atual':
+                const bimestreAtual = Math.ceil((hoje.getMonth() + 1) / 2);
+                dataInicio = new Date(hoje.getFullYear(), (bimestreAtual - 1) * 2, 1);
+                dataFim = new Date(hoje.getFullYear(), bimestreAtual * 2, 0);
+                break;
+                
+            case 'bimestre_anterior':
+                const bimestreAnterior = Math.max(1, Math.ceil((hoje.getMonth() + 1) / 2) - 1);
+                dataInicio = new Date(hoje.getFullYear(), (bimestreAnterior - 1) * 2, 1);
+                dataFim = new Date(hoje.getFullYear(), bimestreAnterior * 2, 0);
+                break;
+                
+            case 'semestre_atual':
+                const semestreAtual = hoje.getMonth() < 6 ? 1 : 2;
+                dataInicio = new Date(hoje.getFullYear(), semestreAtual === 1 ? 0 : 6, 1);
+                dataFim = new Date(hoje.getFullYear(), semestreAtual === 1 ? 6 : 12, 0);
+                break;
+                
+            case 'semestre_anterior':
+                const semestreAnterior = hoje.getMonth() < 6 ? 2 : 1;
+                const anoSemestre = semestreAnterior === 2 ? hoje.getFullYear() - 1 : hoje.getFullYear();
+                dataInicio = new Date(anoSemestre, semestreAnterior === 1 ? 0 : 6, 1);
+                dataFim = new Date(anoSemestre, semestreAnterior === 1 ? 6 : 12, 0);
+                break;
+                
+            case 'anual':
+                dataInicio = new Date(hoje.getFullYear(), 0, 1);
+                dataFim = new Date(hoje.getFullYear(), 11, 31);
+                break;
+                
+            case 'todos':
+            default:
+                dataInicio = new Date(2020, 0, 1); // Data muito antiga para pegar todos
+                dataFim = hoje;
+                break;
+        }
+
+        return { dataInicio, dataFim };
+    }
+
     calcularAnalyticsAvancadas(dados) {
         // Analytics por turma
         const turmas = {};
-        const hoje = new Date();
-        const dataLimite = new Date(hoje);
-        dataLimite.setDate(hoje.getDate() - periodoAnalise);
+        const { dataInicio, dataFim } = this.calcularPeriodoData();
 
         dados.forEach(aluno => {
             if (!turmas[aluno.turma]) {
@@ -656,11 +714,14 @@ class RelatoriosSupabaseManager {
         const selectComparacao1 = document.getElementById('turma1Comparacao');
         const selectComparacao2 = document.getElementById('turma2Comparacao');
         
+        console.log('📋 PREENCHENDO DROPDOWNS COM TURMAS:', turmas);
+        
         if (selectComparacao1) {
             selectComparacao1.innerHTML = '<option value="">Selecionar Turma 1</option>';
             turmas.forEach(turma => {
                 selectComparacao1.innerHTML += `<option value="${turma}">${turma}</option>`;
             });
+            console.log('✅ DROPDOWN 1 PREENCHIDO COM', turmas.length, 'TURMAS');
         }
         
         if (selectComparacao2) {
@@ -669,6 +730,7 @@ class RelatoriosSupabaseManager {
             turmas.forEach(turma => {
                 selectComparacao2.innerHTML += `<option value="${turma}">${turma}</option>`;
             });
+            console.log('✅ DROPDOWN 2 PREENCHIDO COM MÉDIA GERAL +', turmas.length, 'TURMAS');
         }
         
         console.log('📊 FILTROS AVANÇADOS: Carregados', turmas.length, 'turmas');
@@ -815,6 +877,8 @@ class RelatoriosSupabaseManager {
         const turma2 = document.getElementById('turma2Comparacao')?.value;
         const metrica = document.getElementById('metricaComparacao')?.value || 'frequencia';
 
+        console.log('🔍 COMPARAÇÃO: Turma1:', turma1, 'Turma2:', turma2, 'Métrica:', metrica);
+
         if (!turma1 || !turma2) {
             this.inicializarComparacao();
             return;
@@ -825,13 +889,22 @@ class RelatoriosSupabaseManager {
 
         this.destruirGrafico('comparacaoEspecifica');
 
-        const turmas = dadosRelatorios.analytics.turmas;
+        const turmas = dadosRelatorios.analytics?.turmas;
+        if (!turmas) {
+            console.error('❌ Dados de turmas não encontrados');
+            return;
+        }
+
+        console.log('📊 TURMAS DISPONÍVEIS:', Object.keys(turmas));
+        
         let dadosTurma1, dadosTurma2, labelTurma2;
 
         // Dados da turma 1
         if (turmas[turma1]) {
             dadosTurma1 = turmas[turma1];
+            console.log('✅ TURMA1 ENCONTRADA:', turma1, dadosTurma1);
         } else {
+            console.error('❌ TURMA1 NÃO ENCONTRADA:', turma1);
             return;
         }
 
@@ -849,12 +922,17 @@ class RelatoriosSupabaseManager {
         } else if (turmas[turma2]) {
             labelTurma2 = turma2;
             dadosTurma2 = turmas[turma2];
+            console.log('✅ TURMA2 ENCONTRADA:', turma2, dadosTurma2);
         } else {
+            console.error('❌ TURMA2 NÃO ENCONTRADA:', turma2);
             return;
         }
 
         // Obter valores da métrica selecionada
         let valor1, valor2, label, titulo;
+        
+        console.log('🔍 DADOS TURMA1:', JSON.stringify(dadosTurma1, null, 2));
+        console.log('🔍 DADOS TURMA2:', JSON.stringify(dadosTurma2, null, 2));
         
         switch (metrica) {
             case 'frequencia':
@@ -862,26 +940,36 @@ class RelatoriosSupabaseManager {
                 valor2 = dadosTurma2.frequenciaMedia;
                 label = 'Frequência (%)';
                 titulo = `${turma1} vs ${labelTurma2} - Frequência`;
+                console.log('📊 VALORES FREQUÊNCIA: valor1=', valor1, 'valor2=', valor2);
                 break;
             case 'faltas':
                 valor1 = dadosTurma1.totalFaltas;
                 valor2 = dadosTurma2.totalFaltas;
                 label = 'Total de Faltas';
                 titulo = `${turma1} vs ${labelTurma2} - Faltas`;
+                console.log('📊 VALORES FALTAS: valor1=', valor1, 'valor2=', valor2);
                 break;
             case 'medidas':
                 valor1 = dadosTurma1.totalMedidas;
                 valor2 = dadosTurma2.totalMedidas;
                 label = 'Medidas Disciplinares';
                 titulo = `${turma1} vs ${labelTurma2} - Medidas`;
+                console.log('📊 VALORES MEDIDAS: valor1=', valor1, 'valor2=', valor2);
                 break;
             case 'risco':
                 valor1 = dadosTurma1.alunosRisco;
                 valor2 = dadosTurma2.alunosRisco;
                 label = 'Alunos em Risco';
                 titulo = `${turma1} vs ${labelTurma2} - Risco`;
+                console.log('📊 VALORES RISCO: valor1=', valor1, 'valor2=', valor2);
                 break;
         }
+
+        // Garantir que os valores sejam números válidos
+        valor1 = parseFloat(valor1) || 0;
+        valor2 = parseFloat(valor2) || 0;
+        
+        console.log('✅ VALORES FINAIS: valor1=', valor1, 'valor2=', valor2);
 
         // Atualizar título da comparação
         const tituloElemento = document.getElementById('comparacaoTitulo');
@@ -891,6 +979,12 @@ class RelatoriosSupabaseManager {
 
         // Criar gráfico de barras comparativo
         const ctx = canvas.getContext('2d');
+        
+        console.log('🎨 CRIANDO GRÁFICO COM:');
+        console.log('  - Labels:', [turma1, labelTurma2]);
+        console.log('  - Data:', [valor1, valor2]);
+        console.log('  - Label:', label);
+        
         chartsInstances.comparacaoEspecifica = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -931,6 +1025,8 @@ class RelatoriosSupabaseManager {
                 }
             }
         });
+        
+        console.log('🎯 GRÁFICO DE COMPARAÇÃO CRIADO COM SUCESSO!');
     }
 
     gerarGraficoComparativoTurmas() {
@@ -1775,7 +1871,9 @@ document.addEventListener('DOMContentLoaded', inicializarModuloRelatorios);
 // === FUNÇÕES DE INTERFACE AVANÇADAS ===
 
 function atualizarDashboardCompleto() {
-    periodoAnalise = parseInt(document.getElementById('periodoAnalise')?.value) || 60;
+    periodoAnalise = document.getElementById('periodoAnalise')?.value || 'anual';
+    
+    console.log('📊 PERÍODO: Alterado para', periodoAnalise);
     
     if (window.relatoriosManager) {
         window.relatoriosManager.atualizarEstatisticasAvancadas();
