@@ -425,16 +425,32 @@ class FrequenciaSupabaseManager {
     console.log('🔍 DEBUG - mostrarTabelaDias() iniciado');
     console.log(`📊 DEBUG - Turma atual: ${this.turmaAtual}, Mês: ${this.mesAtual}, Ano: ${this.anoAtual}`);
     
-    const container = document.getElementById('frequenciaContainer');
-    const tabelaContainer = document.getElementById('tabela-container');
-    
-    console.log(`🎯 DEBUG - Container encontrado:`, !!container);
-    console.log(`🎯 DEBUG - Tabela container encontrado:`, !!tabelaContainer);
-    
-    if (!container || !tabelaContainer) {
-      console.error('❌ DEBUG - Containers não encontrados!');
-      return;
-    }
+    // Aguardar um momento para o DOM estar pronto
+    setTimeout(() => {
+      const container = document.getElementById('frequenciaContainer');
+      const tabelaContainer = document.getElementById('tabela-container');
+      
+      console.log(`🎯 DEBUG - Container encontrado:`, !!container);
+      console.log(`🎯 DEBUG - Tabela container encontrado:`, !!tabelaContainer);
+      console.log('🔍 DEBUG - Document ready state:', document.readyState);
+      
+      if (!container) {
+        console.error('❌ DEBUG - frequenciaContainer não encontrado!');
+        return;
+      }
+      
+      if (!tabelaContainer) {
+        console.error('❌ DEBUG - tabela-container não encontrado!');
+        console.log('🔍 DEBUG - Todos os elementos com id que contém "tabela":', 
+          Array.from(document.querySelectorAll('*[id*="tabela"]')).map(el => ({id: el.id, tag: el.tagName})));
+        return;
+      }
+      
+      this._executarTabelaDias(container, tabelaContainer);
+    }, 100);
+  }
+  
+  _executarTabelaDias(container, tabelaContainer) {
     
     if (!this.turmaAtual || !this.mesAtual || !this.anoAtual) {
       console.warn('⚠️ DEBUG - Dados de turma/mês/ano faltando');
