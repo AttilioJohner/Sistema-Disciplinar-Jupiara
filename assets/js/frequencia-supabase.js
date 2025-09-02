@@ -91,6 +91,14 @@ class FrequenciaSupabaseManager {
           .select('*')
           .range(inicio, fim);
         
+        // Debug específico: verificar se esta página contém o registro 1250
+        if (frequenciasPagina && frequenciasPagina.length > 0) {
+          const temRegistro1250 = frequenciasPagina.find(r => r.id === 1250);
+          if (temRegistro1250) {
+            console.log(`✅ PÁGINA ${pagina + 1} CONTÉM REGISTRO 1250:`, temRegistro1250);
+          }
+        }
+        
         if (error) {
           console.error('❌ Erro ao buscar frequências:', error);
           throw error;
@@ -110,6 +118,23 @@ class FrequenciaSupabaseManager {
       
       const frequencias = todasFrequencias;
       console.log(`🎯 TOTAL FINAL DE REGISTROS CARREGADOS: ${frequencias.length}`);
+      
+      // Debug específico: verificar se ID 1250 está nos dados carregados
+      const registro1250 = frequencias.find(r => r.id === 1250);
+      if (registro1250) {
+        console.log(`🎯 REGISTRO 1250 ENCONTRADO:`, registro1250);
+      } else {
+        console.log(`❌ REGISTRO 1250 NÃO ENCONTRADO nos ${frequencias.length} registros carregados`);
+      }
+      
+      // Debug: verificar se existem registros para agosto/2025 sexta-feira 15
+      const registrosAgosto15 = frequencias.filter(r => {
+        const data = new Date(r.data);
+        return data.getFullYear() === 2025 && 
+               data.getMonth() === 7 && // agosto = 7 (0-indexed)
+               data.getDate() === 15;
+      });
+      console.log(`🔍 REGISTROS PARA 15/08/2025:`, registrosAgosto15.length, registrosAgosto15.slice(0, 3));
       
       this.dadosFrequencia.clear();
       
