@@ -253,28 +253,136 @@ class FrequenciaSupabaseManager {
       `;
       
       card.addEventListener('click', () => {
-        const filtroTurma = document.getElementById('filtro-turma');
-        if (filtroTurma) {
-          filtroTurma.value = turma;
-          this.turmaAtual = turma;
-          this.atualizarFiltroMes();
-          filtroTurma.scrollIntoView({ behavior: 'smooth' });
-        }
+        this.selecionarTurma(turma);
       });
       
       container.appendChild(card);
     }
   }
 
-  renderizarTabela() {
-    const container = document.getElementById('tabela-container');
-    const thead = document.getElementById('tabela-head');
-    const tbody = document.getElementById('tabela-body');
+  selecionarTurma(turma) {
+    console.log(`🎯 Turma selecionada: ${turma}`);
+    this.turmaAtual = turma;
     
-    if (!container || !thead || !tbody) return;
+    // Encontrar primeiro período disponível da turma
+    let primeiroMes = null, primeiroAno = null;
+    for (const [chave, dados] of this.dadosFrequencia) {
+      if (dados.turma === turma) {
+        primeiroMes = dados.mes;
+        primeiroAno = dados.ano;
+        break;
+      }
+    }
+    
+    if (primeiroMes && primeiroAno) {
+      this.mesAtual = primeiroMes;
+      this.anoAtual = primeiroAno;
+      
+      // Atualizar filtros
+      const filtroTurma = document.getElementById('filtro-turma');
+      const filtroMes = document.getElementById('filtro-mes');
+      const filtroAno = document.getElementById('filtro-ano');
+      
+      if (filtroTurma) filtroTurma.value = turma;
+      if (filtroMes) filtroMes.value = primeiroMes;
+      if (filtroAno) filtroAno.value = primeiroAno;
+      
+      // Mostrar resumo por aluno
+      this.mostrarResumoAlunos();
+      
+      showToast(`Turma ${turma} selecionada - ${this.getNomeMes(primeiroMes)}/${primeiroAno}`, 'success');
+      
+      // Scroll para a seção de frequência detalhada
+      document.querySelector('.table-container').scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+
+  mostrarResumoAlunos() {
+    const container = document.getElementById('frequenciaContainer');
+    const tabelaContainer = document.getElementById('tabela-container');
+    
+    if (!container) return;
+    
+    const chave = `${this.turmaAtual}_${this.mesAtual}_${this.anoAtual}`;
+    const dados = this.dadosFrequencia.get(chave);
+    
+    if (!dados || !dados.alunos.length) {
+      container.innerHTML = '<div class="info-text">Nenhum dado encontrado para esta turma.</div>';
+      return;
+    }
+    
+    // Ocultar tabela de dias
+    if (tabelaContainer) tabelaContainer.style.display = 'none';
+    
+    // Calcular totais por aluno
+    const alunosComTotais = dados.alunos.map(aluno => {
+      const totais = { P: 0, F: 0, A: 0, FC: 0 };
+      
+      if (aluno.dias && typeof aluno.dias === 'object') {
+        Object.values(aluno.dias).forEach(status => {
+          if (totais.hasOwnProperty(status)) {
+            totais[status]++;
+          }
+        });
+      }
+      
+      const totalDias = totais.P + totais.F + totais.A + totais.FC;
+      const percentualPresenca = totalDias > 0 ? ((totais.P / totalDias) * 100).toFixed(1) : '0.0';
+      
+      return {
+        ...aluno,
+        totais,
+        totalDias,
+        percentualPresenca: parseFloat(percentualPresenca)
+      };
+    });
+    
+    // Ordenar por percentual de presença (decrescente)
+    alunosComTotais.sort((a, b) => b.percentualPresenca - a.percentualPresenca);
+    
+    // Renderizar tabela de resumo
+    container.innerHTML = `
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Nome</th>
+              <th>📅 Total Dias</th>
+              <th style="color: #28a745;">✅ Presenças</th>
+              <th style="color: #dc3545;">❌ Faltas</th>
+              <th style="color: #ffc107;">📋 Atestados</th>
+              <th style="color: #fd7e14;">⚠️ Faltas Controladas</th>
+              <th>📊 % Presença</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${alunosComTotais.map(aluno => `
+              <tr>
+                <td><strong>${aluno.codigo}</strong></td>
+                <td>${aluno.nome}</td>
+                <td>${aluno.totalDias}</td>
+                <td class="freq-P">${aluno.totais.P}</td>
+                <td class="freq-F">${aluno.totais.F}</td>
+                <td class="freq-A">${aluno.totais.A}</td>
+                <td class="freq-FC">${aluno.totais.FC}</td>
+                <td><strong style="color: ${aluno.percentualPresenca >= 75 ? '#28a745' : '#dc3545'}">${aluno.percentualPresenca}%</strong></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  mostrarTabelaDias() {
+    const container = document.getElementById('frequenciaContainer');
+    const tabelaContainer = document.getElementById('tabela-container');
+    
+    if (!container || !tabelaContainer) return;
     
     if (!this.turmaAtual || !this.mesAtual || !this.anoAtual) {
-      container.style.display = 'none';
+      showToast('Selecione uma turma primeiro', 'warning');
       return;
     }
     
@@ -282,7 +390,6 @@ class FrequenciaSupabaseManager {
     const dados = this.dadosFrequencia.get(chave);
     
     if (!dados || !dados.alunos.length) {
-      container.style.display = 'none';
       showToast('Nenhum dado encontrado para este período', 'warning');
       return;
     }
@@ -297,6 +404,9 @@ class FrequenciaSupabaseManager {
     
     const dias = Array.from(diasSet).sort((a, b) => parseInt(a) - parseInt(b));
     
+    const thead = document.getElementById('tabela-head');
+    const tbody = document.getElementById('tabela-body');
+    
     // Cabeçalho
     thead.innerHTML = `
       <tr>
@@ -309,16 +419,35 @@ class FrequenciaSupabaseManager {
     // Corpo da tabela
     tbody.innerHTML = dados.alunos.map(aluno => `
       <tr>
-        <td>${aluno.codigo || aluno.id}</td>
-        <td>${aluno.nome || 'Nome não informado'}</td>
+        <td><strong>${aluno.codigo}</strong></td>
+        <td>${aluno.nome}</td>
         ${dias.map(dia => {
           const freq = aluno.dias && aluno.dias[dia] ? aluno.dias[dia] : '';
-          return `<td class="freq-${freq}">${freq}</td>`;
+          return `<td class="freq-${freq}">${freq || '-'}</td>`;
         }).join('')}
       </tr>
     `).join('');
     
-    container.style.display = 'block';
+    // Adicionar botão de voltar
+    container.innerHTML = `
+      <div style="margin-bottom: 15px;">
+        <button class="btn btn-secondary btn-small" onclick="voltarResumoAlunos()">
+          ◀ Voltar ao Resumo
+        </button>
+        <span style="margin-left: 15px; color: #666; font-size: 0.9rem;">
+          Visualizando ${dias.length} dias úteis de ${this.getNomeMes(this.mesAtual)}/${this.anoAtual} - Turma ${this.turmaAtual}
+        </span>
+      </div>
+    `;
+    
+    tabelaContainer.style.display = 'block';
+    
+    showToast(`Visualizando ${dias.length} dias úteis de ${this.getNomeMes(this.mesAtual)}/${this.anoAtual}`, 'info');
+  }
+
+  renderizarTabela() {
+    // Método mantido para compatibilidade, mas agora usa mostrarResumoAlunos por padrão
+    this.mostrarResumoAlunos();
   }
 
   async importarDadosCSV() {
@@ -505,6 +634,19 @@ async function inicializarModuloFrequencia() {
   } catch (error) {
     console.error('❌ Erro ao inicializar frequência:', error);
     showToast('Erro ao carregar módulo de frequência', 'error');
+  }
+}
+
+// Funções globais para os botões HTML
+function mostrarTabelaDiaria() {
+  if (window.frequenciaManager) {
+    window.frequenciaManager.mostrarTabelaDias();
+  }
+}
+
+function voltarResumoAlunos() {
+  if (window.frequenciaManager) {
+    window.frequenciaManager.mostrarResumoAlunos();
   }
 }
 
