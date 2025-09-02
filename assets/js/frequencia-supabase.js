@@ -38,17 +38,25 @@ class FrequenciaSupabaseManager {
     // Filtro avançado de turmas
     const filtroTurmaAvancado = document.getElementById('filtro-turma-avancado');
     if (filtroTurmaAvancado) {
+      console.log('✅ Elemento filtro-turma-avancado encontrado, configurando event listener');
       filtroTurmaAvancado.addEventListener('change', (e) => {
+        console.log(`🔄 Filtro turma changed: ${e.target.value}`);
         this.atualizarListaAlunos(e.target.value);
       });
+    } else {
+      console.error('❌ Elemento filtro-turma-avancado NÃO encontrado!');
     }
     
     // Filtro de alunos
     const filtroAluno = document.getElementById('filtro-aluno');
     if (filtroAluno) {
+      console.log('✅ Elemento filtro-aluno encontrado, configurando event listener');
       filtroAluno.addEventListener('change', (e) => {
+        console.log(`🔄 Filtro aluno changed: ${e.target.value}`);
         this.mostrarEstatisticasAluno(e.target.value);
       });
+    } else {
+      console.error('❌ Elemento filtro-aluno NÃO encontrado!');
     }
 
     // Filtros
@@ -404,19 +412,33 @@ class FrequenciaSupabaseManager {
   }
 
   atualizarListaAlunos(turma) {
-    const selectAluno = document.getElementById('filtro-aluno');
-    if (!selectAluno) return;
+    console.log(`🔍 DEBUG - atualizarListaAlunos chamado com turma: ${turma}`);
     
+    const selectAluno = document.getElementById('filtro-aluno');
+    if (!selectAluno) {
+      console.error('❌ Elemento filtro-aluno não encontrado!');
+      return;
+    }
+    
+    console.log(`✅ Elemento filtro-aluno encontrado`);
     selectAluno.innerHTML = '<option value="">Selecione um aluno...</option>';
     
     if (!turma) {
       selectAluno.disabled = true;
+      console.log('⚠️ Turma vazia, desabilitando select de alunos');
       return;
     }
     
+    console.log(`🔍 Procurando alunos da turma ${turma} em ${this.dadosFrequencia.size} períodos`);
+    
     const alunosUnicos = new Map();
+    let periodosEncontrados = 0;
+    
     this.dadosFrequencia.forEach((periodo, chave) => {
+      console.log(`📊 Verificando período: ${chave} - Turma: ${periodo.turma}`);
       if (periodo.turma === turma) {
+        periodosEncontrados++;
+        console.log(`✅ Período compatível encontrado: ${chave} com ${periodo.alunos.length} alunos`);
         periodo.alunos.forEach(aluno => {
           if (!alunosUnicos.has(aluno.codigo)) {
             alunosUnicos.set(aluno.codigo, { codigo: aluno.codigo, nome: aluno.nome });
@@ -425,7 +447,19 @@ class FrequenciaSupabaseManager {
       }
     });
     
+    console.log(`📊 Total períodos encontrados para turma ${turma}: ${periodosEncontrados}`);
+    console.log(`👥 Total alunos únicos encontrados: ${alunosUnicos.size}`);
+    
+    if (alunosUnicos.size === 0) {
+      selectAluno.innerHTML = '<option value="">Nenhum aluno encontrado</option>';
+      selectAluno.disabled = true;
+      console.log('❌ Nenhum aluno encontrado para a turma');
+      return;
+    }
+    
     const alunosOrdenados = Array.from(alunosUnicos.values()).sort((a, b) => a.nome.localeCompare(b.nome));
+    console.log(`📝 Primeiros 3 alunos:`, alunosOrdenados.slice(0, 3));
+    
     alunosOrdenados.forEach(aluno => {
       const option = document.createElement('option');
       option.value = aluno.codigo;
@@ -434,6 +468,7 @@ class FrequenciaSupabaseManager {
     });
     
     selectAluno.disabled = false;
+    console.log(`✅ Select de alunos atualizado com ${alunosOrdenados.length} alunos`);
   }
 
   mostrarEstatisticasAluno(codigoAluno) {
