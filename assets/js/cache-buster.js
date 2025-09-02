@@ -35,13 +35,11 @@ class CacheBuster {
 
     forcePageReload() {
         if (this.needsCacheRefresh()) {
-            console.log('🔄 Cache desatualizado detectado, forçando reload...');
+            console.log('🔄 Cache desatualizado detectado, marcando sessão...');
             
-            // Marcar sessão antes do reload para evitar loop
+            // Apenas marcar sessão, sem reload automático para evitar loops
             this.markSessionActive();
-            
-            // Força reload ignorando cache
-            window.location.reload(true);
+            console.log('ℹ️ Sessão marcada. Próximas visitas usarão cache atualizado.');
             return true;
         }
         return false;
@@ -139,19 +137,18 @@ class CacheBuster {
     init() {
         console.log(`🔄 Cache Buster v${this.currentVersion} inicializado`);
         
-        // Marcar sessão como ativa (mesmo se não precisou refresh)
+        // Apenas marcar sessão, sem operações que podem causar problemas
         this.markSessionActive();
         
-        // Limpar dados expirados
-        this.forceDataRefresh();
+        // Só limpar dados expirados em modo seguro
+        setTimeout(() => this.forceDataRefresh(), 1000);
         
-        // Setup service worker se disponível
-        this.setupServiceWorkerRefresh();
+        // Botão de refresh apenas em desenvolvimento local
+        if (window.location.hostname === 'localhost') {
+            this.addRefreshButton();
+        }
         
-        // Botão de refresh em desenvolvimento
-        this.addRefreshButton();
-        
-        console.log('✅ Sistema de cache busting ativo');
+        console.log('✅ Sistema de cache busting ativo (modo conservador)');
     }
 
     // Método para chamar manualmente
@@ -176,18 +173,22 @@ function addCacheBuster(url, type = 'data') {
     return `${url}${separator}${cacheBuster}`;
 }
 
-// Interceptar fetch para adicionar cache busting automaticamente
-const originalFetch = window.fetch;
-window.fetch = function(url, options = {}) {
-    // Apenas para requests de dados (não recursos estáticos)
-    if (typeof url === 'string' && !url.includes('?v=') && !url.includes('?cb=')) {
-        if (url.includes('/api/') || url.includes('supabase')) {
-            url = addCacheBuster(url, 'data');
+// Interceptar fetch para adicionar cache busting automaticamente (modo conservador)
+if (window.fetch && !window.fetch._cacheBusterApplied) {
+    const originalFetch = window.fetch;
+    window.fetch = function(url, options = {}) {
+        // Apenas para requests específicos de dados, sem interferir com recursos externos
+        if (typeof url === 'string' && !url.includes('?v=') && !url.includes('?cb=')) {
+            // Só aplicar a URLs internas da aplicação
+            if (url.startsWith('/') && (url.includes('/api/') || url.includes('supabase'))) {
+                url = addCacheBuster(url, 'data');
+            }
         }
-    }
-    
-    return originalFetch.call(this, url, options);
-};
+        
+        return originalFetch.call(this, url, options);
+    };
+    window.fetch._cacheBusterApplied = true;
+}
 
 // Inicializar sistema
 const cacheBuster = new CacheBuster();

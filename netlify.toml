@@ -15,21 +15,17 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://raw.githubusercontent.com;"
 
-# Cache inteligente para HTML (sem cache)
+# Cache moderado para HTML (permite cache mas valida)
 [[headers]]
   for = "/*.html"
   [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-    Pragma = "no-cache"
-    Expires = "0"
+    Cache-Control = "no-cache, must-revalidate"
 
-# Cache inteligente para pages
+# Cache moderado para pages  
 [[headers]]
   for = "/pages/*.html"
   [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-    Pragma = "no-cache"
-    Expires = "0"
+    Cache-Control = "no-cache, must-revalidate"
 
 # Sem cache para arquivos dinâmicos
 [[headers]]
