@@ -102,12 +102,29 @@ class RelatoriosSupabaseManager {
 
     async carregarMedidas() {
         try {
-            const { data, error } = await this.supabase
+            // Primeiro tentar sem ordenação para ser mais seguro
+            let { data, error } = await this.supabase
                 .from('medidas')
-                .select('*')
-                .order('data_ocorrencia', { ascending: false });
+                .select('*');
             
             if (error) throw error;
+            
+            // Se funcionou, tentar ordenar localmente
+            if (data && data.length > 0) {
+                try {
+                    // Tentar ordenar por diferentes possíveis nomes de coluna
+                    if (data[0].data_ocorrencia) {
+                        data.sort((a, b) => new Date(b.data_ocorrencia) - new Date(a.data_ocorrencia));
+                    } else if (data[0].data_aplicacao) {
+                        data.sort((a, b) => new Date(b.data_aplicacao) - new Date(a.data_aplicacao));
+                    } else if (data[0].created_at) {
+                        data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    }
+                } catch (sortError) {
+                    console.warn('⚠️ MEDIDAS: Não foi possível ordenar, usando ordem original');
+                }
+            }
+            
             console.log('📊 MEDIDAS: Carregados', data?.length || 0, 'registros');
             return data || [];
         } catch (error) {
@@ -293,8 +310,18 @@ class RelatoriosSupabaseManager {
             const tipo = medida.tipo_medida || 'Não especificado';
             porTipo[tipo] = (porTipo[tipo] || 0) + 1;
             
-            // Encontrar data mais recente
-            const dataMedida = new Date(medida.data_ocorrencia);
+            // Encontrar data mais recente (tentar diferentes nomes de campo)
+            let dataMedida;
+            if (medida.data_ocorrencia) {
+                dataMedida = new Date(medida.data_ocorrencia);
+            } else if (medida.data_aplicacao) {
+                dataMedida = new Date(medida.data_aplicacao);
+            } else if (medida.created_at) {
+                dataMedida = new Date(medida.created_at);
+            } else {
+                dataMedida = new Date(); // Fallback para data atual se não encontrar
+            }
+            
             if (!ultimaData || dataMedida > ultimaData) {
                 ultimaData = dataMedida;
             }
@@ -513,9 +540,19 @@ function aplicarFiltrosRelatorio() {
             const temFrequenciaRecente = aluno.frequencias.some(f => 
                 new Date(f.data) >= dataLimite
             );
-            const temMedidaRecente = aluno.medidas.some(m => 
-                new Date(m.data_ocorrencia) >= dataLimite
-            );
+            const temMedidaRecente = aluno.medidas.some(m => {
+                let dataMedida;
+                if (m.data_ocorrencia) {
+                    dataMedida = new Date(m.data_ocorrencia);
+                } else if (m.data_aplicacao) {
+                    dataMedida = new Date(m.data_aplicacao);
+                } else if (m.created_at) {
+                    dataMedida = new Date(m.created_at);
+                } else {
+                    return false; // Sem data válida, considerar não recente
+                }
+                return dataMedida >= dataLimite;
+            });
             
             return temFrequenciaRecente || temMedidaRecente;
         });
