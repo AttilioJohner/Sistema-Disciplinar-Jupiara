@@ -2,8 +2,8 @@
   # Diretório de publicação
   publish = "."
   
-  # Comando de build para injetar variáveis de ambiente e sincronização
-  command = "echo 'Criando arquivo de variáveis...' && echo \"window.NETLIFY_ENV = { SUPABASE_URL: '$SUPABASE_URL', SUPABASE_ANON_KEY: '$SUPABASE_ANON_KEY', GITHUB_REPO: '$GITHUB_REPO', SYNC_ENABLED: true };\" > netlify-env.js && echo 'Build concluído com sincronização ativada'"
+  # Comando de build para injetar variáveis de ambiente
+  command = "echo 'Criando arquivo de variáveis...' && echo \"window.NETLIFY_ENV = { SUPABASE_URL: '$SUPABASE_URL', SUPABASE_ANON_KEY: '$SUPABASE_ANON_KEY' };\" > netlify-env.js && echo 'Build concluído'"
 
 # Cabeçalhos de segurança
 [[headers]]
@@ -23,18 +23,10 @@
 
 # Configurações de ambiente
 [context.production]
-  environment = { NODE_ENV = "production", GITHUB_REPO = "AttilioJohner/Sistema-Disciplinar-Jupiara" }
+  environment = { NODE_ENV = "production" }
 
 [context.deploy-preview]
-  environment = { NODE_ENV = "staging", GITHUB_REPO = "AttilioJohner/Sistema-Disciplinar-Jupiara" }
+  environment = { NODE_ENV = "staging" }
 
 [context.branch-deploy]
-  environment = { NODE_ENV = "development", GITHUB_REPO = "AttilioJohner/Sistema-Disciplinar-Jupiara" }
-
-# Hooks de deploy para sincronização
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
-
-# Função serverless para webhook de sincronização  
-[functions]
-  directory = "netlify/functions"
+  environment = { NODE_ENV = "development" }
