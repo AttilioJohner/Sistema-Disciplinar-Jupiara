@@ -526,9 +526,9 @@ class RelatoriosSupabaseManager {
 
             const turma = turmas[aluno.turma];
             turma.totalAlunos++;
-            turma.frequenciaMedia += aluno.percentualPresenca;
-            turma.totalFaltas += aluno.totalFaltas + aluno.totalFaltasControladas;
-            turma.totalMedidas += aluno.totalMedidas;
+            turma.frequenciaMedia += (aluno.percentualPresenca || 0);
+            turma.totalFaltas += (aluno.totalFaltas || 0) + (aluno.totalFaltasControladas || 0);
+            turma.totalMedidas += (aluno.totalMedidas || 0);
             
             if (aluno.nivelRisco === 'Alto' || aluno.nivelRisco === 'Crítico') {
                 turma.alunosRisco++;
@@ -543,11 +543,21 @@ class RelatoriosSupabaseManager {
             }
         });
 
-        // Calcular médias das turmas
+        // Calcular médias das turmas e garantir valores válidos
         Object.keys(turmas).forEach(nomeTurma => {
             const turma = turmas[nomeTurma];
             if (turma.totalAlunos > 0) {
-                turma.frequenciaMedia = turma.frequenciaMedia / turma.totalAlunos;
+                turma.frequenciaMedia = Math.round((turma.frequenciaMedia / turma.totalAlunos) * 100) / 100;
+                // Garantir que todos os valores sejam números válidos
+                turma.totalFaltas = turma.totalFaltas || 0;
+                turma.totalMedidas = turma.totalMedidas || 0;
+                turma.alunosRisco = turma.alunosRisco || 0;
+            } else {
+                // Valores padrão se não há alunos
+                turma.frequenciaMedia = 0;
+                turma.totalFaltas = 0;
+                turma.totalMedidas = 0;
+                turma.alunosRisco = 0;
             }
         });
 
@@ -877,7 +887,6 @@ class RelatoriosSupabaseManager {
         const turma2 = document.getElementById('turma2Comparacao')?.value;
         const metrica = document.getElementById('metricaComparacao')?.value || 'frequencia';
 
-        console.log('🔍 COMPARAÇÃO: Turma1:', turma1, 'Turma2:', turma2, 'Métrica:', metrica);
 
         if (!turma1 || !turma2) {
             this.inicializarComparacao();
@@ -895,14 +904,12 @@ class RelatoriosSupabaseManager {
             return;
         }
 
-        console.log('📊 TURMAS DISPONÍVEIS:', Object.keys(turmas));
         
         let dadosTurma1, dadosTurma2, labelTurma2;
 
         // Dados da turma 1
         if (turmas[turma1]) {
             dadosTurma1 = turmas[turma1];
-            console.log('✅ TURMA1 ENCONTRADA:', turma1, dadosTurma1);
         } else {
             console.error('❌ TURMA1 NÃO ENCONTRADA:', turma1);
             return;
@@ -922,7 +929,6 @@ class RelatoriosSupabaseManager {
         } else if (turmas[turma2]) {
             labelTurma2 = turma2;
             dadosTurma2 = turmas[turma2];
-            console.log('✅ TURMA2 ENCONTRADA:', turma2, dadosTurma2);
         } else {
             console.error('❌ TURMA2 NÃO ENCONTRADA:', turma2);
             return;
@@ -931,8 +937,6 @@ class RelatoriosSupabaseManager {
         // Obter valores da métrica selecionada
         let valor1, valor2, label, titulo;
         
-        console.log('🔍 DADOS TURMA1:', JSON.stringify(dadosTurma1, null, 2));
-        console.log('🔍 DADOS TURMA2:', JSON.stringify(dadosTurma2, null, 2));
         
         switch (metrica) {
             case 'frequencia':
@@ -940,28 +944,24 @@ class RelatoriosSupabaseManager {
                 valor2 = dadosTurma2.frequenciaMedia;
                 label = 'Frequência (%)';
                 titulo = `${turma1} vs ${labelTurma2} - Frequência`;
-                console.log('📊 VALORES FREQUÊNCIA: valor1=', valor1, 'valor2=', valor2);
                 break;
             case 'faltas':
                 valor1 = dadosTurma1.totalFaltas;
                 valor2 = dadosTurma2.totalFaltas;
                 label = 'Total de Faltas';
                 titulo = `${turma1} vs ${labelTurma2} - Faltas`;
-                console.log('📊 VALORES FALTAS: valor1=', valor1, 'valor2=', valor2);
                 break;
             case 'medidas':
                 valor1 = dadosTurma1.totalMedidas;
                 valor2 = dadosTurma2.totalMedidas;
                 label = 'Medidas Disciplinares';
                 titulo = `${turma1} vs ${labelTurma2} - Medidas`;
-                console.log('📊 VALORES MEDIDAS: valor1=', valor1, 'valor2=', valor2);
                 break;
             case 'risco':
                 valor1 = dadosTurma1.alunosRisco;
                 valor2 = dadosTurma2.alunosRisco;
                 label = 'Alunos em Risco';
                 titulo = `${turma1} vs ${labelTurma2} - Risco`;
-                console.log('📊 VALORES RISCO: valor1=', valor1, 'valor2=', valor2);
                 break;
         }
 
@@ -969,7 +969,12 @@ class RelatoriosSupabaseManager {
         valor1 = parseFloat(valor1) || 0;
         valor2 = parseFloat(valor2) || 0;
         
-        console.log('✅ VALORES FINAIS: valor1=', valor1, 'valor2=', valor2);
+        // Verificar se temos dados válidos - se ambos são 0, pode ser problema nos dados
+        if (isNaN(valor1) || isNaN(valor2)) {
+            console.error('Valores inválidos para comparação:', { valor1, valor2, dadosTurma1, dadosTurma2 });
+            this.recalcularAnalytics();
+            return;
+        }
 
         // Atualizar título da comparação
         const tituloElemento = document.getElementById('comparacaoTitulo');
@@ -980,10 +985,6 @@ class RelatoriosSupabaseManager {
         // Criar gráfico de barras comparativo
         const ctx = canvas.getContext('2d');
         
-        console.log('🎨 CRIANDO GRÁFICO COM:');
-        console.log('  - Labels:', [turma1, labelTurma2]);
-        console.log('  - Data:', [valor1, valor2]);
-        console.log('  - Label:', label);
         
         chartsInstances.comparacaoEspecifica = new Chart(ctx, {
             type: 'bar',
@@ -1026,7 +1027,17 @@ class RelatoriosSupabaseManager {
             }
         });
         
-        console.log('🎯 GRÁFICO DE COMPARAÇÃO CRIADO COM SUCESSO!');
+    }
+
+    recalcularAnalytics() {
+        // Forçar recálculo dos analytics se os dados estiverem zerados
+        if (dadosRelatorios?.processedData) {
+            const analytics = this.calcularAnalyticsAvancadas(dadosRelatorios.processedData);
+            dadosRelatorios.analytics = analytics;
+            
+            // Tentar gerar o gráfico novamente
+            setTimeout(() => this.gerarComparacaoEspecifica(), 100);
+        }
     }
 
     gerarGraficoComparativoTurmas() {
