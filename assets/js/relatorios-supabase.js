@@ -69,6 +69,9 @@ class RelatoriosSupabaseManager {
             this.atualizarRankings();
             this.atualizarRelatorioDetalhado();
             
+            // Inicializar gráfico de comparação
+            this.inicializarComparacao();
+            
             showSuccessToast('Relatórios carregados com sucesso!');
             
         } catch (error) {
@@ -429,6 +432,9 @@ class RelatoriosSupabaseManager {
     atualizarEstatisticasAvancadas() {
         console.log('📊 ANALYTICS: Atualizando estatísticas avançadas...');
         
+        // Atualizar período de análise do dropdown
+        periodoAnalise = document.getElementById('periodoAnalise')?.value || 'anual';
+        
         const dados = dadosRelatorios.processedData;
         
         // Calcular métricas avançadas
@@ -724,14 +730,11 @@ class RelatoriosSupabaseManager {
         const selectComparacao1 = document.getElementById('turma1Comparacao');
         const selectComparacao2 = document.getElementById('turma2Comparacao');
         
-        console.log('📋 PREENCHENDO DROPDOWNS COM TURMAS:', turmas);
-        
         if (selectComparacao1) {
             selectComparacao1.innerHTML = '<option value="">Selecionar Turma 1</option>';
             turmas.forEach(turma => {
                 selectComparacao1.innerHTML += `<option value="${turma}">${turma}</option>`;
             });
-            console.log('✅ DROPDOWN 1 PREENCHIDO COM', turmas.length, 'TURMAS');
         }
         
         if (selectComparacao2) {
@@ -740,10 +743,8 @@ class RelatoriosSupabaseManager {
             turmas.forEach(turma => {
                 selectComparacao2.innerHTML += `<option value="${turma}">${turma}</option>`;
             });
-            console.log('✅ DROPDOWN 2 PREENCHIDO COM MÉDIA GERAL +', turmas.length, 'TURMAS');
         }
         
-        console.log('📊 FILTROS AVANÇADOS: Carregados', turmas.length, 'turmas');
     }
 
     atualizarGraficosAvancados() {
@@ -1884,7 +1885,6 @@ document.addEventListener('DOMContentLoaded', inicializarModuloRelatorios);
 function atualizarDashboardCompleto() {
     periodoAnalise = document.getElementById('periodoAnalise')?.value || 'anual';
     
-    console.log('📊 PERÍODO: Alterado para', periodoAnalise);
     
     if (window.relatoriosManager) {
         window.relatoriosManager.atualizarEstatisticasAvancadas();
