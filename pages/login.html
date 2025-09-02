@@ -9,10 +9,11 @@
   <link rel="stylesheet" href="../assets/css/components.css">
   <link rel="stylesheet" href="../assets/css/dashboard.css">
 
-  <!-- APENAS SUPABASE DATABASE -->
+  <!-- SISTEMA DE AUTENTICAÇÃO UNIFICADO -->
   <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
   <script src="../assets/js/env-config.js"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="../assets/js/unified-auth.js"></script>
 
   <style>
     .login-container{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0078d4,#106ebe);padding:20px}
@@ -57,31 +58,6 @@
   </div>
 
   <script>
-    let supabase = null;
-
-    // Credenciais válidas
-    const VALID_CREDENTIALS = {
-      'admin@eecmjupiara.com.br': 'JupiaraAdmin2024!',
-      'admin': 'admin123',
-      'eecmjupiara@gmail.com': '123456'
-    };
-
-    // Inicializar Supabase (apenas para database, não auth)
-    async function initSupabase() {
-      if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
-        showMessage('❌ Configuração Supabase não encontrada', 'error');
-        return false;
-      }
-
-      supabase = window.supabase.createClient(
-        window.SUPABASE_URL,
-        window.SUPABASE_ANON_KEY
-      );
-
-      console.log('✅ Supabase database inicializado');
-      return true;
-    }
-
     // Mostrar mensagem
     function showMessage(text, type = 'success') {
       const messageEl = document.getElementById('message');
@@ -90,76 +66,20 @@
     }
 
     // Verificar se já está logado
-    function checkAuth() {
-      const authData = localStorage.getItem('supabase_auth');
-      if (authData) {
-        try {
-          const auth = JSON.parse(authData);
-          if (auth.user && auth.expires > Date.now()) {
-            console.log('✅ Usuário já logado:', auth.user.email);
-            window.location.href = '../index.html';
-          }
-        } catch (e) {
-          localStorage.removeItem('supabase_auth');
-        }
-      }
-    }
-
-    // Login SIMPLES (validação local)
-    async function login(email, password) {
-      console.log('🔐 Tentando login simples...');
-
-      // Validar credenciais
-      if (!VALID_CREDENTIALS[email] || VALID_CREDENTIALS[email] !== password) {
-        throw new Error('Email ou senha incorretos');
-      }
-
-      console.log('✅ Credenciais válidas!');
-
-      // Testar conexão com Supabase database
-      try {
-        const { data, error } = await supabase.from('alunos').select('count(*)').limit(1);
-        console.log('✅ Conexão com Supabase database OK');
-      } catch (dbError) {
-        console.warn('⚠️ Erro na conexão database:', dbError);
-        // Continuar mesmo assim
-      }
-
-      // Criar sessão local
-      const authData = {
-        user: {
-          id: 'admin-' + Date.now(),
-          email: email,
-          name: 'Administrador',
-          role: 'admin'
-        },
-        expires: Date.now() + (24 * 60 * 60 * 1000), // 24 horas
-        timestamp: Date.now()
-      };
-
-      localStorage.setItem('supabase_auth', JSON.stringify(authData));
+    async function checkAuth() {
+      await window.unifiedAuth.waitForReady();
       
-      // Configurar globalmente
-      window.currentUser = authData.user;
-      window.supabaseClient = supabase;
-
-      console.log('✅ Sessão criada:', authData.user);
-      return authData.user;
-    }
-
-    // Logout
-    function logout() {
-      localStorage.removeItem('supabase_auth');
-      window.currentUser = null;
-      window.location.href = 'pages/login.html';
+      if (window.unifiedAuth.isAuthenticated()) {
+        const user = window.unifiedAuth.getCurrentUser();
+        console.log('✅ Usuário já logado:', user.email);
+        window.location.href = '../index.html';
+      }
     }
 
     // Event listeners
     document.addEventListener('DOMContentLoaded', async function() {
-      console.log('🚀 Sistema de login SIMPLES inicializando...');
-      
-      await initSupabase();
-      checkAuth();
+      console.log('🚀 Sistema de login unificado inicializando...');
+      await checkAuth();
     });
 
     document.getElementById('loginForm').addEventListener('submit', async function(e) {
@@ -178,14 +98,18 @@
       button.textContent = '⏳ Entrando...';
       
       try {
-        const user = await login(email, password);
+        const result = await window.unifiedAuth.signIn(email, password);
         
-        showMessage('✅ Login realizado com sucesso!', 'success');
-        console.log('🎉 Login bem-sucedido para:', user.email);
-        
-        setTimeout(() => {
-          window.location.href = '../index.html';
-        }, 1000);
+        if (result.success) {
+          showMessage('✅ Login realizado com sucesso!', 'success');
+          console.log('🎉 Login bem-sucedido para:', result.user.email);
+          
+          setTimeout(() => {
+            window.location.href = '../index.html';
+          }, 1000);
+        } else {
+          throw new Error(result.error);
+        }
         
       } catch (error) {
         console.error('❌ Erro de login:', error);
@@ -197,7 +121,7 @@
     });
 
     // Disponibilizar logout globalmente
-    window.logoutSystem = logout;
+    window.logoutSystem = () => window.unifiedAuth.signOut();
   </script>
 </body>
 </html>

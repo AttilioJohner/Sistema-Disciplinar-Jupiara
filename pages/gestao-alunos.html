@@ -10,10 +10,11 @@
   <link rel="stylesheet" href="../assets/css/components.css">
   <link rel="stylesheet" href="../assets/css/dashboard.css">
 
-  <!-- APENAS SUPABASE -->
+  <!-- SISTEMA DE AUTENTICAÇÃO UNIFICADO -->
   <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
   <script src="../assets/js/env-config.js"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="../assets/js/unified-auth.js"></script>
   <script src="../assets/js/supabase-only.js"></script>
 
   <!-- CRUD de Alunos (integra com Supabase) -->
@@ -231,13 +232,13 @@
     document.addEventListener('DOMContentLoaded', () => {
       console.log('🛑 Guard de autenticação DESABILITADO - testando redirecionamento');
       // TEMPORARIAMENTE desabilitado para testar loop de redirecionamento
-      // requireAuth({
-      //   loginPath: 'login.html',
-      //   onAuth: (user) => {
-      //     console.log('Usuário logado:', user.email || user.id);
-      //     // A listagem em tempo real é automática via gestao.js
-      //   }
-      // });
+      requireAuth({
+        loginPath: 'login.html',
+        onAuth: (user) => {
+          console.log('Usuário logado:', user.email || user.id);
+          // A listagem em tempo real é automática via gestao.js
+        }
+      });
     });
   </script>
 

@@ -10,14 +10,14 @@
     <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="../assets/css/dashboard.css">
     
-    <!-- Sistema Híbrido de Banco de Dados (Supabase + Local) -->
-    <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas - usando modo local')"></script>
+    <!-- SISTEMA DE AUTENTICAÇÃO UNIFICADO -->
+    <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
     <script src="../assets/js/env-config.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/unified-auth.js"></script>
     <script src="../assets/js/config.js"></script>
     <script src="../assets/js/supabase-config.js"></script>
     <script src="../assets/js/local-db.js"></script>
-    <script src="../assets/js/local-auth.js"></script>
-    <script src="../assets/js/supabase-auth.js"></script>
     <script src="../assets/js/populate-db.js"></script>
     
     <!-- Chart.js para gráficos -->
@@ -324,15 +324,14 @@
     </script>
     <script>
         // Proteger página - requer autenticação
-        console.log('🛑 RequireAuth DESABILITADO temporariamente - corrigindo loops');
-        // TEMPORARIAMENTE desabilitado para corrigir loop de redirecionamento
-        // requireAuth({
-        //     loginPath: 'login.html',
-        //     onAuth: function(user) {
-        //         console.log('Usuário logado nas análises:', user.email);
-        //         // Página já inicializa automaticamente via DOMContentLoaded
-        //     }
-        // });
+        console.log('🔐 Verificando autenticação...');
+        requireAuth({
+            loginPath: 'login.html',
+            onAuth: function(user) {
+                console.log('Usuário logado nas análises:', user.email);
+                // Página já inicializa automaticamente via DOMContentLoaded
+            }
+        });
     </script>
 
 </body>
