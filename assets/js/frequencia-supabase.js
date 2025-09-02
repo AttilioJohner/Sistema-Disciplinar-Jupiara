@@ -1966,7 +1966,7 @@ async function atualizarAlertasMes() {
                 <div class="no-alertas">
                     📅 <strong>Sem alertas</strong><br>
                     <small>Foram analisados <strong>${totalAlunos} alunos</strong> em <strong>${mesSelect.options[mesSelect.selectedIndex].text}/${anoAtual}</strong><br>
-                    Nenhum aluno apresenta problemas graves de frequência (≥5 faltas, ≥3 consecutivas ou <75% presença).</small>
+                    Nenhum aluno apresenta problemas graves: ≥5 faltas totais OU ≥3 faltas consecutivas.</small>
                 </div>
             `;
         } else {
@@ -2020,6 +2020,9 @@ function analisarFrequenciaAluno(aluno) {
         return null;
     }
 
+    // Ordenar registros por data para garantir sequência correta
+    const registrosOrdenados = registros.sort((a, b) => new Date(a.data) - new Date(b.data));
+    
     // Contar tipos de frequência
     let totalPresencas = 0;
     let totalFaltas = 0;
@@ -2030,7 +2033,9 @@ function analisarFrequenciaAluno(aluno) {
     let faltasConsecutivas = 0;
     let maxFaltasConsecutivas = 0;
     
-    registros.forEach((registro, index) => {
+    console.log('📅 SEQUÊNCIA DE FREQUÊNCIA para', aluno.codigo, ':', registrosOrdenados.map(r => `${r.data}:${r.status}`).join(' | '));
+    
+    registrosOrdenados.forEach((registro, index) => {
         const status = registro.status;
         
         // Contar tipos
@@ -2060,23 +2065,17 @@ function analisarFrequenciaAluno(aluno) {
     const totalFaltasGeral = totalFaltas + totalFaltasControladas;
     const percentualPresenca = totalDias > 0 ? (totalPresencas / totalDias) * 100 : 0;
     
-    // Critérios para alerta:
-    // 1. Percentual de presença abaixo de 75%
-    // 2. 3 ou mais faltas consecutivas
-    // 3. 5 ou mais faltas totais no mês
+    // Critérios RIGOROSOS para alerta (conforme solicitado):
+    // 1. 3 ou mais faltas (F ou FC) consecutivas OU
+    // 2. 5 ou mais faltas (F ou FC) totais no mês
+    // NÃO considerar apenas percentual baixo se não atender os critérios acima
     
     const problemas = [];
     let temProblema = false;
     
-    if (percentualPresenca < 75) {
-        problemas.push({
-            tipo: 'baixa_frequencia',
-            descricao: `Frequência baixa (${percentualPresenca.toFixed(1)}%)`,
-            gravidade: 'alta'
-        });
-        temProblema = true;
-    }
+    console.log('🔍 ANÁLISE DETALHADA:', aluno.codigo, '- Faltas:', totalFaltas, 'FC:', totalFaltasControladas, 'Consecutivas:', maxFaltasConsecutivas, 'Total geral:', totalFaltasGeral);
     
+    // Critério 1: 3 ou mais faltas consecutivas (F ou FC)
     if (maxFaltasConsecutivas >= 3) {
         problemas.push({
             tipo: 'faltas_consecutivas',
@@ -2084,16 +2083,21 @@ function analisarFrequenciaAluno(aluno) {
             gravidade: 'alta'
         });
         temProblema = true;
+        console.log('🚨 ALERTA: Faltas consecutivas detectadas:', maxFaltasConsecutivas);
     }
     
+    // Critério 2: 5 ou mais faltas totais (F + FC) no mês
     if (totalFaltasGeral >= 5) {
         problemas.push({
             tipo: 'muitas_faltas',
             descricao: `${totalFaltasGeral} faltas no mês`,
-            gravidade: 'media'
+            gravidade: 'alta'
         });
         temProblema = true;
+        console.log('🚨 ALERTA: Muitas faltas detectadas:', totalFaltasGeral);
     }
+    
+    // REMOVER critério de percentual baixo isolado - só alertar se atender os critérios de faltas acima
     
     if (!temProblema) {
         console.log('✅ ANÁLISE: Aluno sem problemas:', aluno.codigo);
