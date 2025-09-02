@@ -1827,15 +1827,45 @@
                         console.log('FICHA: Aluno encontrado nos dados locais:', alunoData);
                     } else {
                         console.log('FICHA: Criando dados básicos para o aluno:', selectAluno.value);
+                        
+                        // Tentar buscar turma dos dados de medidas se disponível
+                        let turmaAluno = 'N/A';
+                        if (window.alunosMedidasGlobal) {
+                            const alunoComTurma = window.alunosMedidasGlobal.find(a => a.codigo == selectAluno.value || a.id == selectAluno.value);
+                            if (alunoComTurma) {
+                                turmaAluno = alunoComTurma.turma || 'N/A';
+                            }
+                        }
+                        
                         alunoData = {
                             id: selectAluno.value,
                             nome: selectAluno.options[selectAluno.selectedIndex]?.text || 'Aluno não identificado',
-                            codigo: selectAluno.value
+                            codigo: selectAluno.value,
+                            turma: turmaAluno
                         };
                     }
                 }
                 
-                console.log('FICHA: Dados do aluno utilizados:', alunoData);
+                // Se ainda não temos turma, tentar buscar do Supabase
+                if (!alunoData.turma || alunoData.turma === 'N/A') {
+                    try {
+                        const { data: dadosSupabase, error } = await window.supabaseClient
+                            .from('alunos')
+                            .select('turma, "Nome completo"')
+                            .eq('codigo', parseInt(selectAluno.value))
+                            .single();
+                            
+                        if (!error && dadosSupabase) {
+                            alunoData.turma = dadosSupabase.turma || 'N/A';
+                            alunoData.nome_completo = dadosSupabase['Nome completo'] || alunoData.nome;
+                            console.log('FICHA: Dados complementados do Supabase:', dadosSupabase);
+                        }
+                    } catch (error) {
+                        console.warn('FICHA: Não foi possível buscar dados do Supabase:', error);
+                    }
+                }
+                
+                console.log('FICHA: Dados finais do aluno utilizados:', alunoData);
                 
                 // Carregar medidas disciplinares do aluno (usar dados locais se disponível)
                 let medidas = [];
@@ -2020,7 +2050,7 @@
                     </div>
                     <div class="dado-item">
                         <span class="dado-label">Turma:</span>
-                        <span class="dado-valor">${aluno.turma}</span>
+                        <span class="dado-valor">${aluno.turma || aluno.Turma || 'N/A'}</span>
                     </div>
                 </div>
             `;
