@@ -443,10 +443,25 @@ class FrequenciaSupabaseManager {
         console.error('❌ DEBUG - tabela-container não encontrado!');
         console.log('🔍 DEBUG - Todos os elementos com id que contém "tabela":', 
           Array.from(document.querySelectorAll('*[id*="tabela"]')).map(el => ({id: el.id, tag: el.tagName})));
-        return;
+        
+        // Tentar buscar diretamente
+        const tabelaContainerDireto = document.querySelector('#tabela-container');
+        const tabelaContainerQuery = document.querySelector('div[id="tabela-container"]');
+        
+        console.log('🎯 DEBUG - Busca direta #tabela-container:', !!tabelaContainerDireto);
+        console.log('🎯 DEBUG - Busca div[id="tabela-container"]:', !!tabelaContainerQuery);
+        console.log('🎯 DEBUG - Existe elemento?', tabelaContainerDireto || tabelaContainerQuery);
+        
+        if (tabelaContainerDireto || tabelaContainerQuery) {
+          console.log('✅ DEBUG - Elemento encontrado! Prosseguindo...');
+          this._executarTabelaDias(container, tabelaContainerDireto || tabelaContainerQuery);
+        } else {
+          console.error('❌ DEBUG - Nenhum elemento tabela-container foi encontrado!');
+          return;
+        }
+      } else {
+        this._executarTabelaDias(container, tabelaContainer);
       }
-      
-      this._executarTabelaDias(container, tabelaContainer);
     }, 100);
   }
   
