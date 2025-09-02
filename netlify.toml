@@ -15,11 +15,53 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://raw.githubusercontent.com;"
 
-# Cache para assets estáticos
+# Cache inteligente para HTML (sem cache)
 [[headers]]
-  for = "/assets/*"
+  for = "/*.html"
   [headers.values]
-    Cache-Control = "public, max-age=31536000"
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma = "no-cache"
+    Expires = "0"
+
+# Cache inteligente para pages
+[[headers]]
+  for = "/pages/*.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma = "no-cache"
+    Expires = "0"
+
+# Sem cache para arquivos dinâmicos
+[[headers]]
+  for = "/netlify-env.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma = "no-cache"
+    Expires = "0"
+
+# Cache inteligente para JS/CSS (com versioning)
+[[headers]]
+  for = "/assets/js/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=300, stale-while-revalidate=86400"
+
+[[headers]]
+  for = "/assets/css/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=300, stale-while-revalidate=86400"
+
+# Cache longo para assets estáticos (imagens, etc)
+[[headers]]
+  for = "/assets/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Service Worker
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Service-Worker-Allowed = "/"
 
 # Configurações de ambiente
 [context.production]
