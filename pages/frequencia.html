@@ -10,13 +10,11 @@
     <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="../assets/css/dashboard.css">
     
-    <!-- Sistema Local de Banco de Dados -->
-    <script src="../assets/js/local-db.js"></script>
-    <script src="../assets/js/local-auth.js"></script>
-    <script src="../assets/js/populate-db.js"></script>
-    
-    <!-- Sistema de Sincronização GitHub -->
-    <script src="../assets/js/github-sync.js"></script>
+    <!-- APENAS SUPABASE -->
+    <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
+    <script src="../assets/js/env-config.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-only.js"></script>
     
     <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -433,9 +431,7 @@
 
     <!-- JAVASCRIPT -->
     
-    <script src="../assets/js/main.js" defer></script>
-    <script src="../assets/js/gestao.js" defer></script>
-    <script src="../assets/js/forcar-carregamento-frequencia.js" defer></script>
+    <!-- Scripts carregados no head -->
     
     <script>
         // Variáveis globais
@@ -454,15 +450,12 @@
             try {
                 showMessage('Carregando módulo de frequência...', 'loading');
                 
-                // Aguardar Sistema Local
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                // Aguardar Supabase
+                await new Promise(resolve => setTimeout(resolve, 500));
                 
-                if (window.localDb && window.localDb.loaded) {
-                    // Forçar carregamento do arquivo primeiro
-                    const carregouArquivo = await carregarDadosFrequenciaDoArquivo();
-                    if (!carregouArquivo) {
-                        await carregarDadosFrequencia();
-                    }
+                if (window.supabaseClient) {
+                    // Carregar dados do Supabase
+                    await carregarDadosFrequencia();
                     await carregarEstatisticasFrequencia();
                     await carregarAlertasFrequencia();
                     await carregarResumoTurmas();
@@ -470,13 +463,10 @@
                     await carregarTurmasLancamento();
                     aplicarFiltrosFrequencia();
                     
-                    // Verificar atualizações do GitHub
-                    setTimeout(verificarAtualizacoesAutomaticas, 2000);
-                    
                     showMessage('✅ Módulo de frequência carregado!', 'success');
                 } else {
-                    showMessage('⚠️ Sistema Local não conectado - funcionalidade limitada', 'error');
-                    carregarDadosDemoFrequencia();
+                    showMessage('⚠️ Supabase não conectado - verifique a conexão', 'error');
+                    console.error('Supabase client não encontrado');
                 }
             } catch (error) {
                 console.error('Erro ao inicializar frequência:', error);
@@ -788,70 +778,56 @@
         
         async function carregarDadosFrequencia() {
             try {
-                // 1. Tentar carregar do arquivo JSON primeiro (dados mais atualizados)
-                const carregouArquivo = await carregarDadosFrequenciaDoArquivo();
-                if (carregouArquivo) {
-                    return;
-                }
-                
-                // 2. Tentar carregar do GitHub como alternativa
-                if (window.gitHubSync) {
-                    const dadosGitHub = await window.gitHubSync.sincronizarDados('frequencia');
-                    if (dadosGitHub && dadosGitHub.length > 0) {
-                        dadosFrequencia = dadosGitHub;
-                        console.log(`📅 ${dadosFrequencia.length} registros carregados do GitHub`);
-                        return;
-                    }
-                }
-                
-                // 2. Tentar carregar do localStorage como backup
-                const backupLocal = localStorage.getItem('dadosFrequencia_backup');
-                if (backupLocal) {
-                    try {
-                        const backup = JSON.parse(backupLocal);
-                        const horasAtras = (Date.now() - backup.timestamp) / (1000 * 60 * 60);
-                        
-                        // Se o backup tem menos de 24 horas, usar
-                        if (horasAtras < 24 && backup.dados && backup.dados.length > 0) {
-                            dadosFrequencia = backup.dados;
-                            console.log(`💾 ${dadosFrequencia.length} registros carregados do backup local (${horasAtras.toFixed(1)}h atrás)`);
-                            return;
-                        }
-                    } catch (e) {
-                        console.warn('Erro ao carregar backup local:', e);
-                    }
-                }
-                
-                // 3. Fallback para sistema local (se disponível)
-                if (window.db) {
-                    const snapshot = await window.db.collection('frequencia').get();
-                    dadosFrequencia = [];
-                    
-                    snapshot.forEach(doc => {
-                        dadosFrequencia.push({
-                            id: doc.id,
-                            ...doc.data()
-                        });
+                // Aguardar supabaseClient estar disponível
+                if (!window.supabaseClient) {
+                    await new Promise(resolve => {
+                        const check = setInterval(() => {
+                            if (window.supabaseClient) {
+                                clearInterval(check);
+                                resolve();
+                            }
+                        }, 100);
                     });
-                    
-                    console.log(`📅 ${dadosFrequencia.length} registros carregados do sistema local`);
                 }
+
+                console.log('📅 Carregando dados de frequência do Supabase...');
+                
+                // Buscar dados de frequência no Supabase
+                const { data: frequenciaData, error } = await window.supabaseClient
+                    .from('frequencia')
+                    .select('*')
+                    .order('data', { ascending: false });
+
+                if (error) {
+                    throw error;
+                }
+
+                console.log(`📅 ${dadosFrequencia.length} registros de frequência carregados do Supabase`);
+                
+                // Salvar backup local
+                localStorage.setItem('dadosFrequencia_backup', JSON.stringify({
+                    dados: dadosFrequencia,
+                    timestamp: Date.now()
+                }));
                 
             } catch (error) {
-                console.error('Erro ao carregar dados de frequência:', error);
+                console.error('❌ Erro ao carregar dados de frequência do Supabase:', error);
                 
-                // Último recurso: tentar backup local mesmo que antigo
+                // Tentar usar backup local
                 const backupLocal = localStorage.getItem('dadosFrequencia_backup');
                 if (backupLocal) {
                     try {
                         const backup = JSON.parse(backupLocal);
                         if (backup.dados && backup.dados.length > 0) {
                             dadosFrequencia = backup.dados;
-                            console.log(`🆘 ${dadosFrequencia.length} registros carregados do backup de emergência`);
+                            console.log(`🆘 ${dadosFrequencia.length} registros carregados do backup local`);
                         }
                     } catch (e) {
-                        console.warn('Falha no backup de emergência:', e);
+                        console.warn('Falha ao usar backup local:', e);
+                        dadosFrequencia = [];
                     }
+                } else {
+                    dadosFrequencia = [];
                 }
             }
         }
@@ -1079,10 +1055,18 @@
 
         async function carregarFiltrosFrequencia() {
             try {
-                if (dadosFrequencia.length === 0) return;
+                // Buscar turmas únicas no Supabase
+                const { data: turmasData, error: turmasError } = await window.supabaseClient
+                    .from('alunos')
+                    .select('turma')
+                    .neq('turma', null);
                 
-                // Extrair turmas únicas
-                const turmas = [...new Set(dadosFrequencia.map(r => r.turma))].sort();
+                if (turmasError) {
+                    console.error('Erro ao carregar turmas para filtros:', turmasError);
+                    return;
+                }
+                
+                const turmas = [...new Set((turmasData || []).map(r => r.turma))].sort();
                 
                 const selectTurma = document.getElementById('filtroTurmaFreq');
                 if (selectTurma) {
@@ -1097,21 +1081,23 @@
                     });
                 }
                 
-                // Carregar todos os alunos únicos
-                const alunosUnicos = {};
-                dadosFrequencia.forEach(r => {
-                    const chave = `${r.codigo_aluno}_${r.turma}`;
-                    if (!alunosUnicos[chave]) {
-                        alunosUnicos[chave] = {
-                            codigo: r.codigo_aluno,
-                            nome: r.nome_aluno,
-                            turma: r.turma
-                        };
-                    }
-                });
+                // Carregar todos os alunos únicos do Supabase
+                const { data: alunosData, error: alunosError } = await window.supabaseClient
+                    .from('alunos')
+                    .select('codigo, "Nome completo", turma')
+                    .order('"Nome completo"');
+                
+                if (alunosError) {
+                    console.error('Erro ao carregar alunos para filtros:', alunosError);
+                    return;
+                }
                 
                 // Armazenar todos os alunos para uso no filtro dinâmico
-                todosAlunos = Object.values(alunosUnicos).sort((a, b) => a.nome.localeCompare(b.nome));
+                todosAlunos = (alunosData || []).map(aluno => ({
+                    codigo: aluno.codigo,
+                    nome: aluno["Nome completo"],
+                    turma: aluno.turma
+                }));
                 
                 // Carregar inicialmente todos os alunos
                 atualizarFiltroAlunos('');
@@ -1912,22 +1898,25 @@
             }
             
             try {
-                // Filtrar alunos únicos da turma selecionada
-                const alunosUnicos = {};
-                dadosFrequencia.forEach(registro => {
-                    if (registro.turma === turmaSelecionada) {
-                        const chave = registro.codigo_aluno;
-                        if (!alunosUnicos[chave]) {
-                            alunosUnicos[chave] = {
-                                codigo: registro.codigo_aluno,
-                                nome: registro.nome_aluno,
-                                turma: registro.turma
-                            };
-                        }
-                    }
-                });
+                // Buscar alunos da turma selecionada no Supabase
+                const { data: alunosData, error } = await window.supabaseClient
+                    .from('alunos')
+                    .select('codigo, "Nome completo", turma')
+                    .eq('turma', turmaSelecionada)
+                    .order('"Nome completo"');
                 
-                alunosCarregados = Object.values(alunosUnicos).sort((a, b) => a.nome.localeCompare(b.nome));
+                if (error) {
+                    console.error('Erro ao carregar alunos:', error);
+                    showMessage('Erro ao carregar alunos da turma', 'error');
+                    containerLista.style.display = 'none';
+                    return;
+                }
+                
+                alunosCarregados = (alunosData || []).map(aluno => ({
+                    codigo: aluno.codigo,
+                    nome: aluno["Nome completo"],
+                    turma: aluno.turma
+                }));
                 marcacoesFrequencia = {}; // Limpar marcações anteriores
                 
                 if (alunosCarregados.length === 0) {
@@ -2258,36 +2247,46 @@
                     registrosNovos.push(registro);
                 });
                 
-                // Verificar se já existe frequência para esta data/turma
-                const registrosExistentes = dadosFrequencia.filter(r => 
-                    r.data === data && r.turma === turma
-                );
+                // Verificar se já existe frequência para esta data/turma no Supabase
+                const { data: registrosExistentes, error: errorCheck } = await window.supabaseClient
+                    .from('frequencia')
+                    .select('id')
+                    .eq('data', data)
+                    .eq('turma', turma);
                 
-                if (registrosExistentes.length > 0) {
+                if (errorCheck) {
+                    throw errorCheck;
+                }
+                
+                if (registrosExistentes && registrosExistentes.length > 0) {
                     const confirmacao = confirm(`Já existe frequência para a turma ${turma} na data ${formatarData(data)}. Deseja sobrescrever?`);
                     if (!confirmacao) {
                         statusDiv.innerHTML = '';
                         return;
                     }
                     
-                    // Remover registros existentes
-                    dadosFrequencia = dadosFrequencia.filter(r => 
-                        !(r.data === data && r.turma === turma)
-                    );
-                }
-                
-                // Salvar no sistema local se disponível
-                if (window.db) {
-                    const batch = [];
-                    for (const registro of registrosNovos) {
-                        batch.push(
-                            window.db.collection('frequencia').doc(registro.id).set(registro)
-                        );
+                    // Remover registros existentes do Supabase
+                    const { error: deleteError } = await window.supabaseClient
+                        .from('frequencia')
+                        .delete()
+                        .eq('data', data)
+                        .eq('turma', turma);
+                    
+                    if (deleteError) {
+                        throw deleteError;
                     }
-                    await Promise.all(batch);
                 }
                 
-                // Adicionar aos dados locais
+                // Salvar novos registros no Supabase
+                const { data: insertData, error: insertError } = await window.supabaseClient
+                    .from('frequencia')
+                    .insert(registrosNovos);
+                
+                if (insertError) {
+                    throw insertError;
+                }
+                
+                // Adicionar aos dados locais para manter sincronia
                 dadosFrequencia.push(...registrosNovos);
                 
                 // Salvar backup no localStorage
@@ -2353,10 +2352,18 @@
         
         async function carregarTurmasLancamento() {
             try {
-                if (dadosFrequencia.length === 0) return;
+                // Buscar turmas únicas no Supabase
+                const { data: turmasData, error } = await window.supabaseClient
+                    .from('alunos')
+                    .select('turma')
+                    .neq('turma', null);
                 
-                // Extrair turmas únicas
-                const turmas = [...new Set(dadosFrequencia.map(r => r.turma))].sort();
+                if (error) {
+                    console.error('Erro ao carregar turmas:', error);
+                    return;
+                }
+                
+                const turmas = [...new Set((turmasData || []).map(r => r.turma))].sort();
                 
                 const selectTurmaLancamento = document.getElementById('turmaLancamento');
                 if (selectTurmaLancamento) {
