@@ -2272,16 +2272,34 @@ async function salvarProvidencias(codigoAluno) {
             data_abertura_ficai: new Date().toISOString().split('T')[0] // YYYY-MM-DD
         };
         
-        // Salvar no Supabase usando upsert (insert ou update)
-        const { data, error } = await supabaseClient
+        // Tentar INSERT primeiro, depois UPDATE se já existir
+        let { data, error } = await supabaseClient
             .from('ficai_providencias')
-            .upsert(dadosFicai, { 
-                onConflict: 'codigo_matricula,mes_referencia',
-                returning: 'minimal'
-            });
+            .insert(dadosFicai)
+            .select();
         
-        if (error) {
-            console.error('❌ PROVIDÊNCIAS: Erro do Supabase:', error);
+        // Se der erro de duplicata, fazer UPDATE
+        if (error && error.code === '23505') {
+            console.log('📝 PROVIDÊNCIAS: Registro já existe, fazendo UPDATE...');
+            
+            const { data: updateData, error: updateError } = await supabaseClient
+                .from('ficai_providencias')
+                .update({
+                    status_ficai: dadosFicai.status_ficai,
+                    providencias: dadosFicai.providencias,
+                    atualizado_em: new Date().toISOString()
+                })
+                .eq('codigo_matricula', codigoAluno)
+                .eq('mes_referencia', mesReferencia);
+            
+            if (updateError) {
+                console.error('❌ PROVIDÊNCIAS: Erro no UPDATE:', updateError);
+                throw updateError;
+            }
+            
+            data = updateData;
+        } else if (error) {
+            console.error('❌ PROVIDÊNCIAS: Erro no INSERT:', error);
             throw error;
         }
         
