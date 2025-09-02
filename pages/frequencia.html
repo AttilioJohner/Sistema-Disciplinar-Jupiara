@@ -18,6 +18,13 @@
     
     <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- UI Components -->
+    <script src="../assets/js/ui/toast"></script>
+    <script src="../assets/js/main.js"></script>
+    
+    <!-- Sistema de Frequência -->
+    <script src="../assets/js/frequencia-supabase.js"></script>
 </head>
 
 <body>
@@ -448,7 +455,7 @@
         // Função principal de inicialização
         async function inicializarModuloFrequencia() {
             try {
-                showMessage('Carregando módulo de frequência...', 'loading');
+                showToast('Carregando módulo de frequência...', 'loading');
                 
                 // Aguardar Supabase
                 await new Promise(resolve => setTimeout(resolve, 500));
@@ -463,14 +470,14 @@
                     await carregarTurmasLancamento();
                     aplicarFiltrosFrequencia();
                     
-                    showMessage('✅ Módulo de frequência carregado!', 'success');
+                    showToast('✅ Módulo de frequência carregado!', 'success');
                 } else {
-                    showMessage('⚠️ Supabase não conectado - verifique a conexão', 'error');
+                    showToast('⚠️ Supabase não conectado - verifique a conexão', 'error');
                     console.error('Supabase client não encontrado');
                 }
             } catch (error) {
                 console.error('Erro ao inicializar frequência:', error);
-                showMessage('Erro ao carregar módulo de frequência', 'error');
+                showToast('Erro ao carregar módulo de frequência', 'error');
             }
         }
 
@@ -481,7 +488,7 @@
             const statusDiv = document.getElementById('importStatusFrequencia');
             
             if (!fileInput.files[0]) {
-                showMessage('Por favor, selecione um arquivo CSV', 'error');
+                showToast('Por favor, selecione um arquivo CSV', 'error');
                 return;
             }
             
@@ -671,7 +678,7 @@
                     }
                 }, 500);
                 
-                showMessage(`${registrosProcessados.length} registros de frequência importados!`, 'success');
+                showToast(`${registrosProcessados.length} registros de frequência importados!`, 'success');
                 
                 // PULAR SINCRONIZAÇÃO AUTOMÁTICA PARA EVITAR TRAVAMENTO
                 statusDiv.innerHTML += `
@@ -691,7 +698,7 @@
                         ❌ <strong>Erro ao importar:</strong> ${error.message}
                     </div>
                 `;
-                showMessage('Erro ao importar arquivo CSV', 'error');
+                showToast('Erro ao importar arquivo CSV', 'error');
             }
         }
 
@@ -725,11 +732,11 @@
                 await carregarResumoTurmas();
                 aplicarFiltrosFrequencia();
                 
-                showMessage('Dados de frequência removidos', 'success');
+                showToast('Dados de frequência removidos', 'success');
                 
             } catch (error) {
                 console.error('Erro ao limpar dados:', error);
-                showMessage('Erro ao limpar dados', 'error');
+                showToast('Erro ao limpar dados', 'error');
             }
         }
 
@@ -970,7 +977,7 @@
 
         function destacarAlunoFreq(alunoId) {
             console.log('Destacando aluno na frequência:', alunoId);
-            showMessage(`Aluno ${alunoId} selecionado`, 'info');
+            showToast(`Aluno ${alunoId} selecionado`, 'info');
         }
 
         // ======= RESUMO POR TURMA =======
@@ -1719,7 +1726,7 @@
                 // Também salvar no sistema local da página
                 await window.gitHubSync.salvarDadosLocal('frequencia', dados.registros);
                 
-                showMessage('Arquivo GitHub gerado! Use auto-sync-github.js para sincronização automática.', 'success');
+                showToast('Arquivo GitHub gerado! Use auto-sync-github.js para sincronização automática.', 'success');
                 
             } catch (error) {
                 console.error('Erro ao preparar commit:', error);
@@ -1749,7 +1756,7 @@
                     </div>
                 `;
                 
-                showMessage('Sincronização automática com GitHub concluída!', 'success');
+                showToast('Sincronização automática com GitHub concluída!', 'success');
                 
             } catch (error) {
                 console.error('Erro na sincronização automática:', error);
@@ -1759,7 +1766,7 @@
         
         async function sincronizarComGitHub() {
             try {
-                showMessage('🔄 Sincronizando com GitHub...', 'loading');
+                showToast('🔄 Sincronizando com GitHub...', 'loading');
                 
                 if (!window.gitHubSync) {
                     throw new Error('Sistema de sincronização não carregado');
@@ -1788,7 +1795,7 @@
                         </div>
                     `;
                     
-                    showMessage(`${dadosFrequencia.length} registros sincronizados do GitHub!`, 'success');
+                    showToast(`${dadosFrequencia.length} registros sincronizados do GitHub!`, 'success');
                 } else {
                     document.getElementById('importStatusFrequencia').innerHTML = `
                         <div class="alert alert-info">
@@ -1796,7 +1803,7 @@
                             Faça upload de dados primeiro ou verifique se o arquivo foi commitado
                         </div>
                     `;
-                    showMessage('Nenhum dado encontrado no GitHub', 'info');
+                    showToast('Nenhum dado encontrado no GitHub', 'info');
                 }
                 
             } catch (error) {
@@ -1806,7 +1813,7 @@
                         ❌ <strong>Erro na sincronização:</strong> ${error.message}
                     </div>
                 `;
-                showMessage('Erro ao sincronizar com GitHub', 'error');
+                showToast('Erro ao sincronizar com GitHub', 'error');
             }
         }
 
@@ -1835,7 +1842,7 @@
                         </div>
                     `;
                     
-                    showMessage('Arquivo frequencia.json gerado! Veja instruções no console.', 'success');
+                    showToast('Arquivo frequencia.json gerado! Veja instruções no console.', 'success');
                 } else {
                     throw new Error('Falha ao gerar arquivo');
                 }
@@ -1847,7 +1854,7 @@
                         ❌ <strong>Erro ao salvar:</strong> ${error.message}
                     </div>
                 `;
-                showMessage('Erro ao salvar no GitHub', 'error');
+                showToast('Erro ao salvar no GitHub', 'error');
             }
         }
 
@@ -1893,7 +1900,7 @@
             // Se não há data selecionada, focar no campo de data
             if (!dataInput.value) {
                 dataInput.focus();
-                showMessage('Por favor, selecione uma data', 'warning');
+                showToast('Por favor, selecione uma data', 'warning');
                 return;
             }
             
@@ -1907,7 +1914,7 @@
                 
                 if (error) {
                     console.error('Erro ao carregar alunos:', error);
-                    showMessage('Erro ao carregar alunos da turma', 'error');
+                    showToast('Erro ao carregar alunos da turma', 'error');
                     containerLista.style.display = 'none';
                     return;
                 }
@@ -1920,7 +1927,7 @@
                 marcacoesFrequencia = {}; // Limpar marcações anteriores
                 
                 if (alunosCarregados.length === 0) {
-                    showMessage('Nenhum aluno encontrado para esta turma', 'warning');
+                    showToast('Nenhum aluno encontrado para esta turma', 'warning');
                     containerLista.style.display = 'none';
                     return;
                 }
@@ -1943,7 +1950,7 @@
                 
             } catch (error) {
                 console.error('Erro ao carregar alunos:', error);
-                showMessage('Erro ao carregar alunos da turma', 'error');
+                showToast('Erro ao carregar alunos da turma', 'error');
             }
         }
 
@@ -2173,7 +2180,7 @@
 
         function marcarTodosPresentes() {
             if (alunosCarregados.length === 0) {
-                showMessage('Selecione uma turma primeiro', 'warning');
+                showToast('Selecione uma turma primeiro', 'warning');
                 return;
             }
             
@@ -2181,12 +2188,12 @@
                 marcarFrequencia(aluno.codigo, 'P');
             });
             
-            showMessage(`Todos os ${alunosCarregados.length} alunos marcados como presentes`, 'success');
+            showToast(`Todos os ${alunosCarregados.length} alunos marcados como presentes`, 'success');
         }
 
         function limparMarcacoes() {
             if (alunosCarregados.length === 0) {
-                showMessage('Selecione uma turma primeiro', 'warning');
+                showToast('Selecione uma turma primeiro', 'warning');
                 return;
             }
             
@@ -2203,7 +2210,7 @@
             btnSalvar.disabled = true;
             btnSalvar.innerHTML = '💾 Salvar Frequência do Dia';
             
-            showMessage('Marcações limpas', 'success');
+            showToast('Marcações limpas', 'success');
         }
 
         async function salvarFrequenciaDiaria() {
@@ -2212,13 +2219,13 @@
             const statusDiv = document.getElementById('statusSalvamento');
             
             if (!selectTurma.value || !dataInput.value) {
-                showMessage('Selecione turma e data', 'error');
+                showToast('Selecione turma e data', 'error');
                 return;
             }
             
             const totalMarcacoes = Object.keys(marcacoesFrequencia).length;
             if (totalMarcacoes === 0) {
-                showMessage('Marque pelo menos um aluno', 'error');
+                showToast('Marque pelo menos um aluno', 'error');
                 return;
             }
             
@@ -2313,7 +2320,7 @@
                 // Limpar formulário
                 setTimeout(() => {
                     voltarSelecaoTurma();
-                    showMessage('Frequência salva e estatísticas atualizadas!', 'success');
+                    showToast('Frequência salva e estatísticas atualizadas!', 'success');
                 }, 2000);
                 
                 console.log(`✅ Salvos ${registrosNovos.length} registros de frequência`);
@@ -2325,7 +2332,7 @@
                         ❌ <strong>Erro ao salvar:</strong> ${error.message}
                     </div>
                 `;
-                showMessage('Erro ao salvar frequência', 'error');
+                showToast('Erro ao salvar frequência', 'error');
             }
         }
 
