@@ -1888,7 +1888,10 @@ async function atualizarAlertasMes() {
 
         // Buscar dados de frequência do mês
         const inicioMes = `${anoAtual}-${mesSelecionado}-01`;
-        const fimMes = `${anoAtual}-${mesSelecionado}-31`;
+        
+        // Calcular último dia do mês corretamente
+        const ultimoDiaMes = new Date(anoAtual, parseInt(mesSelecionado), 0).getDate();
+        const fimMes = `${anoAtual}-${mesSelecionado}-${ultimoDiaMes.toString().padStart(2, '0')}`;
 
         const { data: registros, error } = await supabaseClient
             .from('frequencia')
@@ -1946,9 +1949,12 @@ async function atualizarAlertasMes() {
 
         // Renderizar resultados
         if (problemasEncontrados.length === 0) {
+            const totalAlunos = Object.keys(alunosPorCodigo).length;
             alertasContainer.innerHTML = `
                 <div class="no-alertas">
-                    🎉 Ótimas notícias! Nenhum aluno com problemas graves de frequência em ${mesSelect.options[mesSelect.selectedIndex].text}
+                    📅 <strong>Sem alertas</strong><br>
+                    <small>Foram analisados <strong>${totalAlunos} alunos</strong> em <strong>${mesSelect.options[mesSelect.selectedIndex].text}/${anoAtual}</strong><br>
+                    Nenhum aluno apresenta problemas graves de frequência (≥5 faltas, ≥3 consecutivas ou <75% presença).</small>
                 </div>
             `;
         } else {
