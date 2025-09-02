@@ -1846,6 +1846,18 @@ async function renderizarAlertasFrequencia() {
                     <option value="12" ${mesAtual === '12' ? 'selected' : ''}>Dezembro</option>
                 </select>
             </div>
+            
+            <div class="filter-group">
+                <label class="providencias-label">📋 Filtrar por Status FICAI:</label>
+                <select id="alertasStatusFiltro" onchange="aplicarFiltroStatus()">
+                    <option value="">Todos os Status</option>
+                    <option value="sem_status">🔴 Sem Status (Prioridade)</option>
+                    <option value="aguardando">⏳ Aguardando Prazo</option>
+                    <option value="resolvido">✅ Resolvido</option>
+                    <option value="cancelado">❌ Cancelado</option>
+                    <option value="conselho">📞 Em Conselho Tutelar</option>
+                </select>
+            </div>
         </div>
         <div id="alertasContainer" class="alertas-grid" style="display: none;">
             <div class="loading-alertas">
@@ -1958,14 +1970,35 @@ async function atualizarAlertasMes() {
                 </div>
             `;
         } else {
-            const alertasHtml = problemasEncontrados.map(problema => 
-                renderizarCardAlerta(problema, mesSelecionado, anoAtual)
-            ).join('');
+            // Carregar status FICAI e aplicar ordenação com prioridade
+            const problemasComStatus = await carregarStatusFicaiParaProblemas(problemasEncontrados, mesSelecionado, anoAtual);
             
-            alertasContainer.innerHTML = alertasHtml;
+            // Ordenar com prioridade: sem status primeiro, depois por gravidade
+            const problemasOrdenados = ordenarProblemasPorPrioridade(problemasComStatus);
             
-            // Carregar providências já salvas após renderizar os cards
-            await carregarProvidenciasSalvas(problemasEncontrados, mesSelecionado, anoAtual);
+            // Aplicar filtro de status se selecionado
+            const problemasFiltrados = aplicarFiltroStatusProblemas(problemasOrdenados);
+            
+            if (problemasFiltrados.length === 0) {
+                const statusFiltro = document.getElementById('alertasStatusFiltro')?.value || '';
+                const mensagemFiltro = statusFiltro ? 'Nenhum alerta encontrado com o status selecionado.' : 'Nenhum problema encontrado.';
+                
+                alertasContainer.innerHTML = `
+                    <div class="no-alertas">
+                        📋 <strong>Filtro sem resultados</strong><br>
+                        <small>${mensagemFiltro}</small>
+                    </div>
+                `;
+            } else {
+                const alertasHtml = problemasFiltrados.map(problema => 
+                    renderizarCardAlerta(problema, mesSelecionado, anoAtual)
+                ).join('');
+                
+                alertasContainer.innerHTML = alertasHtml;
+                
+                // Carregar providências já salvas após renderizar os cards
+                await carregarProvidenciasSalvas(problemasFiltrados, mesSelecionado, anoAtual);
+            }
         }
 
     } catch (error) {
@@ -2433,6 +2466,124 @@ function toggleListaAlertas() {
             console.log('👁️ TOGGLE: Lista vazia, recarregando alertas...');
             atualizarAlertasMes();
         }
+    }
+}
+
+// Função para carregar status FICAI para problemas
+async function carregarStatusFicaiParaProblemas(problemasEncontrados, mes, ano) {
+    console.log('📋 STATUS: Carregando status FICAI para', problemasEncontrados.length, 'problemas');
+    
+    try {
+        const mesReferencia = `${ano}-${mes}`;
+        const codigosAlunos = problemasEncontrados.map(p => p.codigo);
+        
+        if (codigosAlunos.length === 0) {
+            return problemasEncontrados;
+        }
+        
+        // Buscar status FICAI dos alunos com problemas
+        const { data: statusFicai, error } = await supabaseClient
+            .from('ficai_providencias')
+            .select('codigo_matricula, status_ficai')
+            .in('codigo_matricula', codigosAlunos)
+            .eq('mes_referencia', mesReferencia);
+        
+        if (error) {
+            console.error('❌ STATUS: Erro ao buscar status:', error);
+            // Continuar sem status se houver erro
+            return problemasEncontrados.map(p => ({ ...p, statusFicai: null }));
+        }
+        
+        // Mapear status para cada problema
+        const statusMap = {};
+        if (statusFicai && statusFicai.length > 0) {
+            statusFicai.forEach(item => {
+                statusMap[item.codigo_matricula] = item.status_ficai;
+            });
+        }
+        
+        // Adicionar status aos problemas
+        const problemasComStatus = problemasEncontrados.map(problema => ({
+            ...problema,
+            statusFicai: statusMap[problema.codigo] || null
+        }));
+        
+        console.log('📋 STATUS: Status FICAI carregados para', Object.keys(statusMap).length, 'alunos');
+        return problemasComStatus;
+        
+    } catch (error) {
+        console.error('❌ STATUS: Erro geral:', error);
+        return problemasEncontrados.map(p => ({ ...p, statusFicai: null }));
+    }
+}
+
+// Função para ordenar problemas por prioridade
+function ordenarProblemasPorPrioridade(problemas) {
+    console.log('🔄 ORDEM: Ordenando', problemas.length, 'problemas por prioridade');
+    
+    return problemas.sort((a, b) => {
+        // 1. Prioridade: sem status primeiro
+        const aTemStatus = a.statusFicai ? 1 : 0;
+        const bTemStatus = b.statusFicai ? 1 : 0;
+        
+        if (aTemStatus !== bTemStatus) {
+            return aTemStatus - bTemStatus; // sem status (0) vem antes de com status (1)
+        }
+        
+        // 2. Segunda prioridade: gravidade (alta primeiro)
+        const gravidadeOrder = { 'alta': 0, 'media': 1 };
+        const aGravidade = gravidadeOrder[a.gravidade] || 2;
+        const bGravidade = gravidadeOrder[b.gravidade] || 2;
+        
+        if (aGravidade !== bGravidade) {
+            return aGravidade - bGravidade;
+        }
+        
+        // 3. Terceira prioridade: por nome do aluno
+        return a.nome.localeCompare(b.nome);
+    });
+}
+
+// Função para aplicar filtro de status
+function aplicarFiltroStatusProblemas(problemas) {
+    const filtroSelect = document.getElementById('alertasStatusFiltro');
+    const filtroValue = filtroSelect ? filtroSelect.value : '';
+    
+    if (!filtroValue) {
+        console.log('🔍 FILTRO: Mostrando todos os status');
+        return problemas;
+    }
+    
+    console.log('🔍 FILTRO: Aplicando filtro:', filtroValue);
+    
+    const problemasFiltrados = problemas.filter(problema => {
+        switch (filtroValue) {
+            case 'sem_status':
+                return !problema.statusFicai;
+            case 'aguardando':
+                return problema.statusFicai === 'aguardando';
+            case 'resolvido':
+                return problema.statusFicai === 'resolvido';
+            case 'cancelado':
+                return problema.statusFicai === 'cancelado';
+            case 'conselho':
+                return problema.statusFicai === 'conselho';
+            default:
+                return true;
+        }
+    });
+    
+    console.log('🔍 FILTRO: Resultados filtrados:', problemasFiltrados.length, 'de', problemas.length);
+    return problemasFiltrados;
+}
+
+// Função chamada quando o filtro de status muda
+function aplicarFiltroStatus() {
+    console.log('🔄 FILTRO: Reaplicando filtros...');
+    // Recarregar alertas com o novo filtro
+    const alertasContainer = document.getElementById('alertasContainer');
+    if (alertasContainer && alertasContainer.style.display !== 'none') {
+        atualizarAlertasMes();
     }
 }
 
