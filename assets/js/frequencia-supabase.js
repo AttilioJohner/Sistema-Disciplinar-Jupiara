@@ -73,18 +73,43 @@ class FrequenciaSupabaseManager {
 
   async carregarDados() {
     try {
-      console.log('📂 Carregando dados do Supabase...');
+      console.log('📂 Carregando dados do Supabase com paginação...');
       
-      // Buscar todas as frequências - forçar carregar TODOS os registros
-      const { data: frequencias, error } = await this.supabase
-        .from('frequencia')
-        .select('*')
-        .range(0, 10000); // Aumentar limite para 10.000 registros
+      let todasFrequencias = [];
+      let pagina = 0;
+      const tamanhoPagina = 1000;
+      let temMaisDados = true;
       
-      if (error) {
-        console.error('❌ Erro ao buscar frequências:', error);
-        throw error;
+      while (temMaisDados) {
+        const inicio = pagina * tamanhoPagina;
+        const fim = inicio + tamanhoPagina - 1;
+        
+        console.log(`📄 Carregando página ${pagina + 1} (registros ${inicio} a ${fim})...`);
+        
+        const { data: frequenciasPagina, error } = await this.supabase
+          .from('frequencia')
+          .select('*')
+          .range(inicio, fim);
+        
+        if (error) {
+          console.error('❌ Erro ao buscar frequências:', error);
+          throw error;
+        }
+        
+        if (frequenciasPagina && frequenciasPagina.length > 0) {
+          todasFrequencias = todasFrequencias.concat(frequenciasPagina);
+          console.log(`✅ Página ${pagina + 1}: ${frequenciasPagina.length} registros (total: ${todasFrequencias.length})`);
+          
+          // Se recebemos menos que o tamanho da página, não há mais dados
+          temMaisDados = frequenciasPagina.length === tamanhoPagina;
+          pagina++;
+        } else {
+          temMaisDados = false;
+        }
       }
+      
+      const frequencias = todasFrequencias;
+      console.log(`🎯 TOTAL FINAL DE REGISTROS CARREGADOS: ${frequencias.length}`);
       
       this.dadosFrequencia.clear();
       
