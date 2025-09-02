@@ -409,6 +409,9 @@ class FrequenciaSupabaseManager {
     
     // Atualizar filtro avançado de turmas
     this.atualizarFiltroTurmas(Array.from(relatoriosPorTurma.keys()));
+    
+    // Atualizar turmas para lançamento
+    this.carregarTurmasLancamento();
   }
 
   setupFiltrosAvancados() {
@@ -619,6 +622,223 @@ class FrequenciaSupabaseManager {
         </div>
       </div>
     `;
+  }
+
+  // SISTEMA DE LANÇAMENTO DE FREQUÊNCIA
+  carregarTurmasLancamento() {
+    console.log('🔍 Carregando turmas para lançamento...');
+    const selectTurma = document.getElementById('turmaLancamento');
+    if (!selectTurma) return;
+
+    // Coletar todas as turmas disponíveis
+    const turmasDisponiveis = new Set();
+    this.dadosFrequencia.forEach((periodo, chave) => {
+      turmasDisponiveis.add(periodo.turma);
+    });
+
+    // Limpar e popular select
+    selectTurma.innerHTML = '<option value="">Selecione uma turma...</option>';
+    Array.from(turmasDisponiveis).sort().forEach(turma => {
+      const option = document.createElement('option');
+      option.value = turma;
+      option.textContent = `Turma ${turma}`;
+      selectTurma.appendChild(option);
+    });
+
+    console.log(`✅ ${turmasDisponiveis.size} turmas carregadas para lançamento`);
+  }
+
+  carregarAlunosLancamento(turma) {
+    console.log(`🔍 Carregando alunos da turma ${turma} para lançamento...`);
+    
+    const containerLista = document.getElementById('containerListaAlunos');
+    const tituloTurmaData = document.getElementById('tituloTurmaData');
+    const listaAlunos = document.getElementById('listaAlunosFrequencia');
+    const dataLancamento = document.getElementById('dataLancamento').value;
+
+    if (!turma) {
+      containerLista.style.display = 'none';
+      return;
+    }
+
+    if (!dataLancamento) {
+      alert('Por favor, selecione uma data antes de escolher a turma.');
+      document.getElementById('turmaLancamento').value = '';
+      return;
+    }
+
+    // Coletar alunos únicos da turma
+    const alunosUnicos = new Map();
+    this.dadosFrequencia.forEach((periodo, chave) => {
+      if (periodo.turma === turma) {
+        periodo.alunos.forEach(aluno => {
+          if (!alunosUnicos.has(aluno.codigo)) {
+            alunosUnicos.set(aluno.codigo, {
+              codigo: aluno.codigo,
+              nome: aluno.nome,
+              turma: turma
+            });
+          }
+        });
+      }
+    });
+
+    if (alunosUnicos.size === 0) {
+      alert(`Nenhum aluno encontrado para a turma ${turma}`);
+      return;
+    }
+
+    // Ordenar alunos por nome
+    const alunosOrdenados = Array.from(alunosUnicos.values())
+      .sort((a, b) => a.nome.localeCompare(b.nome));
+
+    // Atualizar título
+    const dataFormatada = new Date(dataLancamento + 'T00:00:00').toLocaleDateString('pt-BR');
+    tituloTurmaData.textContent = `Turma ${turma} - ${dataFormatada}`;
+
+    // Gerar lista de alunos
+    listaAlunos.innerHTML = alunosOrdenados.map(aluno => `
+      <div class="aluno-frequencia-item" data-codigo="${aluno.codigo}">
+        <div class="aluno-info">
+          <span class="aluno-codigo">${aluno.codigo}</span>
+          <span class="aluno-nome">${aluno.nome}</span>
+        </div>
+        <div class="frequencia-controles">
+          <label class="frequencia-radio">
+            <input type="radio" name="freq_${aluno.codigo}" value="P" checked>
+            <span class="radio-label freq-P">P</span>
+          </label>
+          <label class="frequencia-radio">
+            <input type="radio" name="freq_${aluno.codigo}" value="F">
+            <span class="radio-label freq-F">F</span>
+          </label>
+          <label class="frequencia-radio">
+            <input type="radio" name="freq_${aluno.codigo}" value="A">
+            <span class="radio-label freq-A">A</span>
+          </label>
+          <label class="frequencia-radio">
+            <input type="radio" name="freq_${aluno.codigo}" value="FC">
+            <span class="radio-label freq-FC">FC</span>
+          </label>
+        </div>
+      </div>
+    `).join('');
+
+    // Mostrar container e habilitar botão de salvar
+    containerLista.style.display = 'block';
+    document.getElementById('btnSalvarFrequencia').disabled = false;
+
+    console.log(`✅ ${alunosOrdenados.length} alunos carregados para lançamento`);
+  }
+
+  marcarTodosPresentes() {
+    console.log('✅ Marcando todos como presentes...');
+    const radiosPresenca = document.querySelectorAll('input[type="radio"][value="P"]');
+    radiosPresenca.forEach(radio => {
+      radio.checked = true;
+    });
+    console.log(`✅ ${radiosPresenca.length} alunos marcados como presentes`);
+  }
+
+  limparMarcacoes() {
+    console.log('🔄 Limpando todas as marcações...');
+    const radiosPresenca = document.querySelectorAll('input[type="radio"][value="P"]');
+    radiosPresenca.forEach(radio => {
+      radio.checked = true;
+    });
+    console.log('✅ Todas as marcações resetadas para Presente');
+  }
+
+  async salvarFrequenciaDiaria() {
+    const turma = document.getElementById('turmaLancamento').value;
+    const data = document.getElementById('dataLancamento').value;
+    const statusContainer = document.getElementById('statusSalvamento');
+
+    if (!turma || !data) {
+      alert('Por favor, selecione uma turma e uma data.');
+      return;
+    }
+
+    console.log(`💾 Iniciando salvamento da frequência - Turma: ${turma}, Data: ${data}`);
+
+    // Coletar dados dos alunos
+    const dadosFrequencia = [];
+    const alunosItems = document.querySelectorAll('.aluno-frequencia-item');
+    
+    alunosItems.forEach(item => {
+      const codigo = item.dataset.codigo;
+      const nome = item.querySelector('.aluno-nome').textContent;
+      const radioSelecionado = item.querySelector('input[type="radio"]:checked');
+      
+      if (radioSelecionado) {
+        dadosFrequencia.push({
+          codigo_matricula: codigo,
+          nome_completo: nome,
+          turma: turma,
+          data: data,
+          status: radioSelecionado.value
+        });
+      }
+    });
+
+    console.log(`📊 Coletados dados de ${dadosFrequencia.length} alunos`);
+
+    // Mostrar loading
+    statusContainer.innerHTML = `
+      <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>Salvando frequência de ${dadosFrequencia.length} alunos...</p>
+      </div>
+    `;
+
+    try {
+      // Salvar no Supabase
+      const { data: resultado, error } = await this.supabase
+        .from('frequencia')
+        .upsert(dadosFrequencia, { onConflict: 'codigo_matricula,data' });
+
+      if (error) {
+        console.error('❌ Erro ao salvar frequência:', error);
+        statusContainer.innerHTML = `
+          <div class="error-message">
+            ❌ Erro ao salvar: ${error.message}
+          </div>
+        `;
+        return;
+      }
+
+      console.log('✅ Frequência salva com sucesso!');
+      statusContainer.innerHTML = `
+        <div class="success-message">
+          ✅ Frequência salva com sucesso! ${dadosFrequencia.length} registros processados.
+        </div>
+      `;
+
+      // Recarregar dados e limpar formulário
+      setTimeout(async () => {
+        await this.carregarDados();
+        this.renderizarRelatorios();
+        this.voltarSelecaoTurma();
+        statusContainer.innerHTML = '';
+      }, 2000);
+
+    } catch (error) {
+      console.error('❌ Erro na operação:', error);
+      statusContainer.innerHTML = `
+        <div class="error-message">
+          ❌ Erro na operação: ${error.message}
+        </div>
+      `;
+    }
+  }
+
+  voltarSelecaoTurma() {
+    console.log('⬅️ Voltando para seleção de turma...');
+    document.getElementById('turmaLancamento').value = '';
+    document.getElementById('dataLancamento').value = '';
+    document.getElementById('containerListaAlunos').style.display = 'none';
+    document.getElementById('btnSalvarFrequencia').disabled = true;
+    document.getElementById('statusSalvamento').innerHTML = '';
   }
 
   selecionarTurma(turma) {
@@ -1290,6 +1510,38 @@ function selecionarPeriodoDias() {
 function voltarResumoAlunos() {
   if (window.frequenciaManager) {
     window.frequenciaManager.mostrarResumoAlunos();
+  }
+}
+
+// FUNÇÕES GLOBAIS PARA LANÇAMENTO DE FREQUÊNCIA
+function carregarAlunosLancamento() {
+  const turma = document.getElementById('turmaLancamento').value;
+  if (window.frequenciaManager && turma) {
+    window.frequenciaManager.carregarAlunosLancamento(turma);
+  }
+}
+
+function marcarTodosPresentes() {
+  if (window.frequenciaManager) {
+    window.frequenciaManager.marcarTodosPresentes();
+  }
+}
+
+function limparMarcacoes() {
+  if (window.frequenciaManager) {
+    window.frequenciaManager.limparMarcacoes();
+  }
+}
+
+function salvarFrequenciaDiaria() {
+  if (window.frequenciaManager) {
+    window.frequenciaManager.salvarFrequenciaDiaria();
+  }
+}
+
+function voltarSelecaoTurma() {
+  if (window.frequenciaManager) {
+    window.frequenciaManager.voltarSelecaoTurma();
   }
 }
 

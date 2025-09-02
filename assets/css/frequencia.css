@@ -289,3 +289,127 @@
 .btn-secondary:hover {
   background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
 }
+
+/* Sistema de Lançamento de Frequência */
+.alunos-frequencia-lista {
+  max-height: 500px;
+  overflow-y: auto;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  background: white;
+}
+
+.aluno-frequencia-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid #f1f3f4;
+  transition: background-color 0.2s ease;
+}
+
+.aluno-frequencia-item:hover {
+  background-color: #f8f9fa;
+}
+
+.aluno-frequencia-item:last-child {
+  border-bottom: none;
+}
+
+.aluno-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.aluno-codigo {
+  font-weight: 700;
+  color: #007bff;
+  min-width: 80px;
+  font-size: 0.9rem;
+}
+
+.aluno-nome {
+  font-weight: 500;
+  color: #333;
+  flex: 1;
+}
+
+.frequencia-controles {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.frequencia-radio {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.frequencia-radio input[type="radio"] {
+  opacity: 0;
+  position: absolute;
+}
+
+.radio-label {
+  padding: 0.5rem 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-align: center;
+  min-width: 35px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.frequencia-radio input[type="radio"]:checked + .radio-label {
+  border-color: transparent;
+  color: white;
+  transform: scale(1.05);
+}
+
+.frequencia-radio input[type="radio"]:checked + .radio-label.freq-P {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
+.frequencia-radio input[type="radio"]:checked + .radio-label.freq-F {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+}
+
+.frequencia-radio input[type="radio"]:checked + .radio-label.freq-A {
+  background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+  box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3);
+}
+
+.frequencia-radio input[type="radio"]:checked + .radio-label.freq-FC {
+  background: linear-gradient(135deg, #fd7e14 0%, #e55a00 100%);
+  box-shadow: 0 2px 4px rgba(253, 126, 20, 0.3);
+}
+
+.frequencia-radio:hover .radio-label {
+  border-color: #007bff;
+  transform: translateY(-1px);
+}
+
+.success-message {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  color: #155724;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #28a745;
+  font-weight: 500;
+}
+
+.error-message {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+  color: #721c24;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #dc3545;
+  font-weight: 500;
+}
