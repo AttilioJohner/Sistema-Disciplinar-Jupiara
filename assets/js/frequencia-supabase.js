@@ -25,33 +25,25 @@ class FrequenciaSupabaseManager {
     await this.carregarDados();
     this.renderizarRelatorios();
     
-    // Se não há dados, mensagem informativa
+    // Se não há dados, mostrar opções de importação
     if (this.dadosFrequencia.size === 0) {
       console.log('📥 Nenhum dado encontrado...');
-      showToast('Carregando dados de frequência...', 'info');
+      showToast('Nenhum dado de frequência encontrado. Importe um arquivo CSV.', 'info');
     }
     
     console.log('✅ FrequenciaSupabaseManager inicializado');
   }
 
   setupEventListeners() {
-    // Event listeners para filtros avançados
-    const filtroTurmaAvancado = document.getElementById('filtro-turma-avancado');
-    const filtroAluno = document.getElementById('filtro-aluno');
-    
-    if (filtroTurmaAvancado) {
-      filtroTurmaAvancado.addEventListener('change', () => {
-        this.atualizarListaAlunos(filtroTurmaAvancado.value);
-      });
-    }
-    
-    if (filtroAluno) {
-      filtroAluno.addEventListener('change', () => {
-        this.mostrarEstatisticasAluno(filtroAluno.value);
+    // Botão importar (opcional - só se existir)
+    const btnImportar = document.getElementById('btn-importar');
+    if (btnImportar) {
+      btnImportar.addEventListener('click', () => {
+        this.importarDadosCSV();
       });
     }
 
-    // Filtros originais
+    // Filtros
     const filtroTurma = document.getElementById('filtro-turma');
     const filtroMes = document.getElementById('filtro-mes');
     const filtroAno = document.getElementById('filtro-ano');
@@ -385,27 +377,6 @@ class FrequenciaSupabaseManager {
       
       cardsGrid.appendChild(card);
     }
-    
-    // Atualizar filtro avançado de turmas
-    this.atualizarFiltroTurmas(Array.from(relatoriosPorTurma.keys()));
-  }
-
-  atualizarFiltroTurmas(turmas) {
-    const selectTurma = document.getElementById('filtro-turma-avancado');
-    if (!selectTurma) return;
-    
-    // Limpar opções antigas
-    selectTurma.innerHTML = '<option value="">Selecione uma turma...</option>';
-    
-    // Adicionar turmas ordenadas
-    turmas.sort().forEach(turma => {
-      const option = document.createElement('option');
-      option.value = turma;
-      option.textContent = `Turma ${turma}`;
-      selectTurma.appendChild(option);
-    });
-    
-    console.log(`✅ Filtro de turmas atualizado com ${turmas.length} turmas`);
   }
 
   selecionarTurma(turma) {
@@ -580,187 +551,6 @@ class FrequenciaSupabaseManager {
     
     console.log(`✅ DEBUG - Tabela compilada renderizada para ${alunosComTotais.length} alunos da turma ${this.turmaAtual}`);
     showToast(`Estatísticas compiladas: ${alunosComTotais.length} alunos da turma ${this.turmaAtual}`, 'success');
-  }
-
-  atualizarListaAlunos(turma) {
-    console.log(`🔍 Atualizando lista de alunos para turma: ${turma}`);
-    
-    const selectAluno = document.getElementById('filtro-aluno');
-    if (!selectAluno) return;
-    
-    // Limpar opções antigas
-    selectAluno.innerHTML = '<option value="">Selecione um aluno...</option>';
-    
-    if (!turma) {
-      selectAluno.disabled = true;
-      return;
-    }
-    
-    // Coletar todos os alunos únicos da turma
-    const alunosUnicos = new Map();
-    
-    this.dadosFrequencia.forEach((periodo, chave) => {
-      if (periodo.turma === turma) {
-        periodo.alunos.forEach(aluno => {
-          if (!alunosUnicos.has(aluno.codigo)) {
-            alunosUnicos.set(aluno.codigo, {
-              codigo: aluno.codigo,
-              nome: aluno.nome
-            });
-          }
-        });
-      }
-    });
-    
-    // Ordenar alunos por nome
-    const alunosOrdenados = Array.from(alunosUnicos.values())
-      .sort((a, b) => a.nome.localeCompare(b.nome));
-    
-    // Adicionar opções
-    alunosOrdenados.forEach(aluno => {
-      const option = document.createElement('option');
-      option.value = aluno.codigo;
-      option.textContent = `${aluno.codigo} - ${aluno.nome}`;
-      selectAluno.appendChild(option);
-    });
-    
-    selectAluno.disabled = false;
-    console.log(`✅ Lista atualizada com ${alunosOrdenados.length} alunos`);
-  }
-
-  async mostrarEstatisticasAluno(codigoAluno) {
-    if (!codigoAluno) {
-      // Limpar área de estatísticas
-      const container = document.getElementById('estatisticas-aluno');
-      if (container) {
-        container.innerHTML = '<div class="info-text">Selecione um aluno para ver suas estatísticas</div>';
-      }
-      return;
-    }
-    
-    console.log(`📊 Gerando estatísticas para aluno: ${codigoAluno}`);
-    
-    // Compilar dados do aluno
-    const dadosAluno = {
-      codigo: codigoAluno,
-      nome: '',
-      turma: '',
-      totais: { P: 0, F: 0, A: 0, FC: 0 },
-      totalRegistros: 0,
-      periodos: []
-    };
-    
-    this.dadosFrequencia.forEach((periodo, chave) => {
-      const alunoNoPeriodo = periodo.alunos.find(a => a.codigo === codigoAluno);
-      if (alunoNoPeriodo) {
-        dadosAluno.nome = alunoNoPeriodo.nome;
-        dadosAluno.turma = periodo.turma;
-        
-        const totalPeriodo = { P: 0, F: 0, A: 0, FC: 0 };
-        if (alunoNoPeriodo.dias) {
-          Object.values(alunoNoPeriodo.dias).forEach(status => {
-            if (dadosAluno.totais.hasOwnProperty(status)) {
-              dadosAluno.totais[status]++;
-              totalPeriodo[status]++;
-              dadosAluno.totalRegistros++;
-            }
-          });
-        }
-        
-        dadosAluno.periodos.push({
-          periodo: `${this.getNomeMes(periodo.mes)}/${periodo.ano}`,
-          totais: totalPeriodo,
-          totalDias: Object.values(totalPeriodo).reduce((a, b) => a + b, 0)
-        });
-      }
-    });
-    
-    // Calcular percentual de presença
-    const percentualPresenca = dadosAluno.totalRegistros > 0 
-      ? ((dadosAluno.totais.P / dadosAluno.totalRegistros) * 100).toFixed(1)
-      : 0;
-    
-    this.renderizarEstatisticasAluno(dadosAluno, parseFloat(percentualPresenca));
-  }
-
-  renderizarEstatisticasAluno(dadosAluno, percentualPresenca) {
-    const container = document.getElementById('estatisticas-aluno');
-    if (!container) return;
-    
-    const corPresenca = percentualPresenca >= 75 ? '#28a745' : percentualPresenca >= 50 ? '#ffc107' : '#dc3545';
-    
-    container.innerHTML = `
-      <div class="container">
-        <h2>📊 Estatísticas - ${dadosAluno.nome}</h2>
-        
-        <div class="aluno-card">
-          <div class="aluno-card-header">
-            <div class="aluno-info">
-              <span class="aluno-codigo">${dadosAluno.codigo}</span>
-              <span class="aluno-turma">Turma ${dadosAluno.turma}</span>
-            </div>
-            <div class="aluno-presenca" style="color: ${corPresenca}">
-              <span class="presenca-valor">${percentualPresenca}%</span>
-              <span class="presenca-label">Presença</span>
-            </div>
-          </div>
-          
-          <div class="stats-grid">
-            <div class="stat-card stat-success">
-              <div class="stat-icon">✅</div>
-              <div class="stat-value">${dadosAluno.totais.P}</div>
-              <div class="stat-label">Presenças</div>
-            </div>
-            
-            <div class="stat-card stat-danger">
-              <div class="stat-icon">❌</div>
-              <div class="stat-value">${dadosAluno.totais.F}</div>
-              <div class="stat-label">Faltas</div>
-            </div>
-            
-            <div class="stat-card stat-warning">
-              <div class="stat-icon">📋</div>
-              <div class="stat-value">${dadosAluno.totais.A}</div>
-              <div class="stat-label">Atestados</div>
-            </div>
-            
-            <div class="stat-card stat-info">
-              <div class="stat-icon">⚠️</div>
-              <div class="stat-value">${dadosAluno.totais.FC}</div>
-              <div class="stat-label">Faltas Controladas</div>
-            </div>
-          </div>
-          
-          <div class="progress-section">
-            <h4>📈 Frequência por Período</h4>
-            ${dadosAluno.periodos.map(periodo => {
-              const percentualPeriodo = periodo.totalDias > 0 
-                ? ((periodo.totais.P / periodo.totalDias) * 100).toFixed(1)
-                : 0;
-              const corBarra = parseFloat(percentualPeriodo) >= 75 ? '#28a745' : '#dc3545';
-              
-              return `
-                <div class="periodo-item">
-                  <div class="periodo-info">
-                    <span class="periodo-nome">${periodo.periodo}</span>
-                    <span class="periodo-percent">${percentualPeriodo}%</span>
-                  </div>
-                  <div class="progress-bar">
-                    <div class="progress-fill" style="width: ${percentualPeriodo}%; background: ${corBarra}"></div>
-                  </div>
-                  <div class="periodo-detalhes">
-                    <span class="freq-P">${periodo.totais.P}P</span>
-                    <span class="freq-F">${periodo.totais.F}F</span>
-                    <span class="freq-A">${periodo.totais.A}A</span>
-                    <span class="freq-FC">${periodo.totais.FC}FC</span>
-                  </div>
-                </div>
-              `;
-            }).join('')}
-          </div>
-        </div>
-      </div>
-    `;
   }
 
   mostrarTabelaDias(mesEscolhido = null, anoEscolhido = null) {
@@ -1048,7 +838,55 @@ class FrequenciaSupabaseManager {
     this.mostrarResumoAlunos();
   }
 
-}
+  async importarDadosCSV() {
+    showToast('Importando dados...', 'info');
+    
+    // Usar dados completos do arquivo separado
+    const csvData = window.getDadosFrequencia ? window.getDadosFrequencia() : null;
+    
+    if (!csvData) {
+      showToast('Dados não encontrados. Verifique se o arquivo de dados foi carregado.', 'error');
+      return;
+    }
+    
+    try {
+      await this.processarCSVData(csvData);
+      showToast('Dados importados com sucesso!', 'success');
+      
+      // Recarregar dados e atualizar interface
+      await this.carregarDados();
+      this.renderizarRelatorios();
+      
+      // Selecionar primeira turma automaticamente se houver dados
+      if (this.dadosFrequencia.size > 0) {
+        const primeiraTurma = Array.from(this.dadosFrequencia.keys())[0].split('_')[0];
+        const primeiroMes = Array.from(this.dadosFrequencia.keys())[0].split('_')[1];
+        const primeiroAno = Array.from(this.dadosFrequencia.keys())[0].split('_')[2];
+        
+        const filtroTurma = document.getElementById('filtro-turma');
+        const filtroMes = document.getElementById('filtro-mes');
+        const filtroAno = document.getElementById('filtro-ano');
+        
+        if (filtroTurma) filtroTurma.value = primeiraTurma;
+        if (filtroMes) filtroMes.value = primeiroMes;
+        if (filtroAno) filtroAno.value = primeiroAno;
+        
+        this.turmaAtual = primeiraTurma;
+        this.mesAtual = primeiroMes;
+        this.anoAtual = primeiroAno;
+        
+        this.atualizarFiltroMes();
+        this.renderizarTabela();
+        
+        showToast(`Mostrando dados da turma ${primeiraTurma}`, 'success');
+      }
+    } catch (error) {
+      console.error('❌ Erro na importação:', error);
+      showToast('Erro na importação: ' + error.message, 'error');
+    }
+  }
+
+  async processarCSVData(csvData) {
     // Parse CSV
     const lines = csvData.trim().split('\n');
     const header = this.parseCSVLine(lines[0]);
