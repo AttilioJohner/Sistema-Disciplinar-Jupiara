@@ -73,7 +73,7 @@ class RelatoriosSupabaseManager {
             const { data, error } = await this.supabase
                 .from('alunos')
                 .select('*')
-                .order('nome_completo');
+                .order('Nome completo');
             
             if (error) throw error;
             console.log('📊 ALUNOS: Carregados', data?.length || 0, 'alunos');
@@ -103,9 +103,9 @@ class RelatoriosSupabaseManager {
     async carregarMedidas() {
         try {
             const { data, error } = await this.supabase
-                .from('medidas_disciplinares')
+                .from('medidas')
                 .select('*')
-                .order('created_at', { ascending: false });
+                .order('data_aplicacao', { ascending: false });
             
             if (error) throw error;
             console.log('📊 MEDIDAS: Carregados', data?.length || 0, 'registros');
@@ -121,7 +121,7 @@ class RelatoriosSupabaseManager {
             const { data, error } = await this.supabase
                 .from('ficai_providencias')
                 .select('*')
-                .order('criado_em', { ascending: false });
+                .order('data_criacao', { ascending: false });
             
             if (error) throw error;
             console.log('📊 FICAI: Carregados', data?.length || 0, 'registros');
@@ -146,7 +146,7 @@ class RelatoriosSupabaseManager {
             // Buscar medidas do aluno
             const medidasAluno = dadosRelatorios.medidas.filter(m => 
                 m.codigo_matricula === aluno.codigo_matricula || 
-                m.aluno_nome === aluno.nome_completo
+                m.aluno_nome === aluno['Nome completo']
             );
             
             // Buscar providências FICAI do aluno
@@ -169,7 +169,7 @@ class RelatoriosSupabaseManager {
             dadosIntegrados.push({
                 // Dados básicos do aluno
                 codigo: aluno.codigo_matricula,
-                nome: aluno.nome_completo,
+                nome: aluno['Nome completo'],
                 turma: aluno.turma,
                 nascimento: aluno.data_nascimento,
                 
@@ -190,7 +190,7 @@ class RelatoriosSupabaseManager {
                 // Status FICAI
                 statusFicai: ficaiRecente?.status_ficai || null,
                 providenciasFicai: ficaiRecente?.providencias || null,
-                dataFicai: ficaiRecente?.criado_em || null,
+                dataFicai: ficaiRecente?.data_criacao || null,
                 
                 // Análise de risco
                 nivelRisco: nivelRisco.nivel,
@@ -286,7 +286,7 @@ class RelatoriosSupabaseManager {
             porTipo[tipo] = (porTipo[tipo] || 0) + 1;
             
             // Encontrar data mais recente
-            const dataMedida = new Date(medida.created_at || medida.data_aplicacao);
+            const dataMedida = new Date(medida.data_aplicacao);
             if (!ultimaData || dataMedida > ultimaData) {
                 ultimaData = dataMedida;
             }
@@ -506,7 +506,7 @@ function aplicarFiltrosRelatorio() {
                 new Date(f.data) >= dataLimite
             );
             const temMedidaRecente = aluno.medidas.some(m => 
-                new Date(m.created_at || m.data_aplicacao) >= dataLimite
+                new Date(m.data_aplicacao) >= dataLimite
             );
             
             return temFrequenciaRecente || temMedidaRecente;
