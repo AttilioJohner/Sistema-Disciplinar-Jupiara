@@ -307,27 +307,41 @@ class FrequenciaSupabaseManager {
     const container = document.getElementById('resumoTurmas');
     if (!container) return;
     
-    // Criar estrutura completa com filtros avançados
+    // Criar estrutura preservando o layout original
     container.innerHTML = `
-      <div class="filters-row">
-        <div class="filter-group">
-          <label for="filtro-turma-avancado">Pesquisar por Turma:</label>
-          <select id="filtro-turma-avancado">
-            <option value="">Selecione uma turma...</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label for="filtro-aluno">Pesquisar Aluno:</label>
-          <select id="filtro-aluno" disabled>
-            <option value="">Selecione um aluno...</option>
-          </select>
-        </div>
-      </div>
-      <div id="estatisticas-aluno">
-        <div class="info-text">Selecione uma turma e depois um aluno para ver suas estatísticas</div>
-      </div>
       <div class="cards-grid"></div>
     `;
+    
+    // Criar filtros avançados em container separado, se não existir
+    let filtrosContainer = document.getElementById('filtros-avancados-container');
+    if (!filtrosContainer) {
+      filtrosContainer = document.createElement('div');
+      filtrosContainer.id = 'filtros-avancados-container';
+      filtrosContainer.innerHTML = `
+        <div class="container">
+          <h2>🔍 Pesquisa Avançada</h2>
+          <div class="filters-row">
+            <div class="filter-group">
+              <label for="filtro-turma-avancado">Turma:</label>
+              <select id="filtro-turma-avancado">
+                <option value="">Selecione uma turma...</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label for="filtro-aluno">Aluno:</label>
+              <select id="filtro-aluno" disabled>
+                <option value="">Selecione um aluno...</option>
+              </select>
+            </div>
+          </div>
+          <div id="estatisticas-aluno">
+            <div class="info-text">Selecione uma turma e depois um aluno para ver suas estatísticas</div>
+          </div>
+        </div>
+      `;
+      // Inserir antes do container de resumo das turmas
+      container.parentNode.insertBefore(filtrosContainer, container);
+    }
     
     const cardsGrid = container.querySelector('.cards-grid');
     
