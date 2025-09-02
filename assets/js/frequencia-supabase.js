@@ -553,17 +553,40 @@ class FrequenciaSupabaseManager {
     const diasUteis = this.gerarDiasUteis(parseInt(mesVisualizacao), parseInt(anoVisualizacao));
     console.log(`📅 DEBUG - Dias úteis de ${mesVisualizacao}/${anoVisualizacao}:`, diasUteis.map(d => `${d.dia}(${d.diaSemana})`).join(', '));
     
-    // Debug: verificar quais dias têm dados reais na base
-    const diasComDados = new Set();
-    dadosPeriodo.alunos.forEach(aluno => {
-      if (aluno.dias) {
-        Object.keys(aluno.dias).forEach(dia => {
-          diasComDados.add(dia);
+    // Debug: verificar quais dias têm dados REAIS consultando o Supabase original
+    const diasComDadosReais = new Set();
+    
+    // Buscar registros originais do Supabase para este período específico
+    try {
+      const { data: registrosOriginais } = await this.supabase
+        .from('frequencia')
+        .select('data')
+        .eq('turma', this.turmaAtual)
+        .gte('data', `${anoVisualizacao}-${mesVisualizacao.padStart(2, '0')}-01`)
+        .lt('data', `${anoVisualizacao}-${String(parseInt(mesVisualizacao) + 1).padStart(2, '0')}-01`);
+      
+      if (registrosOriginais) {
+        registrosOriginais.forEach(registro => {
+          const dataObj = new Date(registro.data);
+          const dia = String(dataObj.getDate()).padStart(2, '0');
+          diasComDadosReais.add(dia);
         });
       }
-    });
-    console.log(`📊 DEBUG - Dias com dados na base:`, Array.from(diasComDados).sort((a, b) => parseInt(a) - parseInt(b)).join(', '));
-    console.log(`❓ DEBUG - Dias úteis sem dados:`, diasUteis.filter(d => !diasComDados.has(d.dia)).map(d => `${d.dia}(${d.diaSemana})`).join(', '));
+    } catch (error) {
+      console.error('❌ Erro ao buscar dados originais:', error);
+    }
+    
+    console.log(`📊 DEBUG - Dias com dados REAIS no Supabase:`, Array.from(diasComDadosReais).sort((a, b) => parseInt(a) - parseInt(b)).join(', '));
+    console.log(`❓ DEBUG - Dias úteis sem dados:`, diasUteis.filter(d => !diasComDadosReais.has(d.dia)).map(d => `${d.dia}(${d.diaSemana})`).join(', '));
+    
+    // Usar apenas dias que têm dados reais para a tabela
+    const diasComDadosOrdenados = Array.from(diasComDadosReais)
+      .sort((a, b) => parseInt(a) - parseInt(b))
+      .map(dia => {
+        const dataCompleta = new Date(parseInt(anoVisualizacao), parseInt(mesVisualizacao) - 1, parseInt(dia));
+        const diaSemana = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'][dataCompleta.getDay()];
+        return { dia, diaSemana };
+      });
     
     // Renderizar tabela por dias
     container.innerHTML = `
@@ -585,8 +608,7 @@ class FrequenciaSupabaseManager {
           </button>
         </div>
         <p style="color: #666; font-size: 0.9rem;">
-          ${dadosPeriodo.alunos.length} alunos • ${diasComDados.size} dias com dados em ${this.getNomeMes(mesVisualizacao)}/${anoVisualizacao}
-          ${diasUteis.length !== diasComDados.size ? `<br><span style="color: #f39c12;">⚠️ ${diasUteis.length - diasComDados.size} dias úteis sem registros</span>` : ''}
+          ${dadosPeriodo.alunos.length} alunos • ${diasComDadosReais.size} dias com dados em ${this.getNomeMes(mesVisualizacao)}/${anoVisualizacao}
         </p>
       </div>
       <div class="table-wrapper">
@@ -595,7 +617,7 @@ class FrequenciaSupabaseManager {
             <tr>
               <th>Código</th>
               <th>Nome</th>
-              ${diasUteis.map(diaInfo => `
+              ${diasComDadosOrdenados.map(diaInfo => `
                 <th style="text-align: center; min-width: 60px;">
                   <div>${diaInfo.dia}</div>
                   <div style="font-size: 0.8em; color: #666;">(${diaInfo.diaSemana})</div>
@@ -608,7 +630,7 @@ class FrequenciaSupabaseManager {
               <tr>
                 <td><strong>${aluno.codigo}</strong></td>
                 <td>${aluno.nome}</td>
-                ${diasUteis.map(diaInfo => {
+                ${diasComDadosOrdenados.map(diaInfo => {
                   const status = aluno.dias && aluno.dias[diaInfo.dia] ? aluno.dias[diaInfo.dia] : '';
                   const classe = status ? `freq-${status}` : '';
                   return `<td class="${classe}" style="text-align: center;">${status || '-'}</td>`;
@@ -620,8 +642,8 @@ class FrequenciaSupabaseManager {
       </div>
     `;
     
-    console.log(`✅ DEBUG - Tabela diária renderizada: ${dadosPeriodo.alunos.length} alunos x ${diasUteis.length} dias úteis`);
-    showToast(`Visualização: ${diasUteis.length} dias úteis de ${this.getNomeMes(mesVisualizacao)}/${anoVisualizacao}`, 'success');
+    console.log(`✅ DEBUG - Tabela diária renderizada: ${dadosPeriodo.alunos.length} alunos x ${diasComDadosReais.size} dias reais`);
+    showToast(`Visualização: ${diasComDadosReais.size} dias com dados de ${this.getNomeMes(mesVisualizacao)}/${anoVisualizacao}`, 'success');
   }
   
   gerarDiasUteis(mes, ano) {
