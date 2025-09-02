@@ -1304,7 +1304,7 @@
                 }
             } else {
                 // Se nunca teve medidas negativas (ou só teve positivas), só começa a recuperar após 60 dias da data inicial
-                const dataInicial = new Date('2024-07-28'); // Data de início do sistema de notas (28 de julho de 2024)
+                const dataInicial = new Date('2025-07-28'); // Data de início do sistema de notas (28 de julho de 2025)
                 diasSemMedidasNegativas = Math.floor((hoje - dataInicial) / (1000 * 60 * 60 * 24));
                 if (diasSemMedidasNegativas >= 60) {
                     const pontosRecuperacao = (diasSemMedidasNegativas - 60) * 0.2;
@@ -1409,10 +1409,10 @@
                             medidasPorAluno[medida.codigo_matricula].push(medida);
                         });
                         
-                        // Calcular nota para cada aluno
+                        // Calcular nota para cada aluno considerando data inicial 28/07/2025
                         todosAlunos.forEach(aluno => {
                             const medidasDoAluno = medidasPorAluno[aluno.codigo] || [];
-                            const notaAluno = calcularNotaDisciplinar(medidasDoAluno);
+                            const notaAluno = calcularNotaDisciplinar(medidasDoAluno, aluno.codigo);
                             somaNotas += notaAluno.nota;
                         });
                         
@@ -1438,7 +1438,7 @@
                 document.getElementById('medidasMes').textContent = '0';
                 document.getElementById('medidasSemana').textContent = '0';
                 document.getElementById('alunosAfetados').textContent = '0';
-                document.getElementById('mediaNotaEscola').textContent = '8.0';
+                document.getElementById('mediaNotaEscola').textContent = '8.00';
             }
         }
 
