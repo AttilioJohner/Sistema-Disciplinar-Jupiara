@@ -158,6 +158,18 @@ class FrequenciaSupabaseManager {
           const ano = String(dataObj.getFullYear());
           const dia = String(dataObj.getDate()).padStart(2, '0');
           
+          // Debug específico para registro 1250 e registros do dia 15/08/2025
+          if (registro.id === 1250 || (registro.data && registro.data.includes('2025-08-15'))) {
+            console.log(`🔧 PROCESSAMENTO REGISTRO ${registro.id}:`, {
+              raw_data: registro.data,
+              parsed_date: dataObj,
+              mes: mes,
+              ano: ano,
+              dia: dia,
+              turma: registro.turma
+            });
+          }
+          
           const chave = `${registro.turma}_${mes}_${ano}`;
           
           if (!gruposDados.has(chave)) {
@@ -591,14 +603,30 @@ class FrequenciaSupabaseManager {
     
     // Debug: verificar quais dias têm dados reais na base
     const diasComDados = new Set();
+    console.log(`🔍 DEBUG - dadosPeriodo.alunos tem ${dadosPeriodo.alunos.length} alunos`);
+    
+    // Procurar especificamente por registros do dia 15
+    let registrosDia15 = [];
+    
     dadosPeriodo.alunos.forEach(aluno => {
       if (aluno.dias) {
         Object.keys(aluno.dias).forEach(dia => {
           diasComDados.add(dia);
+          
+          // Debug específico para dia 15
+          if (dia === '15') {
+            registrosDia15.push({
+              aluno: aluno.nome,
+              codigo: aluno.codigo,
+              status: aluno.dias[dia]
+            });
+          }
         });
       }
     });
+    
     console.log(`📊 DEBUG - Dias com dados na base:`, Array.from(diasComDados).sort((a, b) => parseInt(a) - parseInt(b)).join(', '));
+    console.log(`🔍 DEBUG - Registros encontrados para dia 15:`, registrosDia15.length, registrosDia15.slice(0, 3));
     console.log(`❓ DEBUG - Dias úteis sem dados:`, diasUteis.filter(d => !diasComDados.has(d.dia)).map(d => `${d.dia}(${d.diaSemana})`).join(', '));
     
     // Renderizar tabela por dias
