@@ -1692,9 +1692,10 @@ async function inicializarModuloFrequencia() {
       window.frequenciaManager = new FrequenciaSupabaseManager();
       showToast('✅ Módulo de frequência carregado!', 'success');
       
-      // Inicializar sistema de alertas
+      // Inicializar sistema de alertas e estatísticas
       setTimeout(() => {
         carregarAlertasFrequencia();
+        carregarEstatisticasRapidas();
       }, 2000);
       
     } catch (error) {
@@ -2426,6 +2427,101 @@ function toggleListaAlertas() {
             console.log('👁️ TOGGLE: Lista vazia, recarregando alertas...');
             atualizarAlertasMes();
         }
+    }
+}
+
+// Função para carregar estatísticas rápidas do dia
+async function carregarEstatisticasRapidas() {
+    console.log('📊 STATS: Carregando estatísticas rápidas...');
+    
+    try {
+        // Data de hoje no formato YYYY-MM-DD
+        const hoje = new Date().toISOString().split('T')[0];
+        
+        // Buscar registros de frequência de hoje
+        const { data: registrosHoje, error } = await supabaseClient
+            .from('frequencia')
+            .select('status')
+            .eq('data', hoje);
+        
+        if (error) {
+            console.error('❌ STATS: Erro ao buscar dados:', error);
+            return;
+        }
+        
+        console.log('📊 STATS: Registros de hoje encontrados:', registrosHoje?.length || 0);
+        
+        // Contar por tipo de status
+        let presencas = 0;
+        let faltas = 0;
+        let faltasControladas = 0;
+        let atestados = 0;
+        
+        if (registrosHoje && registrosHoje.length > 0) {
+            registrosHoje.forEach(registro => {
+                switch (registro.status) {
+                    case 'P':
+                        presencas++;
+                        break;
+                    case 'F':
+                        faltas++;
+                        break;
+                    case 'FC':
+                        faltasControladas++;
+                        break;
+                    case 'A':
+                        atestados++;
+                        break;
+                }
+            });
+        }
+        
+        // Atualizar elementos na tela
+        const presencasEl = document.getElementById('presencasHoje');
+        const faltasEl = document.getElementById('faltasHoje');
+        const faltasControladasEl = document.getElementById('faltasControladasHoje');
+        const atestadosEl = document.getElementById('atestadosHoje');
+        
+        if (presencasEl) {
+            presencasEl.textContent = presencas;
+            presencasEl.style.opacity = '0';
+            setTimeout(() => {
+                presencasEl.style.transition = 'opacity 0.5s ease';
+                presencasEl.style.opacity = '1';
+            }, 100);
+        }
+        
+        if (faltasEl) {
+            faltasEl.textContent = faltas;
+            faltasEl.style.opacity = '0';
+            setTimeout(() => {
+                faltasEl.style.transition = 'opacity 0.5s ease';
+                faltasEl.style.opacity = '1';
+            }, 200);
+        }
+        
+        if (faltasControladasEl) {
+            faltasControladasEl.textContent = faltasControladas;
+            faltasControladasEl.style.opacity = '0';
+            setTimeout(() => {
+                faltasControladasEl.style.transition = 'opacity 0.5s ease';
+                faltasControladasEl.style.opacity = '1';
+            }, 300);
+        }
+        
+        if (atestadosEl) {
+            atestadosEl.textContent = atestados;
+            atestadosEl.style.opacity = '0';
+            setTimeout(() => {
+                atestadosEl.style.transition = 'opacity 0.5s ease';
+                atestadosEl.style.opacity = '1';
+            }, 400);
+        }
+        
+        console.log('📊 STATS: Estatísticas atualizadas - P:', presencas, 'F:', faltas, 'FC:', faltasControladas, 'A:', atestados);
+        
+    } catch (error) {
+        console.error('❌ STATS: Erro geral:', error);
     }
 }
 

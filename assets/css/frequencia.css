@@ -615,3 +615,22 @@
   line-height: 1.4;
   color: #6c757d;
 }
+
+/* Animações para quick-stats */
+.stat-number {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 700;
+}
+
+.stat-number.loading {
+  opacity: 0.3;
+  transform: scale(0.9);
+}
+
+.stat-card {
+  transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
