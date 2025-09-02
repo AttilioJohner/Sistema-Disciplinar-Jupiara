@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init:*)",
+      "Bash(git config:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git branch:*)",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(mkdir:*)",
+      "Bash(node:*)",
+      "Bash(python:*)",
+      "WebFetch(domain:eecmjupiara.com.br)",
+      "WebFetch(domain:eecmjupiara.netlify.app)",
+      "Read(C:\\Users\\attil\\OneDrive\\Área de Trabalho\\Sistemas\\Jupiara/**)",
+      "Read(C:\\Users\\attil\\OneDrive\\Área de Trabalho\\Sistemas\\Jupiara/**)",
+      "Read(C:\\Users\\attil\\OneDrive\\Área de Trabalho\\Sistemas\\Jupiara/**)",
+      "Bash(git log:*)",
+      "Bash(setx:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

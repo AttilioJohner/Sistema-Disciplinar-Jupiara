@@ -1,0 +1,40 @@
+[build]
+  # Diretório de publicação
+  publish = "."
+  
+  # Comando de build para injetar variáveis de ambiente e sincronização
+  command = "echo 'Criando arquivo de variáveis...' && echo \"window.NETLIFY_ENV = { SUPABASE_URL: '$SUPABASE_URL', SUPABASE_ANON_KEY: '$SUPABASE_ANON_KEY', GITHUB_REPO: '$GITHUB_REPO', SYNC_ENABLED: true };\" > netlify-env.js && echo 'Build concluído com sincronização ativada'"
+
+# Cabeçalhos de segurança
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://raw.githubusercontent.com;"
+
+# Cache para assets estáticos
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+# Configurações de ambiente
+[context.production]
+  environment = { NODE_ENV = "production", GITHUB_REPO = "AttilioJohner/Sistema-Disciplinar-Jupiara" }
+
+[context.deploy-preview]
+  environment = { NODE_ENV = "staging", GITHUB_REPO = "AttilioJohner/Sistema-Disciplinar-Jupiara" }
+
+[context.branch-deploy]
+  environment = { NODE_ENV = "development", GITHUB_REPO = "AttilioJohner/Sistema-Disciplinar-Jupiara" }
+
+# Hooks de deploy para sincronização
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Função serverless para webhook de sincronização  
+[functions]
+  directory = "netlify/functions"

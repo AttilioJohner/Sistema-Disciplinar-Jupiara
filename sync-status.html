@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Status de Sincronização - Sistema Disciplinar Jupiara</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .status-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .status-online { border-left: 5px solid #28a745; }
+        .status-offline { border-left: 5px solid #dc3545; }
+        .status-warning { border-left: 5px solid #ffc107; }
+        .sync-log {
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">🔄 Status de Sincronização</h1>
+                
+                <!-- Status Cards -->
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card status-card" id="github-status">
+                            <div class="card-body">
+                                <h5 class="card-title">🐙 GitHub</h5>
+                                <p class="card-text" id="github-text">Verificando...</p>
+                                <small class="text-muted" id="github-details"></small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card status-card" id="netlify-status">
+                            <div class="card-body">
+                                <h5 class="card-title">🚀 Netlify</h5>
+                                <p class="card-text" id="netlify-text">Verificando...</p>
+                                <small class="text-muted" id="netlify-details"></small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card status-card" id="supabase-status">
+                            <div class="card-body">
+                                <h5 class="card-title">🗄️ Supabase</h5>
+                                <p class="card-text" id="supabase-text">Verificando...</p>
+                                <small class="text-muted" id="supabase-details"></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Controles de Sincronização</h5>
+                                <div class="d-flex gap-2 mb-3">
+                                    <button class="btn btn-primary" onclick="checkStatus()">
+                                        🔍 Verificar Status
+                                    </button>
+                                    <button class="btn btn-success" onclick="triggerSync()">
+                                        🔄 Sincronizar Agora
+                                    </button>
+                                    <button class="btn btn-warning" onclick="triggerDeploy()">
+                                        🚀 Deploy Netlify
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="clearLogs()">
+                                        🗑️ Limpar Logs
+                                    </button>
+                                </div>
+                                
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="autoSync" checked>
+                                    <label class="form-check-label" for="autoSync">
+                                        Sincronização Automática (10 min)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sync Log -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">📝 Log de Sincronização</h5>
+                                <div class="sync-log" id="syncLog">
+                                    Aguardando eventos de sincronização...<br>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="netlify-env.js"></script>
+    <script src="assets/js/supabase-config.js"></script>
+    <script src="sync-config.js"></script>
+    
+    <script>
+        let autoSyncInterval = null;
+
+        // Log function
+        function addLog(message, type = 'info') {
+            const logDiv = document.getElementById('syncLog');
+            const timestamp = new Date().toLocaleTimeString('pt-BR');
+            const emoji = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
+            
+            logDiv.innerHTML += `${timestamp} ${emoji} ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // Update status card
+        function updateStatusCard(service, online, message, details = '') {
+            const card = document.getElementById(`${service}-status`);
+            const text = document.getElementById(`${service}-text`);
+            const detailsEl = document.getElementById(`${service}-details`);
+            
+            card.className = `card status-card ${online ? 'status-online' : 'status-offline'}`;
+            text.textContent = online ? 'Online' : 'Offline';
+            detailsEl.textContent = details;
+            
+            if (message) {
+                addLog(`${service.toUpperCase()}: ${message}`, online ? 'success' : 'error');
+            }
+        }
+
+        // Check all services status
+        async function checkStatus() {
+            addLog('Verificando status de todos os serviços...');
+            
+            if (window.syncManager) {
+                const status = await window.syncManager.checkSyncStatus();
+                
+                updateStatusCard('github', status.github, 
+                    status.github ? 'Repositório acessível' : 'Repositório não encontrado',
+                    'AttilioJohner/Sistema-Disciplinar-Jupiara');
+                
+                updateStatusCard('netlify', status.netlify,
+                    status.netlify ? 'Site online' : 'Site indisponível',
+                    'eecmjupiara.netlify.app');
+                
+                updateStatusCard('supabase', status.supabase,
+                    status.supabase ? 'Banco conectado' : 'Banco offline',
+                    'rvppxdhrahcwiwrrwwaz.supabase.co');
+                
+                if (status.errors.length > 0) {
+                    status.errors.forEach(error => addLog(error, 'error'));
+                }
+                
+                addLog(`Última sincronização: ${status.lastSync}`);
+            } else {
+                addLog('SyncManager não inicializado ainda', 'warning');
+            }
+        }
+
+        // Trigger manual sync
+        async function triggerSync() {
+            if (!window.syncManager) {
+                addLog('SyncManager não disponível', 'error');
+                return;
+            }
+            
+            addLog('Iniciando sincronização manual...');
+            
+            try {
+                const data = window.syncManager.collectLocalData();
+                const result = await window.syncManager.fullSync(data);
+                
+                addLog(`Sincronização completa: ${Object.keys(data).length} tipos de dados processados`, 'success');
+                
+                if (result.github?.success) {
+                    addLog(`GitHub: ${result.github.message}`, 'success');
+                }
+                if (result.netlify?.success) {
+                    addLog(`Netlify: ${result.netlify.message}`, 'success');
+                }
+                if (result.supabase?.success) {
+                    addLog(`Supabase: ${result.supabase.message}`, 'success');
+                }
+                
+            } catch (error) {
+                addLog(`Erro na sincronização: ${error.message}`, 'error');
+            }
+        }
+
+        // Trigger Netlify deploy
+        async function triggerDeploy() {
+            if (!window.syncManager) {
+                addLog('SyncManager não disponível', 'error');
+                return;
+            }
+            
+            addLog('Disparando deploy no Netlify...');
+            
+            try {
+                const result = await window.syncManager.triggerNetlifyDeploy('Deploy manual via painel');
+                addLog(`Deploy: ${result.message}`, result.success ? 'success' : 'error');
+                
+                if (result.success && result.deployUrl) {
+                    addLog(`URL do site: ${result.deployUrl}`, 'info');
+                }
+            } catch (error) {
+                addLog(`Erro no deploy: ${error.message}`, 'error');
+            }
+        }
+
+        // Clear logs
+        function clearLogs() {
+            document.getElementById('syncLog').innerHTML = 'Logs limpos...<br>';
+        }
+
+        // Toggle auto sync
+        function toggleAutoSync() {
+            const checkbox = document.getElementById('autoSync');
+            
+            if (checkbox.checked) {
+                if (window.syncManager) {
+                    window.syncManager.enableAutoSync(10 * 60 * 1000); // 10 minutes
+                    addLog('Sincronização automática ativada (10 min)', 'success');
+                }
+                
+                autoSyncInterval = setInterval(() => {
+                    addLog('Verificação automática de status...');
+                    checkStatus();
+                }, 5 * 60 * 1000); // Check every 5 minutes
+                
+            } else {
+                if (window.syncManager) {
+                    window.syncManager.disableAutoSync();
+                    addLog('Sincronização automática desativada', 'warning');
+                }
+                
+                if (autoSyncInterval) {
+                    clearInterval(autoSyncInterval);
+                    autoSyncInterval = null;
+                }
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            addLog('Painel de sincronização inicializado');
+            
+            // Check status on load
+            setTimeout(checkStatus, 2000);
+            
+            // Setup auto sync toggle
+            document.getElementById('autoSync').addEventListener('change', toggleAutoSync);
+            toggleAutoSync(); // Initialize auto sync
+        });
+
+        // Listen for sync events
+        window.addEventListener('syncComplete', function(event) {
+            addLog(`Evento de sincronização recebido: ${JSON.stringify(event.detail)}`, 'info');
+        });
+    </script>
+</body>
+</html>

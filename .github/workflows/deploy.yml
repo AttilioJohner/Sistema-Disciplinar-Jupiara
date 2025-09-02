@@ -1,0 +1,93 @@
+name: Deploy to Netlify
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        if [ -f package.json ]; then
+          npm ci
+        else
+          echo "No package.json found, skipping npm install"
+        fi
+        
+    - name: Run tests
+      run: |
+        if [ -f package.json ] && npm list --depth=0 | grep -q test; then
+          npm test
+        else
+          echo "No tests configured, skipping"
+        fi
+        
+    - name: Build project
+      run: |
+        echo "Building Sistema Disciplinar Jupiara..."
+        # Criar arquivo de configuração de build
+        echo "window.BUILD_INFO = { timestamp: '$(date -u +%Y-%m-%dT%H:%M:%SZ)', commit: '${{ github.sha }}', branch: '${{ github.ref_name }}' };" > build-info.js
+        echo "Build completed successfully"
+        
+    - name: Deploy to Netlify
+      uses: nwtgck/actions-netlify@v2.0
+      with:
+        publish-dir: '.'
+        production-branch: main
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        deploy-message: |
+          Deploy from GitHub Actions
+          Commit: ${{ github.sha }}
+          Author: ${{ github.actor }}
+        enable-pull-request-comment: true
+        enable-commit-comment: false
+        overwrites-pull-request-comment: true
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        
+    - name: Sync with Supabase
+      if: github.ref == 'refs/heads/main'
+      run: |
+        echo "🔄 Iniciando sincronização com Supabase..."
+        curl -X POST "${{ secrets.NETLIFY_FUNCTION_URL }}/sync-webhook" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "action": "github_sync",
+            "source": "github_actions",
+            "github_data": {
+              "head_commit": {
+                "id": "${{ github.sha }}",
+                "author": {
+                  "name": "${{ github.actor }}"
+                },
+                "message": "${{ github.event.head_commit.message }}"
+              }
+            }
+          }' || echo "⚠️ Falha na sincronização (não crítico)"
+          
+    - name: Update deployment status
+      if: always()
+      run: |
+        if [ ${{ job.status }} == 'success' ]; then
+          echo "✅ Deploy realizado com sucesso!"
+          echo "🌐 Site: https://eecmjupiara.netlify.app"
+          echo "📝 Commit: ${{ github.sha }}"
+        else
+          echo "❌ Deploy falhou!"
+          exit 1
+        fi
