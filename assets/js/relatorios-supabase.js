@@ -1,7 +1,7 @@
 // assets/js/relatorios-supabase.js
 // Dashboard Avançado de Análise Escolar com Supabase
 
-console.log('📊 DASHBOARD AVANÇADO: Inicializando sistema analítico...');
+console.log('📊 DASHBOARD AVANÇADO: Inicializando sistema analítico v2.1...');
 
 // Variáveis globais expandidas
 let dadosRelatorios = {

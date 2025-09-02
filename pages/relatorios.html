@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatórios - Dashboard Disciplinar</title>
+    <title>Relatórios - Dashboard Disciplinar v2.1</title>
     
     <!-- CSS Externos -->
     <link rel="stylesheet" href="../assets/css/style.css">
@@ -118,12 +118,15 @@
                     </div>
                     <div class="reports-controls">
                         <select id="periodoAnalise" class="form-select" onchange="atualizarDashboardCompleto()">
-                            <option value="30">Últimos 30 dias</option>
-                            <option value="60" selected>Últimos 2 meses</option>
-                            <option value="90">Últimos 3 meses</option>
-                            <option value="180">Últimos 6 meses</option>
-                            <option value="365">Último ano</option>
-                            <option value="todos">Todos os períodos</option>
+                            <option value="mes_atual">Mês Atual</option>
+                            <option value="mes_anterior">Mês Anterior</option>
+                            <option value="todos_meses">Todos os Meses</option>
+                            <option value="bimestre_atual">Bimestre Atual</option>
+                            <option value="bimestre_anterior">Bimestre Anterior</option>
+                            <option value="semestre_atual">Semestre Atual</option>
+                            <option value="semestre_anterior">Semestre Anterior</option>
+                            <option value="anual" selected>Período Anual</option>
+                            <option value="todos">Todos os Registros</option>
                         </select>
                         <button class="btn btn-success" onclick="exportarDashboardCompleto()">
                             📄 Exportar Dashboard PDF
