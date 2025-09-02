@@ -75,10 +75,11 @@ class FrequenciaSupabaseManager {
     try {
       console.log('📂 Carregando dados do Supabase...');
       
-      // Buscar todas as frequências - removendo limitações
+      // Buscar todas as frequências - forçar carregar TODOS os registros
       const { data: frequencias, error } = await this.supabase
         .from('frequencia')
-        .select('*');
+        .select('*')
+        .range(0, 10000); // Aumentar limite para 10.000 registros
       
       if (error) {
         console.error('❌ Erro ao buscar frequências:', error);
