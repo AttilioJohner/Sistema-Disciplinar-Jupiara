@@ -334,51 +334,79 @@ class FrequenciaSupabaseManager {
   }
 
   mostrarResumoAlunos() {
+    console.log('🔍 DEBUG mostrarResumoAlunos - Iniciando compilação estatística...');
+    
+    if (!this.turmaAtual) {
+      console.warn('⚠️ DEBUG - Turma não selecionada');
+      return;
+    }
+    
     const container = document.getElementById('frequenciaContainer');
     const tabelaContainer = document.getElementById('tabela-container');
     
     if (!container) return;
     
-    const chave = `${this.turmaAtual}_${this.mesAtual}_${this.anoAtual}`;
-    const dados = this.dadosFrequencia.get(chave);
-    
-    console.log(`🔍 DEBUG mostrarResumoAlunos - Chave buscada: ${chave}`);
-    console.log(`📊 DEBUG - Dados encontrados:`, dados);
-    console.log(`👥 DEBUG - Quantidade de alunos:`, dados ? dados.alunos.length : 0);
-    
-    if (dados && dados.alunos.length > 0) {
-      console.log(`🎓 DEBUG - Primeiro aluno:`, dados.alunos[0]);
-      console.log(`📅 DEBUG - Dias do primeiro aluno:`, dados.alunos[0].dias);
-      console.log(`🔢 DEBUG - Quantidade de dias do primeiro aluno:`, Object.keys(dados.alunos[0].dias || {}).length);
-    }
-    
-    if (!dados || !dados.alunos.length) {
-      container.innerHTML = '<div class="info-text">Nenhum dado encontrado para esta turma.</div>';
-      return;
-    }
-    
     // Ocultar tabela de dias
     if (tabelaContainer) tabelaContainer.style.display = 'none';
     
-    // Calcular totais por aluno
-    const alunosComTotais = dados.alunos.map(aluno => {
-      const totais = { P: 0, F: 0, A: 0, FC: 0 };
-      
-      if (aluno.dias && typeof aluno.dias === 'object') {
-        Object.values(aluno.dias).forEach(status => {
-          if (totais.hasOwnProperty(status)) {
-            totais[status]++;
+    console.log(`🎯 DEBUG - Compilando TODOS os dados para turma: ${this.turmaAtual}`);
+    
+    // Compilar TODOS os dados da turma (todos os meses/anos)
+    const alunosDaTurma = new Map();
+    
+    // Percorrer todos os períodos carregados
+    this.dadosFrequencia.forEach((periodo, chave) => {
+      if (periodo.turma === this.turmaAtual) {
+        console.log(`📊 DEBUG - Processando período: ${chave} com ${periodo.alunos.length} alunos`);
+        
+        periodo.alunos.forEach(aluno => {
+          // Se aluno não existe no Map, criar
+          if (!alunosDaTurma.has(aluno.codigo)) {
+            alunosDaTurma.set(aluno.codigo, {
+              codigo: aluno.codigo,
+              nome: aluno.nome,
+              totais: { P: 0, F: 0, A: 0, FC: 0 },
+              totalRegistros: 0
+            });
+          }
+          
+          const alunoCompilado = alunosDaTurma.get(aluno.codigo);
+          
+          // Somar todos os dias deste período
+          if (aluno.dias) {
+            Object.values(aluno.dias).forEach(status => {
+              if (alunoCompilado.totais.hasOwnProperty(status)) {
+                alunoCompilado.totais[status]++;
+                alunoCompilado.totalRegistros++;
+              }
+            });
           }
         });
       }
+    });
+    
+    console.log(`👥 DEBUG - Total de alunos únicos na turma ${this.turmaAtual}: ${alunosDaTurma.size}`);
+    
+    if (alunosDaTurma.size === 0) {
+      container.innerHTML = `
+        <div class="info-text">
+          ⚠️ Nenhum dado encontrado para a turma ${this.turmaAtual}
+        </div>
+      `;
+      return;
+    }
+    
+    // Converter Map para Array e calcular percentuais
+    const alunosComTotais = Array.from(alunosDaTurma.values()).map(aluno => {
+      // Calcular percentual de presença (P dividido pelo total de registros)
+      const percentualPresenca = aluno.totalRegistros > 0 
+        ? ((aluno.totais.P / aluno.totalRegistros) * 100).toFixed(1) 
+        : 0;
       
-      const totalDias = totais.P + totais.F + totais.A + totais.FC;
-      const percentualPresenca = totalDias > 0 ? ((totais.P / totalDias) * 100).toFixed(1) : '0.0';
+      console.log(`👤 DEBUG - ${aluno.nome}: ${aluno.totais.P}P, ${aluno.totais.F}F, ${aluno.totais.A}A, ${aluno.totais.FC}FC = ${percentualPresenca}% (${aluno.totalRegistros} registros)`);
       
       return {
         ...aluno,
-        totais,
-        totalDias,
         percentualPresenca: parseFloat(percentualPresenca)
       };
     });
@@ -386,19 +414,25 @@ class FrequenciaSupabaseManager {
     // Ordenar por percentual de presença (decrescente)
     alunosComTotais.sort((a, b) => b.percentualPresenca - a.percentualPresenca);
     
-    // Renderizar tabela de resumo
+    // Renderizar tabela compilada
     container.innerHTML = `
+      <div style="margin-bottom: 15px;">
+        <h3>📊 Estatísticas Compiladas - Turma ${this.turmaAtual}</h3>
+        <p style="color: #666; font-size: 0.9rem;">
+          Total de ${alunosComTotais.length} alunos • Dados compilados de todos os períodos registrados
+        </p>
+      </div>
       <div class="table-wrapper">
         <table class="data-table">
           <thead>
             <tr>
               <th>Código</th>
               <th>Nome</th>
-              <th>📅 Total Dias</th>
-              <th style="color: #28a745;">✅ Presenças</th>
-              <th style="color: #dc3545;">❌ Faltas</th>
-              <th style="color: #ffc107;">📋 Atestados</th>
-              <th style="color: #fd7e14;">⚠️ Faltas Controladas</th>
+              <th>📅 Total Registros</th>
+              <th style="color: #28a745;">✅ Presenças (P)</th>
+              <th style="color: #dc3545;">❌ Faltas (F)</th>
+              <th style="color: #ffc107;">📋 Atestados (A)</th>
+              <th style="color: #fd7e14;">⚠️ Faltas Controladas (FC)</th>
               <th>📊 % Presença</th>
             </tr>
           </thead>
@@ -407,18 +441,21 @@ class FrequenciaSupabaseManager {
               <tr>
                 <td><strong>${aluno.codigo}</strong></td>
                 <td>${aluno.nome}</td>
-                <td>${aluno.totalDias}</td>
-                <td class="freq-P">${aluno.totais.P}</td>
-                <td class="freq-F">${aluno.totais.F}</td>
-                <td class="freq-A">${aluno.totais.A}</td>
-                <td class="freq-FC">${aluno.totais.FC}</td>
-                <td><strong style="color: ${aluno.percentualPresenca >= 75 ? '#28a745' : '#dc3545'}">${aluno.percentualPresenca}%</strong></td>
+                <td><strong>${aluno.totalRegistros}</strong></td>
+                <td class="freq-P"><strong>${aluno.totais.P}P</strong></td>
+                <td class="freq-F"><strong>${aluno.totais.F}F</strong></td>
+                <td class="freq-A"><strong>${aluno.totais.A}A</strong></td>
+                <td class="freq-FC"><strong>${aluno.totais.FC}FC</strong></td>
+                <td><strong style="color: ${aluno.percentualPresenca >= 75 ? '#28a745' : '#dc3545'}; font-size: 1.1em;">${aluno.percentualPresenca}%</strong></td>
               </tr>
             `).join('')}
           </tbody>
         </table>
       </div>
     `;
+    
+    console.log(`✅ DEBUG - Tabela compilada renderizada para ${alunosComTotais.length} alunos da turma ${this.turmaAtual}`);
+    showToast(`Estatísticas compiladas: ${alunosComTotais.length} alunos da turma ${this.turmaAtual}`, 'success');
   }
 
   mostrarTabelaDias() {
