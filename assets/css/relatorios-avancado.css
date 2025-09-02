@@ -224,6 +224,90 @@ body {
     overflow: hidden;
 }
 
+.chart-card-large {
+    min-height: 400px;
+    max-height: 450px;
+}
+
+.chart-card-medium {
+    min-height: 300px;
+    max-height: 350px;
+}
+
+.chart-card-full {
+    min-height: 250px;
+    max-height: 300px;
+}
+
+.chart-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    max-height: 300px;
+}
+
+.chart-container canvas {
+    max-width: 100% !important;
+    max-height: 100% !important;
+}
+
+/* Ranking Estático */
+.ranking-static {
+    padding: 1rem 0;
+}
+
+.ranking-static-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.5rem;
+    background: white;
+    border-radius: 8px;
+    border-left: 4px solid;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease;
+}
+
+.ranking-static-item:hover {
+    transform: translateX(3px);
+}
+
+.ranking-static-item.rank-1 { border-color: #ffd700; background: linear-gradient(to right, #fff9e6, white); }
+.ranking-static-item.rank-2 { border-color: #c0c0c0; background: linear-gradient(to right, #f5f5f5, white); }
+.ranking-static-item.rank-3 { border-color: #cd7f32; background: linear-gradient(to right, #fff2e6, white); }
+.ranking-static-item.rank-4,
+.ranking-static-item.rank-5 { border-color: #007bff; background: linear-gradient(to right, #f0f7ff, white); }
+
+.ranking-static-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.ranking-static-position {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #666;
+    min-width: 25px;
+}
+
+.ranking-static-turma {
+    font-weight: 600;
+    color: #343a40;
+    font-size: 0.95rem;
+}
+
+.ranking-static-metric {
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    color: white;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+}
+
 .chart-header {
     margin-bottom: 1.5rem;
 }
@@ -450,6 +534,16 @@ body {
     
     .reports-header .module-title {
         font-size: 1.3rem;
+    }
+    
+    .section-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.8rem;
+    }
+    
+    .section-controls span {
+        display: none; /* Hide "vs" text on mobile */
     }
     
     .dashboard-stats-grid {

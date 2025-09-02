@@ -262,30 +262,42 @@
                         <div class="section-header">
                             <h2>📊 Análise Comparativa por Turma</h2>
                             <div class="section-controls">
-                                <select id="metricaComparacao" class="form-select" onchange="atualizarGraficosComparativos()">
+                                <select id="turma1Comparacao" class="form-select" onchange="atualizarComparacao()">
+                                    <option value="">Selecionar Turma 1</option>
+                                </select>
+                                <span style="margin: 0 10px; color: #666;">vs</span>
+                                <select id="turma2Comparacao" class="form-select" onchange="atualizarComparacao()">
+                                    <option value="">Selecionar Turma 2</option>
+                                    <option value="MEDIA_GERAL">📊 Média Geral</option>
+                                </select>
+                                <select id="metricaComparacao" class="form-select" onchange="atualizarComparacao()">
                                     <option value="frequencia">Frequência %</option>
                                     <option value="faltas">Total de Faltas</option>
                                     <option value="medidas">Medidas Disciplinares</option>
-                                    <option value="risco">Nível de Risco</option>
+                                    <option value="risco">Alunos em Risco</option>
                                 </select>
                             </div>
                         </div>
                         
                         <div class="charts-comparative-grid">
-                            <div class="chart-card-large">
+                            <div class="chart-card-medium">
                                 <div class="chart-header">
-                                    <h3>📈 Comparativo Geral entre Turmas</h3>
-                                    <p>Performance de todas as turmas na métrica selecionada</p>
+                                    <h3>⚖️ Comparação Específica</h3>
+                                    <p id="comparacaoTitulo">Selecione duas turmas para comparar</p>
                                 </div>
-                                <canvas id="chartComparativoTurmas" height="120"></canvas>
+                                <div class="chart-container">
+                                    <canvas id="chartComparacaoEspecifica"></canvas>
+                                </div>
                             </div>
                             
                             <div class="chart-card-medium">
                                 <div class="chart-header">
-                                    <h3>🎯 Ranking de Turmas</h3>
-                                    <p>Classificação por performance</p>
+                                    <h3>🏆 Ranking Geral</h3>
+                                    <p>Top 5 turmas por desempenho</p>
                                 </div>
-                                <canvas id="chartRankingTurmas" height="120"></canvas>
+                                <div id="rankingTurmasLista" class="ranking-static">
+                                    <!-- Ranking será populado aqui -->
+                                </div>
                             </div>
                         </div>
                     </div>

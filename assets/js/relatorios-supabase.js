@@ -652,6 +652,25 @@ class RelatoriosSupabaseManager {
             }
         });
         
+        // Preencher selects de comparação
+        const selectComparacao1 = document.getElementById('turma1Comparacao');
+        const selectComparacao2 = document.getElementById('turma2Comparacao');
+        
+        if (selectComparacao1) {
+            selectComparacao1.innerHTML = '<option value="">Selecionar Turma 1</option>';
+            turmas.forEach(turma => {
+                selectComparacao1.innerHTML += `<option value="${turma}">${turma}</option>`;
+            });
+        }
+        
+        if (selectComparacao2) {
+            selectComparacao2.innerHTML = '<option value="">Selecionar Turma 2</option>';
+            selectComparacao2.innerHTML += '<option value="MEDIA_GERAL">📊 Média Geral</option>';
+            turmas.forEach(turma => {
+                selectComparacao2.innerHTML += `<option value="${turma}">${turma}</option>`;
+            });
+        }
+        
         console.log('📊 FILTROS AVANÇADOS: Carregados', turmas.length, 'turmas');
     }
 
@@ -660,9 +679,9 @@ class RelatoriosSupabaseManager {
         
         if (!dadosRelatorios.analytics) return;
         
-        // Gráficos comparativos entre turmas
-        this.gerarGraficoComparativoTurmas();
-        this.gerarGraficoRankingTurmas();
+        // Sistema de comparação inteligente
+        this.gerarRankingTurmasEstatico();
+        this.inicializarComparacao();
         
         // Gráficos de frequência avançados
         this.gerarGraficoFrequenciaTemporal();
@@ -734,6 +753,185 @@ class RelatoriosSupabaseManager {
         }
     }
     // === MÉTODOS DE GRÁFICOS AVANÇADOS ===
+
+    gerarRankingTurmasEstatico() {
+        const container = document.getElementById('rankingTurmasLista');
+        if (!container) return;
+
+        const turmas = dadosRelatorios.analytics.turmas;
+        if (!turmas) return;
+
+        // Calcular ranking baseado em frequência média
+        const turmasArray = Object.entries(turmas)
+            .map(([nome, dados]) => ({
+                nome,
+                frequencia: dados.frequenciaMedia,
+                alunos: dados.totalAlunos,
+                faltas: dados.totalFaltas,
+                medidas: dados.totalMedidas,
+                risco: dados.alunosRisco
+            }))
+            .sort((a, b) => b.frequencia - a.frequencia)
+            .slice(0, 5);
+
+        let html = '';
+        turmasArray.forEach((turma, index) => {
+            html += `
+                <div class="ranking-static-item rank-${index + 1}">
+                    <div class="ranking-static-info">
+                        <div class="ranking-static-position">${index + 1}º</div>
+                        <div class="ranking-static-turma">${turma.nome}</div>
+                    </div>
+                    <div class="ranking-static-metric">
+                        ${turma.frequencia.toFixed(1)}%
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html || '<p class="text-muted">Carregando ranking...</p>';
+    }
+
+    inicializarComparacao() {
+        // Limpar gráfico de comparação se existir
+        this.destruirGrafico('comparacaoEspecifica');
+        
+        const canvas = document.getElementById('chartComparacaoEspecifica');
+        if (!canvas) return;
+        
+        // Estado inicial - mostrar placeholder
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#f8f9fa';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#6c757d';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Selecione turmas para comparar', canvas.width/2, canvas.height/2);
+    }
+
+    gerarComparacaoEspecifica() {
+        const turma1 = document.getElementById('turma1Comparacao')?.value;
+        const turma2 = document.getElementById('turma2Comparacao')?.value;
+        const metrica = document.getElementById('metricaComparacao')?.value || 'frequencia';
+
+        if (!turma1 || !turma2) {
+            this.inicializarComparacao();
+            return;
+        }
+
+        const canvas = document.getElementById('chartComparacaoEspecifica');
+        if (!canvas || typeof Chart === 'undefined') return;
+
+        this.destruirGrafico('comparacaoEspecifica');
+
+        const turmas = dadosRelatorios.analytics.turmas;
+        let dadosTurma1, dadosTurma2, labelTurma2;
+
+        // Dados da turma 1
+        if (turmas[turma1]) {
+            dadosTurma1 = turmas[turma1];
+        } else {
+            return;
+        }
+
+        // Dados da turma 2 ou média geral
+        if (turma2 === 'MEDIA_GERAL') {
+            labelTurma2 = 'Média Geral';
+            const todasTurmas = Object.values(turmas);
+            const totalAlunos = todasTurmas.reduce((sum, t) => sum + t.totalAlunos, 0);
+            dadosTurma2 = {
+                frequenciaMedia: todasTurmas.reduce((sum, t) => sum + t.frequenciaMedia * t.totalAlunos, 0) / totalAlunos,
+                totalFaltas: todasTurmas.reduce((sum, t) => sum + t.totalFaltas, 0) / todasTurmas.length,
+                totalMedidas: todasTurmas.reduce((sum, t) => sum + t.totalMedidas, 0) / todasTurmas.length,
+                alunosRisco: todasTurmas.reduce((sum, t) => sum + t.alunosRisco, 0) / todasTurmas.length
+            };
+        } else if (turmas[turma2]) {
+            labelTurma2 = turma2;
+            dadosTurma2 = turmas[turma2];
+        } else {
+            return;
+        }
+
+        // Obter valores da métrica selecionada
+        let valor1, valor2, label, titulo;
+        
+        switch (metrica) {
+            case 'frequencia':
+                valor1 = dadosTurma1.frequenciaMedia;
+                valor2 = dadosTurma2.frequenciaMedia;
+                label = 'Frequência (%)';
+                titulo = `${turma1} vs ${labelTurma2} - Frequência`;
+                break;
+            case 'faltas':
+                valor1 = dadosTurma1.totalFaltas;
+                valor2 = dadosTurma2.totalFaltas;
+                label = 'Total de Faltas';
+                titulo = `${turma1} vs ${labelTurma2} - Faltas`;
+                break;
+            case 'medidas':
+                valor1 = dadosTurma1.totalMedidas;
+                valor2 = dadosTurma2.totalMedidas;
+                label = 'Medidas Disciplinares';
+                titulo = `${turma1} vs ${labelTurma2} - Medidas`;
+                break;
+            case 'risco':
+                valor1 = dadosTurma1.alunosRisco;
+                valor2 = dadosTurma2.alunosRisco;
+                label = 'Alunos em Risco';
+                titulo = `${turma1} vs ${labelTurma2} - Risco`;
+                break;
+        }
+
+        // Atualizar título da comparação
+        const tituloElemento = document.getElementById('comparacaoTitulo');
+        if (tituloElemento) {
+            tituloElemento.textContent = titulo;
+        }
+
+        // Criar gráfico de barras comparativo
+        const ctx = canvas.getContext('2d');
+        chartsInstances.comparacaoEspecifica = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [turma1, labelTurma2],
+                datasets: [{
+                    label: label,
+                    data: [valor1, valor2],
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 99, 132, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 99, 132, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    title: {
+                        display: true,
+                        text: titulo,
+                        font: { size: 14, weight: 'bold' }
+                    }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.1)' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
 
     gerarGraficoComparativoTurmas() {
         const canvas = document.getElementById('chartComparativoTurmas');
@@ -1586,9 +1784,9 @@ function atualizarDashboardCompleto() {
     }
 }
 
-function atualizarGraficosComparativos() {
+function atualizarComparacao() {
     if (window.relatoriosManager) {
-        window.relatoriosManager.gerarGraficoComparativoTurmas();
+        window.relatoriosManager.gerarComparacaoEspecifica();
     }
 }
 
