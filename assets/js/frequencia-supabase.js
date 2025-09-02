@@ -129,6 +129,11 @@ class FrequenciaSupabaseManager {
           
           // Adicionar status do dia
           grupo.alunos.get(codigoAluno).dias[dia] = registro.status;
+          
+          // Debug para ver como os dados estão sendo processados
+          if (Math.random() < 0.01) { // 1% dos registros para não poluir o log
+            console.log(`🔍 Debug processamento: ${registro.turma} - Aluno ${codigoAluno} - Dia ${dia} = ${registro.status}`);
+          }
         });
         
         // Converter Maps de alunos para arrays
@@ -264,6 +269,17 @@ class FrequenciaSupabaseManager {
     console.log(`🎯 Turma selecionada: ${turma}`);
     this.turmaAtual = turma;
     
+    // Mostrar loading
+    const container = document.getElementById('frequenciaContainer');
+    if (container) {
+      container.innerHTML = `
+        <div class="loading-state">
+          <div class="loading-spinner"></div>
+          <p>Carregando dados da turma ${turma}...</p>
+        </div>
+      `;
+    }
+    
     // Encontrar primeiro período disponível da turma
     let primeiroMes = null, primeiroAno = null;
     for (const [chave, dados] of this.dadosFrequencia) {
@@ -287,10 +303,11 @@ class FrequenciaSupabaseManager {
       if (filtroMes) filtroMes.value = primeiroMes;
       if (filtroAno) filtroAno.value = primeiroAno;
       
-      // Mostrar resumo por aluno
-      this.mostrarResumoAlunos();
-      
-      showToast(`Turma ${turma} selecionada - ${this.getNomeMes(primeiroMes)}/${primeiroAno}`, 'success');
+      // Delay para mostrar loading, depois mostrar dados
+      setTimeout(() => {
+        this.mostrarResumoAlunos();
+        showToast(`Turma ${turma} selecionada - ${this.getNomeMes(primeiroMes)}/${primeiroAno}`, 'success');
+      }, 300);
       
       // Scroll para a seção de frequência detalhada
       document.querySelector('.table-container').scrollIntoView({ behavior: 'smooth' });
@@ -403,6 +420,9 @@ class FrequenciaSupabaseManager {
     });
     
     const dias = Array.from(diasSet).sort((a, b) => parseInt(a) - parseInt(b));
+    console.log(`📅 Debug - Dias encontrados para ${this.turmaAtual}:`, dias);
+    console.log(`📊 Debug - Total de dias: ${dias.length}`);
+    console.log(`🔍 Debug - Exemplo de aluno:`, dados.alunos[0]);
     
     const thead = document.getElementById('tabela-head');
     const tbody = document.getElementById('tabela-body');
