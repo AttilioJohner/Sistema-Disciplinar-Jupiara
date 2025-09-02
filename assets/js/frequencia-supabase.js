@@ -123,6 +123,8 @@ class FrequenciaSupabaseManager {
       const registro1250 = frequencias.find(r => r.id === 1250);
       if (registro1250) {
         console.log(`🎯 REGISTRO 1250 ENCONTRADO:`, registro1250);
+        const data1250 = new Date(registro1250.data);
+        console.log(`🎯 REGISTRO 1250 DATA DEBUG: raw='${registro1250.data}' -> Date=${data1250} -> Year=${data1250.getFullYear()} Month=${data1250.getMonth()} Day=${data1250.getDate()}`);
       } else {
         console.log(`❌ REGISTRO 1250 NÃO ENCONTRADO nos ${frequencias.length} registros carregados`);
       }
@@ -130,6 +132,10 @@ class FrequenciaSupabaseManager {
       // Debug: verificar se existem registros para agosto/2025 sexta-feira 15
       const registrosAgosto15 = frequencias.filter(r => {
         const data = new Date(r.data);
+        // Só debugar alguns registros para não lotar o console
+        if (r.id === 1250 || r.data.includes('2025-08-15')) {
+          console.log(`🔧 DEBUG DATA ID ${r.id}: raw='${r.data}' -> Date=${data} -> Year=${data.getFullYear()} Month=${data.getMonth()} Day=${data.getDate()}`);
+        }
         return data.getFullYear() === 2025 && 
                data.getMonth() === 7 && // agosto = 7 (0-indexed)
                data.getDate() === 15;
