@@ -553,6 +553,18 @@ class FrequenciaSupabaseManager {
     const diasUteis = this.gerarDiasUteis(parseInt(mesVisualizacao), parseInt(anoVisualizacao));
     console.log(`📅 DEBUG - Dias úteis de ${mesVisualizacao}/${anoVisualizacao}:`, diasUteis.map(d => `${d.dia}(${d.diaSemana})`).join(', '));
     
+    // Debug: verificar quais dias têm dados reais na base
+    const diasComDados = new Set();
+    dadosPeriodo.alunos.forEach(aluno => {
+      if (aluno.dias) {
+        Object.keys(aluno.dias).forEach(dia => {
+          diasComDados.add(dia);
+        });
+      }
+    });
+    console.log(`📊 DEBUG - Dias com dados na base:`, Array.from(diasComDados).sort((a, b) => parseInt(a) - parseInt(b)).join(', '));
+    console.log(`❓ DEBUG - Dias úteis sem dados:`, diasUteis.filter(d => !diasComDados.has(d.dia)).map(d => `${d.dia}(${d.diaSemana})`).join(', '));
+    
     // Renderizar tabela por dias
     container.innerHTML = `
       <div style="margin-bottom: 15px;">
@@ -573,7 +585,8 @@ class FrequenciaSupabaseManager {
           </button>
         </div>
         <p style="color: #666; font-size: 0.9rem;">
-          ${dadosPeriodo.alunos.length} alunos • ${diasUteis.length} dias úteis de ${this.getNomeMes(mesVisualizacao)}/${anoVisualizacao}
+          ${dadosPeriodo.alunos.length} alunos • ${diasComDados.size} dias com dados em ${this.getNomeMes(mesVisualizacao)}/${anoVisualizacao}
+          ${diasUteis.length !== diasComDados.size ? `<br><span style="color: #f39c12;">⚠️ ${diasUteis.length - diasComDados.size} dias úteis sem registros</span>` : ''}
         </p>
       </div>
       <div class="table-wrapper">
