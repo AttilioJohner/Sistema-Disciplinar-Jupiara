@@ -14,6 +14,7 @@
   padding: 1rem;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   transition: all 0.2s;
+  cursor: pointer;
 }
 
 .turma-card:hover {
@@ -112,6 +113,7 @@
 .freq-P { background: #d4edda; color: #155724; font-weight: bold; }
 .freq-F { background: #f8d7da; color: #721c24; font-weight: bold; }
 .freq-A { background: #fff3cd; color: #856404; font-weight: bold; }
+.freq-FC { background: #fde2e4; color: #8b1a1a; font-weight: bold; }
 
 .container {
   background: white;

@@ -9,93 +9,7 @@
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="../assets/css/dashboard.css">
-    
-    <style>
-        .turmas-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-        
-        .turma-card {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        
-        .turma-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        
-        .turma-card h3 {
-            margin: 0 0 15px 0;
-            color: #333;
-            font-size: 1.1rem;
-        }
-        
-        .turma-stats {
-            display: flex;
-            justify-content: space-between;
-            margin: 8px 0;
-            font-size: 0.9rem;
-            color: #666;
-        }
-        
-        .filters-container {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-        }
-        
-        .table-container {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            margin-top: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .table-wrapper {
-            overflow-x: auto;
-        }
-        
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        
-        .data-table th,
-        .data-table td {
-            padding: 10px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .data-table th {
-            background: #f8f9fa;
-            font-weight: 600;
-            color: #333;
-        }
-        
-        .freq-P { color: #28a745; font-weight: bold; }
-        .freq-F { color: #dc3545; font-weight: bold; }
-        .freq-A { color: #ffc107; font-weight: bold; }
-        .freq-FC { color: #fd7e14; font-weight: bold; }
-    </style>
+    <link rel="stylesheet" href="../assets/css/frequencia.css">
     
     <!-- APENAS SUPABASE -->
     <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
@@ -529,7 +443,7 @@
                 <small>Visão geral da frequência por turma</small>
             </div>
             
-            <div id="relatorios-turmas" class="turmas-grid">
+            <div id="relatorios-turmas" class="cards-grid">
                 <!-- Cards das turmas serão inseridos aqui -->
             </div>
         </div>
@@ -541,43 +455,39 @@
                 <small>Filtrar e visualizar frequência por período</small>
             </div>
             
-            <div class="filters-container">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Turma</label>
-                        <select id="filtro-turma" class="form-control">
-                            <option value="">Selecione uma turma</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Mês</label>
-                        <select id="filtro-mes" class="form-control">
-                            <option value="">Selecione um mês</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Ano</label>
-                        <select id="filtro-ano" class="form-control">
-                            <option value="">Selecione um ano</option>
-                        </select>
-                    </div>
+            <div class="filters-row">
+                <div class="filter-group">
+                    <label>Turma</label>
+                    <select id="filtro-turma">
+                        <option value="">Selecione uma turma</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label>Mês</label>
+                    <select id="filtro-mes">
+                        <option value="">Selecione um mês</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label>Ano</label>
+                    <select id="filtro-ano">
+                        <option value="">Selecione um ano</option>
+                    </select>
                 </div>
             </div>
             
             <!-- TABELA DE FREQUÊNCIA -->
             <div id="tabela-container" class="table-container" style="display: none;">
-                <div class="table-wrapper">
-                    <table class="data-table">
-                        <thead id="tabela-head">
-                            <!-- Cabeçalho será inserido dinamicamente -->
-                        </thead>
-                        <tbody id="tabela-body">
-                            <!-- Dados serão inseridos dinamicamente -->
-                        </tbody>
-                    </table>
-                </div>
+                <table class="data-table">
+                    <thead id="tabela-head">
+                        <!-- Cabeçalho será inserido dinamicamente -->
+                    </thead>
+                    <tbody id="tabela-body">
+                        <!-- Dados serão inseridos dinamicamente -->
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
