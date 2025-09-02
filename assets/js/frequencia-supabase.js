@@ -35,31 +35,7 @@ class FrequenciaSupabaseManager {
   }
 
   setupEventListeners() {
-    // Filtro avançado de turmas
-    const filtroTurmaAvancado = document.getElementById('filtro-turma-avancado');
-    if (filtroTurmaAvancado) {
-      console.log('✅ Elemento filtro-turma-avancado encontrado, configurando event listener');
-      filtroTurmaAvancado.addEventListener('change', (e) => {
-        console.log(`🔄 Filtro turma changed: ${e.target.value}`);
-        this.atualizarListaAlunos(e.target.value);
-      });
-    } else {
-      console.error('❌ Elemento filtro-turma-avancado NÃO encontrado!');
-    }
-    
-    // Filtro de alunos
-    const filtroAluno = document.getElementById('filtro-aluno');
-    if (filtroAluno) {
-      console.log('✅ Elemento filtro-aluno encontrado, configurando event listener');
-      filtroAluno.addEventListener('change', (e) => {
-        console.log(`🔄 Filtro aluno changed: ${e.target.value}`);
-        this.mostrarEstatisticasAluno(e.target.value);
-      });
-    } else {
-      console.error('❌ Elemento filtro-aluno NÃO encontrado!');
-    }
-
-    // Filtros
+    // Filtros originais
     const filtroTurma = document.getElementById('filtro-turma');
     const filtroMes = document.getElementById('filtro-mes');
     const filtroAno = document.getElementById('filtro-ano');
@@ -331,9 +307,32 @@ class FrequenciaSupabaseManager {
     const container = document.getElementById('resumoTurmas');
     if (!container) return;
     
-    // Criar estrutura com grid de cards
-    container.innerHTML = '<div class="cards-grid"></div>';
+    // Criar estrutura completa com filtros avançados
+    container.innerHTML = `
+      <div class="filters-row">
+        <div class="filter-group">
+          <label for="filtro-turma-avancado">Pesquisar por Turma:</label>
+          <select id="filtro-turma-avancado">
+            <option value="">Selecione uma turma...</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="filtro-aluno">Pesquisar Aluno:</label>
+          <select id="filtro-aluno" disabled>
+            <option value="">Selecione um aluno...</option>
+          </select>
+        </div>
+      </div>
+      <div id="estatisticas-aluno">
+        <div class="info-text">Selecione uma turma e depois um aluno para ver suas estatísticas</div>
+      </div>
+      <div class="cards-grid"></div>
+    `;
+    
     const cardsGrid = container.querySelector('.cards-grid');
+    
+    // Configurar event listeners dos novos elementos
+    this.setupFiltrosAvancados();
     
     // Agrupar por turma
     const relatoriosPorTurma = new Map();
@@ -396,6 +395,34 @@ class FrequenciaSupabaseManager {
     
     // Atualizar filtro avançado de turmas
     this.atualizarFiltroTurmas(Array.from(relatoriosPorTurma.keys()));
+  }
+
+  setupFiltrosAvancados() {
+    console.log('🔧 Configurando event listeners dos filtros avançados...');
+    
+    // Filtro avançado de turmas
+    const filtroTurmaAvancado = document.getElementById('filtro-turma-avancado');
+    if (filtroTurmaAvancado) {
+      console.log('✅ Elemento filtro-turma-avancado encontrado, configurando event listener');
+      filtroTurmaAvancado.addEventListener('change', (e) => {
+        console.log(`🔄 Filtro turma changed: ${e.target.value}`);
+        this.atualizarListaAlunos(e.target.value);
+      });
+    } else {
+      console.error('❌ Elemento filtro-turma-avancado ainda NÃO encontrado!');
+    }
+    
+    // Filtro de alunos
+    const filtroAluno = document.getElementById('filtro-aluno');
+    if (filtroAluno) {
+      console.log('✅ Elemento filtro-aluno encontrado, configurando event listener');
+      filtroAluno.addEventListener('change', (e) => {
+        console.log(`🔄 Filtro aluno changed: ${e.target.value}`);
+        this.mostrarEstatisticasAluno(e.target.value);
+      });
+    } else {
+      console.error('❌ Elemento filtro-aluno ainda NÃO encontrado!');
+    }
   }
 
   atualizarFiltroTurmas(turmas) {
