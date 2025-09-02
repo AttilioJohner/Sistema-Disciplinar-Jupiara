@@ -156,6 +156,11 @@ class FrequenciaSupabaseManager {
           // Adicionar status do dia
           grupo.alunos.get(codigoAluno).dias[dia] = registro.status;
           
+          // Debug específico para sextas-feiras (dias 01, 08, 15, 22, 29)
+          if (['01', '08', '15', '22', '29'].includes(dia)) {
+            console.log(`🔍 SEXTA-FEIRA ENCONTRADA: ${registro.turma} - Aluno ${codigoAluno} - Dia ${dia} (${registro.data}) = ${registro.status}`);
+          }
+          
           // Debug mais frequente para ver acumulação de dias
           if (Math.random() < 0.05) { // 5% dos registros
             const alunoAtual = grupo.alunos.get(codigoAluno);
@@ -629,18 +634,29 @@ class FrequenciaSupabaseManager {
     const diasSemana = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
     const diasDoMes = new Date(ano, mes, 0).getDate(); // último dia do mês
     
+    console.log(`📅 Gerando dias úteis para ${mes}/${ano} (total de dias no mês: ${diasDoMes})`);
+    
     for (let dia = 1; dia <= diasDoMes; dia++) {
       const data = new Date(ano, mes - 1, dia); // mês é 0-indexed em Date
       const diaSemana = data.getDay(); // 0 = domingo, 1 = segunda, etc
+      const diaFormatado = String(dia).padStart(2, '0');
+      
+      // Debug específico para sextas-feiras
+      if (diaSemana === 5) { // sexta-feira
+        console.log(`🔍 SEXTA-FEIRA encontrada no calendário: dia ${diaFormatado} é ${diasSemana[diaSemana]}`);
+      }
       
       // Apenas dias úteis (segunda=1 a sexta=5)
       if (diaSemana >= 1 && diaSemana <= 5) {
         diasUteis.push({
-          dia: String(dia).padStart(2, '0'),
+          dia: diaFormatado,
           diaSemana: diasSemana[diaSemana]
         });
       }
     }
+    
+    const sextasFeiras = diasUteis.filter(d => d.diaSemana === 'sex');
+    console.log(`📊 Sextas-feiras geradas:`, sextasFeiras.map(s => s.dia).join(', '));
     
     return diasUteis;
   }
