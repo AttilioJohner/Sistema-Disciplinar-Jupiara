@@ -1,4 +1,5 @@
 -- Esquema para tabela de Providências FICAI no Supabase
+-- Execute este script no SQL Editor do Supabase
 
 -- Tabela para armazenar as providências tomadas para cada aluno
 CREATE TABLE IF NOT EXISTS ficai_providencias (
@@ -6,29 +7,18 @@ CREATE TABLE IF NOT EXISTS ficai_providencias (
     codigo_matricula VARCHAR(50) NOT NULL,
     nome_completo VARCHAR(255) NOT NULL,
     turma VARCHAR(100) NOT NULL,
-    mes_referencia VARCHAR(7) NOT NULL, -- formato: YYYY-MM (exemplo: '2025-08')
+    mes_referencia VARCHAR(7) NOT NULL,
     
-    -- Status do FICAI
     status_ficai VARCHAR(50) DEFAULT NULL,
-    -- Valores possíveis:
-    -- 'aguardando' = FICAI Aberta, aguardando prazo
-    -- 'resolvido' = Resolvido pela Escola  
-    -- 'cancelado' = Cancelado pela escola
-    -- 'conselho' = Em andamento no Conselho Tutelar
-    
-    -- Providências tomadas
     providencias TEXT,
     
-    -- Controle de prazos
     data_abertura_ficai DATE DEFAULT CURRENT_DATE,
-    prazo_resposta DATE, -- Calculado automaticamente (data_abertura + 30 dias)
+    prazo_resposta DATE,
     data_resolucao DATE DEFAULT NULL,
     
-    -- Metadados
     criado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     atualizado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     
-    -- Índices para consultas eficientes
     UNIQUE(codigo_matricula, mes_referencia)
 );
 
@@ -38,7 +28,7 @@ CREATE INDEX IF NOT EXISTS idx_ficai_status ON ficai_providencias(status_ficai);
 CREATE INDEX IF NOT EXISTS idx_ficai_turma ON ficai_providencias(turma);
 CREATE INDEX IF NOT EXISTS idx_ficai_prazo ON ficai_providencias(prazo_resposta);
 
--- Trigger para atualizar automaticamente o campo atualizado_em
+-- Trigger para atualizar automaticamente os campos
 CREATE OR REPLACE FUNCTION update_ficai_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -68,7 +58,7 @@ CREATE TRIGGER trigger_update_ficai_timestamp
 -- Comentários para documentação
 COMMENT ON TABLE ficai_providencias IS 'Tabela para registrar providências e acompanhamento de casos FICAI';
 COMMENT ON COLUMN ficai_providencias.codigo_matricula IS 'Código de matrícula do aluno';
-COMMENT ON COLUMN ficai_providencias.mes_referencia IS 'Mês de referência da análise (formato YYYY-MM)';
-COMMENT ON COLUMN ficai_providencias.status_ficai IS 'Status atual do processo FICAI';
+COMMENT ON COLUMN ficai_providencias.mes_referencia IS 'Mês de referência da análise no formato YYYY-MM';
+COMMENT ON COLUMN ficai_providencias.status_ficai IS 'Status atual do processo FICAI: aguardando, resolvido, cancelado, conselho';
 COMMENT ON COLUMN ficai_providencias.providencias IS 'Descrição das providências tomadas pela escola';
-COMMENT ON COLUMN ficai_providencias.prazo_resposta IS 'Prazo legal para resposta da família (30 dias)';
+COMMENT ON COLUMN ficai_providencias.prazo_resposta IS 'Prazo legal para resposta da família calculado automaticamente';
