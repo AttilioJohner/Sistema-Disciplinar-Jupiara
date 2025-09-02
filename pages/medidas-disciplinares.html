@@ -335,6 +335,36 @@
             margin-bottom: 5px;
         }
         
+        /* Medidas positivas - verde */
+        .medida-item.positiva {
+            border-left: 4px solid #28a745;
+        }
+        
+        .medida-item.positiva .medida-tipo {
+            color: #28a745;
+        }
+        
+        /* Pontuação da medida */
+        .medida-pontos {
+            display: inline-block;
+            margin-left: 10px;
+            padding: 3px 8px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        
+        .medida-pontos.positivos {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .medida-pontos.negativos {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
         .medida-descricao {
             color: #495057;
             margin-bottom: 8px;
@@ -1897,7 +1927,13 @@
         
         // Função para excluir medida disciplinar
         async function excluirMedida(medidaId, botao) {
+            // Primeira confirmação
             if (!confirm('⚠️ Tem certeza que deseja excluir esta medida disciplinar?\n\nEsta ação não pode ser desfeita.')) {
+                return;
+            }
+            
+            // Segunda confirmação mais específica
+            if (!confirm('🚨 CONFIRMAÇÃO FINAL:\n\nVocê está prestes a EXCLUIR PERMANENTEMENTE esta medida disciplinar do sistema.\n\nEsta operação:\n• Remove a medida do Supabase\n• Afeta o cálculo da nota disciplinar\n• NÃO pode ser desfeita\n\nDeseja realmente continuar?')) {
                 return;
             }
             
@@ -1997,6 +2033,31 @@
         }
         
         
+        // Função para calcular pontos de uma medida
+        function calcularPontosMedida(tipoMedida, diasSuspensao = 1) {
+            let pontos = 0;
+            
+            // Medidas positivas
+            if (tipoMedida === 'Elogio Individual') pontos = 0.5;
+            else if (tipoMedida === 'Elogio Coletivo') pontos = 0.3;
+            else if (tipoMedida === 'Fato Observado Positivo') pontos = 0.1;
+            
+            // Medidas negativas
+            else if (tipoMedida === 'Fato Observado Negativo') pontos = -0.1;
+            else if (tipoMedida === 'Advertência Verbal' || tipoMedida === 'Advertência Escrita') pontos = -0.3;
+            else if (tipoMedida === 'Suspensão') {
+                pontos = -0.5 * diasSuspensao;
+            }
+            else if (tipoMedida === 'Ação Educativa') pontos = -1.0;
+            
+            return pontos;
+        }
+
+        // Função para verificar se é medida positiva
+        function isMedidaPositiva(tipoMedida) {
+            return ['Elogio Individual', 'Elogio Coletivo', 'Fato Observado Positivo'].includes(tipoMedida);
+        }
+
         function exibirHistoricoMedidas(medidas) {
             const container = document.getElementById('historicoMedidas');
             
@@ -2026,12 +2087,27 @@
             
             medidas.forEach(medida => {
                 const dataFormatada = new Date(medida.data_registro).toLocaleDateString('pt-BR');
+                const tipoMedida = medida.tipo_medida || 'N/A';
+                const diasSuspensao = medida.dias_suspensao || 1;
+                const pontos = calcularPontosMedida(tipoMedida, diasSuspensao);
+                const isPositiva = isMedidaPositiva(tipoMedida);
+                
+                // Formatar exibição dos pontos
+                let pontosTexto = '';
+                if (pontos > 0) {
+                    pontosTexto = `<span class="medida-pontos positivos">+${pontos}</span>`;
+                } else if (pontos < 0) {
+                    pontosTexto = `<span class="medida-pontos negativos">${pontos}</span>`;
+                }
                 
                 html += `
-                    <div class="medida-item" data-medida-id="${medida.id}">
+                    <div class="medida-item ${isPositiva ? 'positiva' : ''}" data-medida-id="${medida.id}">
                         <div class="medida-data">${dataFormatada}</div>
                         <div class="medida-content">
-                            <div class="medida-tipo">${medida.tipo_medida || 'N/A'}</div>
+                            <div class="medida-tipo">
+                                ${tipoMedida}
+                                ${pontosTexto}
+                            </div>
                             <div class="medida-descricao">
                                 <strong>Especificação:</strong> ${medida.especificacao || 'N/A'}
                             </div>
