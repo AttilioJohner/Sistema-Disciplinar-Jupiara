@@ -56,7 +56,7 @@ function computeAlunoStats(f, fc, p, a) {
  */
 function aggregateByTurma(alunosStats, excluirSemDados = true) {
     const alunosParaCalculo = excluirSemDados 
-        ? alunosStats.filter(aluno => aluno.temDados)
+        ? alunosStats.filter(aluno => aluno.temDados || aluno.temDadosFrequencia)
         : alunosStats;
     
     if (alunosParaCalculo.length === 0) {
@@ -69,16 +69,16 @@ function aggregateByTurma(alunosStats, excluirSemDados = true) {
     }
     
     // Média aritmética simples dos percentuais
-    const somaPctPresenca = alunosParaCalculo.reduce((sum, a) => sum + a.pctPresenca, 0);
-    const somaPctFaltas = alunosParaCalculo.reduce((sum, a) => sum + a.pctFaltas, 0);
+    const somaPctPresenca = alunosParaCalculo.reduce((sum, a) => sum + (a.pctPresenca || 0), 0);
+    const somaPctFaltas = alunosParaCalculo.reduce((sum, a) => sum + (a.pctFaltas || 0), 0);
     
     // Somatórios absolutos de todos os alunos (incluindo sem dados)
     const somatorios = alunosStats.reduce((acc, aluno) => ({
-        F: acc.F + aluno.totals.F,
-        FC: acc.FC + aluno.totals.FC,
-        P: acc.P + aluno.totals.P,
-        A: acc.A + aluno.totals.A,
-        TOTAL: acc.TOTAL + aluno.totals.TOTAL
+        F: acc.F + (aluno.totals?.F || 0),
+        FC: acc.FC + (aluno.totals?.FC || 0),
+        P: acc.P + (aluno.totals?.P || 0),
+        A: acc.A + (aluno.totals?.A || 0),
+        TOTAL: acc.TOTAL + (aluno.totals?.TOTAL || 0)
     }), { F: 0, FC: 0, P: 0, A: 0, TOTAL: 0 });
     
     return {
