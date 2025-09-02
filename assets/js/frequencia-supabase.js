@@ -92,6 +92,9 @@ class FrequenciaSupabaseManager {
       const gruposDados = new Map();
       
       if (frequencias && frequencias.length > 0) {
+        console.log(`📊 Total de registros encontrados: ${frequencias.length}`);
+        console.log('📋 Primeiros 3 registros:', frequencias.slice(0, 3));
+        
         frequencias.forEach(registro => {
           // Extrair mês e ano da data
           const dataObj = new Date(registro.data);
@@ -102,6 +105,7 @@ class FrequenciaSupabaseManager {
           const chave = `${registro.turma}_${mes}_${ano}`;
           
           if (!gruposDados.has(chave)) {
+            console.log(`📅 Novo período encontrado: ${chave} (${registro.turma} - ${mes}/${ano})`);
             gruposDados.set(chave, {
               turma: registro.turma,
               mes: mes,
