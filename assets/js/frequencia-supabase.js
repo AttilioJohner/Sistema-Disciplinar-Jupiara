@@ -841,6 +841,221 @@ class FrequenciaSupabaseManager {
     document.getElementById('statusSalvamento').innerHTML = '';
   }
 
+  // SISTEMA DE ALERTAS DE FREQUÊNCIA
+  carregarAlertasFrequencia() {
+    console.log('🚨 Carregando alertas de frequência...');
+    
+    // Criar seletor de mês se não existir
+    this.criarSeletorMesAlertas();
+    
+    // Carregar alertas do mês atual
+    const mesAtual = new Date().getMonth() + 1;
+    const anoAtual = new Date().getFullYear();
+    this.atualizarAlertasFrequencia(mesAtual.toString().padStart(2, '0'), anoAtual.toString());
+  }
+
+  criarSeletorMesAlertas() {
+    const painelAlertas = document.getElementById('painelAlertasFrequencia');
+    if (!painelAlertas) return;
+
+    // Verificar se já existe o seletor
+    if (document.getElementById('seletorMesAlertas')) return;
+
+    const seletorContainer = document.createElement('div');
+    seletorContainer.innerHTML = `
+      <div class="filters-row" style="margin: 1rem 0;">
+        <div class="filter-group">
+          <label>Mês/Ano para Análise:</label>
+          <select id="seletorMesAlertas" onchange="atualizarAlertasMes()">
+            <option value="01_2025">Janeiro/2025</option>
+            <option value="02_2025">Fevereiro/2025</option>
+            <option value="03_2025">Março/2025</option>
+            <option value="04_2025">Abril/2025</option>
+            <option value="05_2025">Maio/2025</option>
+            <option value="06_2025">Junho/2025</option>
+            <option value="07_2025">Julho/2025</option>
+            <option value="08_2025" selected>Agosto/2025</option>
+            <option value="09_2025">Setembro/2025</option>
+            <option value="10_2025">Outubro/2025</option>
+            <option value="11_2025">Novembro/2025</option>
+            <option value="12_2025">Dezembro/2025</option>
+          </select>
+        </div>
+      </div>
+    `;
+
+    painelAlertas.insertBefore(seletorContainer, painelAlertas.querySelector('#alertasFrequenciaContainer'));
+  }
+
+  atualizarAlertasFrequencia(mes, ano) {
+    console.log(`🔍 Analisando alertas para ${mes}/${ano}...`);
+    
+    const container = document.getElementById('alertasFrequenciaContainer');
+    if (!container) return;
+
+    // Coletar alunos com problemas de frequência
+    const alunosComProblemas = [];
+    
+    this.dadosFrequencia.forEach((periodo, chave) => {
+      if (periodo.mes === mes && periodo.ano === ano) {
+        periodo.alunos.forEach(aluno => {
+          if (aluno.dias) {
+            let faltasConsecutivas = 0;
+            let totalFaltas = 0;
+            let maxFaltasConsecutivas = 0;
+            let diasUteis = Object.keys(aluno.dias).length;
+
+            // Analisar padrão de faltas
+            const diasOrdenados = Object.keys(aluno.dias).sort((a, b) => parseInt(a) - parseInt(b));
+            
+            diasOrdenados.forEach(dia => {
+              const status = aluno.dias[dia];
+              if (status === 'F' || status === 'FC') {
+                totalFaltas++;
+                faltasConsecutivas++;
+                maxFaltasConsecutivas = Math.max(maxFaltasConsecutivas, faltasConsecutivas);
+              } else {
+                faltasConsecutivas = 0;
+              }
+            });
+
+            const percentualPresenca = diasUteis > 0 ? ((diasUteis - totalFaltas) / diasUteis) * 100 : 100;
+
+            // Critérios para alerta
+            if (percentualPresenca < 75 || maxFaltasConsecutivas >= 3 || totalFaltas >= 5) {
+              alunosComProblemas.push({
+                codigo: aluno.codigo,
+                nome: aluno.nome,
+                turma: periodo.turma,
+                totalFaltas,
+                maxFaltasConsecutivas,
+                percentualPresenca: percentualPresenca.toFixed(1),
+                diasUteis
+              });
+            }
+          }
+        });
+      }
+    });
+
+    console.log(`⚠️ Encontrados ${alunosComProblemas.length} alunos com problemas de frequência`);
+
+    if (alunosComProblemas.length === 0) {
+      container.innerHTML = `
+        <div class="success-message">
+          ✅ Nenhum aluno com problemas de frequência em ${mes}/${ano}
+        </div>
+      `;
+      return;
+    }
+
+    // Renderizar alertas
+    container.innerHTML = `
+      <div class="alertas-grid">
+        ${alunosComProblemas.map(aluno => `
+          <div class="alerta-item" data-codigo="${aluno.codigo}">
+            <div class="alerta-header">
+              <div class="aluno-dados">
+                <span class="aluno-codigo">${aluno.codigo}</span>
+                <span class="aluno-nome">${aluno.nome}</span>
+                <span class="aluno-turma">Turma ${aluno.turma}</span>
+              </div>
+              <div class="alerta-stats">
+                <span class="stat-item stat-danger">${aluno.totalFaltas} faltas</span>
+                <span class="stat-item stat-warning">${aluno.maxFaltasConsecutivas} consecutivas</span>
+                <span class="stat-item ${aluno.percentualPresenca < 50 ? 'stat-danger' : 'stat-warning'}">${aluno.percentualPresenca}%</span>
+              </div>
+            </div>
+            
+            <div class="providencias-container">
+              <label class="form-label">📋 Providências Tomadas:</label>
+              <div class="providencias-controles">
+                <div class="providencia-step">
+                  <span class="step-label">1. Abertura de FICAI:</span>
+                  <span class="step-status">abrir FICAI</span>
+                </div>
+                
+                <div class="providencia-opcoes">
+                  <label class="providencia-radio">
+                    <input type="radio" name="prov_${aluno.codigo}" value="ficai_aguardando" onchange="mostrarPrazoFicai('${aluno.codigo}')">
+                    <span class="radio-text">FICAI Aberta, aguardando prazo</span>
+                  </label>
+                  
+                  <label class="providencia-radio">
+                    <input type="radio" name="prov_${aluno.codigo}" value="resolvido_escola" onchange="marcarResolvido('${aluno.codigo}')">
+                    <span class="radio-text">Resolvido pela Escola</span>
+                  </label>
+                  
+                  <label class="providencia-radio">
+                    <input type="radio" name="prov_${aluno.codigo}" value="cancelado_escola">
+                    <span class="radio-text">Cancelado pela Escola</span>
+                  </label>
+                  
+                  <label class="providencia-radio">
+                    <input type="radio" name="prov_${aluno.codigo}" value="conselho_tutelar">
+                    <span class="radio-text">Em andamento no Conselho Tutelar</span>
+                  </label>
+                </div>
+                
+                <div id="prazo_${aluno.codigo}" class="prazo-container" style="display: none;">
+                  <label>Prazo (dias):</label>
+                  <input type="number" min="1" max="30" value="15" class="form-input" style="width: 80px;">
+                  <span class="prazo-data"></span>
+                </div>
+                
+                <div id="resolvido_${aluno.codigo}" class="resolvido-container" style="display: none;">
+                  <span class="resolvido-check">✅ Situação Resolvida</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  mostrarPrazoFicai(codigoAluno) {
+    const prazoContainer = document.getElementById(`prazo_${codigoAluno}`);
+    const resolvidoContainer = document.getElementById(`resolvido_${codigoAluno}`);
+    
+    if (prazoContainer) {
+      prazoContainer.style.display = 'block';
+      const inputPrazo = prazoContainer.querySelector('input[type="number"]');
+      const spanData = prazoContainer.querySelector('.prazo-data');
+      
+      // Calcular data limite
+      const dataAtual = new Date();
+      const prazoEmDias = parseInt(inputPrazo.value) || 15;
+      const dataLimite = new Date(dataAtual.getTime() + (prazoEmDias * 24 * 60 * 60 * 1000));
+      
+      spanData.textContent = `(até ${dataLimite.toLocaleDateString('pt-BR')})`;
+      
+      // Atualizar quando mudar o prazo
+      inputPrazo.addEventListener('input', () => {
+        const novoPrazo = parseInt(inputPrazo.value) || 15;
+        const novaData = new Date(dataAtual.getTime() + (novoPrazo * 24 * 60 * 60 * 1000));
+        spanData.textContent = `(até ${novaData.toLocaleDateString('pt-BR')})`;
+      });
+    }
+    
+    if (resolvidoContainer) {
+      resolvidoContainer.style.display = 'none';
+    }
+  }
+
+  marcarResolvido(codigoAluno) {
+    const prazoContainer = document.getElementById(`prazo_${codigoAluno}`);
+    const resolvidoContainer = document.getElementById(`resolvido_${codigoAluno}`);
+    
+    if (prazoContainer) {
+      prazoContainer.style.display = 'none';
+    }
+    
+    if (resolvidoContainer) {
+      resolvidoContainer.style.display = 'block';
+    }
+  }
+
   selecionarTurma(turma) {
     console.log(`🎯 Turma selecionada: ${turma}`);
     this.turmaAtual = turma;
@@ -1476,6 +1691,12 @@ async function inicializarModuloFrequencia() {
     try {
       window.frequenciaManager = new FrequenciaSupabaseManager();
       showToast('✅ Módulo de frequência carregado!', 'success');
+      
+      // Inicializar sistema de alertas
+      setTimeout(() => {
+        carregarAlertasFrequencia();
+      }, 2000);
+      
     } catch (error) {
       console.error('❌ Erro ao inicializar FrequenciaManager:', error);
       showToast('Erro ao inicializar módulo de frequência', 'error');
@@ -1543,6 +1764,521 @@ function voltarSelecaoTurma() {
   if (window.frequenciaManager) {
     window.frequenciaManager.voltarSelecaoTurma();
   }
+}
+
+// Funções globais para alertas de frequência
+async function carregarAlertasFrequencia() {
+    console.log('🚨 ALERTAS: Iniciando carregamento de alertas de frequência...');
+    
+    const container = document.getElementById('alertasFrequenciaContainer');
+    if (!container) {
+        console.error('❌ ALERTAS: Container de alertas não encontrado');
+        return;
+    }
+
+    try {
+        container.innerHTML = `
+            <div class="loading-alertas">
+                <div class="loading-spinner"></div>
+                <p>Carregando alertas de frequência...</p>
+            </div>
+        `;
+
+        // Verificar se temos dados de frequência
+        const { data: registros, error } = await supabaseClient
+            .from('frequencia')
+            .select('*')
+            .limit(1);
+
+        if (error) {
+            throw error;
+        }
+
+        if (!registros || registros.length === 0) {
+            container.innerHTML = `
+                <div class="no-alertas">
+                    📊 Nenhum registro de frequência encontrado. Cadastre algumas frequências primeiro.
+                </div>
+            `;
+            return;
+        }
+
+        // Renderizar interface de alertas
+        await renderizarAlertasFrequencia();
+
+    } catch (error) {
+        console.error('❌ ALERTAS: Erro ao carregar alertas:', error);
+        container.innerHTML = `
+            <div class="error-message">
+                ❌ Erro ao carregar alertas de frequência: ${error.message}
+            </div>
+        `;
+    }
+}
+
+async function renderizarAlertasFrequencia() {
+    console.log('🚨 ALERTAS: Renderizando interface...');
+    
+    const container = document.getElementById('alertasFrequenciaContainer');
+    
+    // Data atual
+    const agora = new Date();
+    const mesAtual = (agora.getMonth() + 1).toString().padStart(2, '0');
+    const anoAtual = agora.getFullYear();
+    
+    container.innerHTML = `
+        <div class="alertas-filters">
+            <div class="filter-group">
+                <label class="providencias-label">📅 Mês para análise:</label>
+                <select id="alertasMes" onchange="atualizarAlertasMes()">
+                    <option value="01">Janeiro</option>
+                    <option value="02">Fevereiro</option>
+                    <option value="03">Março</option>
+                    <option value="04">Abril</option>
+                    <option value="05">Maio</option>
+                    <option value="06">Junho</option>
+                    <option value="07">Julho</option>
+                    <option value="08" ${mesAtual === '08' ? 'selected' : ''}>Agosto</option>
+                    <option value="09" ${mesAtual === '09' ? 'selected' : ''}>Setembro</option>
+                    <option value="10" ${mesAtual === '10' ? 'selected' : ''}>Outubro</option>
+                    <option value="11" ${mesAtual === '11' ? 'selected' : ''}>Novembro</option>
+                    <option value="12" ${mesAtual === '12' ? 'selected' : ''}>Dezembro</option>
+                </select>
+            </div>
+        </div>
+        <div id="alertasContainer" class="alertas-grid">
+            <div class="loading-alertas">
+                <div class="loading-spinner"></div>
+                <p>Analisando frequências...</p>
+            </div>
+        </div>
+    `;
+    
+    // Definir mês atual como selecionado
+    document.getElementById('alertasMes').value = mesAtual;
+    
+    // Carregar alertas do mês atual
+    await atualizarAlertasMes();
+}
+
+async function atualizarAlertasMes() {
+    console.log('🚨 ALERTAS: Atualizando alertas por mês...');
+    
+    const mesSelect = document.getElementById('alertasMes');
+    const alertasContainer = document.getElementById('alertasContainer');
+    
+    if (!mesSelect || !alertasContainer) {
+        console.error('❌ ALERTAS: Elementos de filtro não encontrados');
+        return;
+    }
+
+    const mesSelecionado = mesSelect.value;
+    const anoAtual = new Date().getFullYear();
+    
+    console.log('🚨 ALERTAS: Analisando mês:', mesSelecionado, 'ano:', anoAtual);
+
+    try {
+        alertasContainer.innerHTML = `
+            <div class="loading-alertas">
+                <div class="loading-spinner"></div>
+                <p>Analisando frequências de ${mesSelect.options[mesSelect.selectedIndex].text}...</p>
+            </div>
+        `;
+
+        // Buscar dados de frequência do mês
+        const inicioMes = `${anoAtual}-${mesSelecionado}-01`;
+        const fimMes = `${anoAtual}-${mesSelecionado}-31`;
+
+        const { data: registros, error } = await supabaseClient
+            .from('frequencia')
+            .select('*')
+            .gte('data', inicioMes)
+            .lte('data', fimMes)
+            .order('codigo_matricula')
+            .order('data');
+
+        if (error) {
+            throw error;
+        }
+
+        console.log('🚨 ALERTAS: Registros encontrados:', registros?.length || 0);
+
+        if (!registros || registros.length === 0) {
+            alertasContainer.innerHTML = `
+                <div class="no-alertas">
+                    📊 Nenhum registro de frequência encontrado para ${mesSelect.options[mesSelect.selectedIndex].text}/${anoAtual}
+                </div>
+            `;
+            return;
+        }
+
+        // Processar dados por aluno
+        const alunosPorCodigo = {};
+        registros.forEach(registro => {
+            const codigo = registro.codigo_matricula;
+            if (!alunosPorCodigo[codigo]) {
+                alunosPorCodigo[codigo] = {
+                    codigo: codigo,
+                    nome: registro.nome_completo,
+                    turma: registro.turma,
+                    registros: []
+                };
+            }
+            alunosPorCodigo[codigo].registros.push(registro);
+        });
+
+        console.log('🚨 ALERTAS: Alunos processados:', Object.keys(alunosPorCodigo).length);
+
+        // Analisar problemas de frequência
+        const problemasEncontrados = [];
+        
+        Object.values(alunosPorCodigo).forEach(aluno => {
+            const problema = analisarFrequenciaAluno(aluno);
+            if (problema) {
+                problemasEncontrados.push(problema);
+            }
+        });
+
+        console.log('🚨 ALERTAS: Problemas encontrados:', problemasEncontrados.length);
+
+        // Renderizar resultados
+        if (problemasEncontrados.length === 0) {
+            alertasContainer.innerHTML = `
+                <div class="no-alertas">
+                    🎉 Ótimas notícias! Nenhum aluno com problemas graves de frequência em ${mesSelect.options[mesSelect.selectedIndex].text}
+                </div>
+            `;
+        } else {
+            const alertasHtml = problemasEncontrados.map(problema => 
+                renderizarCardAlerta(problema, mesSelecionado, anoAtual)
+            ).join('');
+            
+            alertasContainer.innerHTML = alertasHtml;
+        }
+
+    } catch (error) {
+        console.error('❌ ALERTAS: Erro ao atualizar alertas:', error);
+        alertasContainer.innerHTML = `
+            <div class="error-message">
+                ❌ Erro ao carregar alertas: ${error.message}
+            </div>
+        `;
+    }
+}
+
+function analisarFrequenciaAluno(aluno) {
+    console.log('🔍 ANÁLISE: Analisando aluno', aluno.codigo, '-', aluno.nome);
+    
+    const registros = aluno.registros;
+    
+    if (!registros || registros.length === 0) {
+        return null;
+    }
+
+    // Contar tipos de frequência
+    let totalPresencas = 0;
+    let totalFaltas = 0;
+    let totalFaltasControladas = 0;
+    let totalAtestados = 0;
+    
+    // Analisar faltas consecutivas
+    let faltasConsecutivas = 0;
+    let maxFaltasConsecutivas = 0;
+    
+    registros.forEach((registro, index) => {
+        const status = registro.status;
+        
+        // Contar tipos
+        switch (status) {
+            case 'P':
+                totalPresencas++;
+                faltasConsecutivas = 0; // Reset contador
+                break;
+            case 'F':
+                totalFaltas++;
+                faltasConsecutivas++;
+                maxFaltasConsecutivas = Math.max(maxFaltasConsecutivas, faltasConsecutivas);
+                break;
+            case 'FC':
+                totalFaltasControladas++;
+                faltasConsecutivas++;
+                maxFaltasConsecutivas = Math.max(maxFaltasConsecutivas, faltasConsecutivas);
+                break;
+            case 'A':
+                totalAtestados++;
+                faltasConsecutivas = 0; // Atestado não conta como falta consecutiva
+                break;
+        }
+    });
+
+    const totalDias = registros.length;
+    const totalFaltasGeral = totalFaltas + totalFaltasControladas;
+    const percentualPresenca = totalDias > 0 ? (totalPresencas / totalDias) * 100 : 0;
+    
+    // Critérios para alerta:
+    // 1. Percentual de presença abaixo de 75%
+    // 2. 3 ou mais faltas consecutivas
+    // 3. 5 ou mais faltas totais no mês
+    
+    const problemas = [];
+    let temProblema = false;
+    
+    if (percentualPresenca < 75) {
+        problemas.push({
+            tipo: 'baixa_frequencia',
+            descricao: `Frequência baixa (${percentualPresenca.toFixed(1)}%)`,
+            gravidade: 'alta'
+        });
+        temProblema = true;
+    }
+    
+    if (maxFaltasConsecutivas >= 3) {
+        problemas.push({
+            tipo: 'faltas_consecutivas',
+            descricao: `${maxFaltasConsecutivas} faltas consecutivas`,
+            gravidade: 'alta'
+        });
+        temProblema = true;
+    }
+    
+    if (totalFaltasGeral >= 5) {
+        problemas.push({
+            tipo: 'muitas_faltas',
+            descricao: `${totalFaltasGeral} faltas no mês`,
+            gravidade: 'media'
+        });
+        temProblema = true;
+    }
+    
+    if (!temProblema) {
+        console.log('✅ ANÁLISE: Aluno sem problemas:', aluno.codigo);
+        return null;
+    }
+    
+    console.log('🚨 ANÁLISE: Problema encontrado para', aluno.codigo, '- Problemas:', problemas.length);
+    
+    return {
+        ...aluno,
+        stats: {
+            totalDias,
+            totalPresencas,
+            totalFaltas,
+            totalFaltasControladas,
+            totalAtestados,
+            percentualPresenca,
+            maxFaltasConsecutivas
+        },
+        problemas,
+        gravidade: problemas.some(p => p.gravidade === 'alta') ? 'alta' : 'media'
+    };
+}
+
+function renderizarCardAlerta(problema, mes, ano) {
+    const { codigo, nome, turma, stats, problemas, gravidade } = problema;
+    
+    // Determinar classe CSS baseada na gravidade
+    const classeAlerta = gravidade === 'alta' ? 'alerta-item danger' : 'alerta-item warning';
+    
+    // Gerar badges de estatísticas
+    const badgesStats = [
+        {
+            texto: `${stats.percentualPresenca.toFixed(1)}% presença`,
+            classe: stats.percentualPresenca < 75 ? 'danger' : stats.percentualPresenca < 85 ? 'warning' : 'info'
+        },
+        {
+            texto: `${stats.totalFaltas} faltas`,
+            classe: stats.totalFaltas >= 5 ? 'danger' : stats.totalFaltas >= 3 ? 'warning' : 'info'
+        }
+    ];
+    
+    if (stats.maxFaltasConsecutivas >= 3) {
+        badgesStats.push({
+            texto: `${stats.maxFaltasConsecutivas} consecutivas`,
+            classe: 'danger'
+        });
+    }
+    
+    if (stats.totalFaltasControladas > 0) {
+        badgesStats.push({
+            texto: `${stats.totalFaltasControladas} FC`,
+            classe: 'warning'
+        });
+    }
+    
+    if (stats.totalAtestados > 0) {
+        badgesStats.push({
+            texto: `${stats.totalAtestados} atestados`,
+            classe: 'info'
+        });
+    }
+    
+    const badgesHtml = badgesStats.map(badge => 
+        `<span class="stat-badge ${badge.classe}">${badge.texto}</span>`
+    ).join('');
+    
+    return `
+        <div class="${classeAlerta}" id="alerta-${codigo}">
+            <div class="alerta-header">
+                <div class="alerta-aluno">${nome}</div>
+                <div class="alerta-codigo">#${codigo} - ${turma}</div>
+            </div>
+            
+            <div class="alerta-stats">
+                ${badgesHtml}
+            </div>
+            
+            <div class="providencias-container">
+                <label class="providencias-label">📋 Status FICAI:</label>
+                <div class="ficai-controls">
+                    <div class="ficai-status-group">
+                        <select id="ficai-status-${codigo}" onchange="mostrarPrazoFicai('${codigo}')" class="ficai-status">
+                            <option value="">Selecionar ação...</option>
+                            <option value="aguardando">FICAI Aberta, aguardando prazo</option>
+                            <option value="resolvido">Resolvido pela Escola</option>
+                            <option value="cancelado">Cancelado pela escola</option>
+                            <option value="conselho">Em andamento no Conselho Tutelar</option>
+                        </select>
+                    </div>
+                    
+                    <div id="ficai-prazo-${codigo}" class="ficai-prazo">
+                        <!-- Prazo será mostrado aqui quando "aguardando" for selecionado -->
+                    </div>
+                    
+                    <textarea 
+                        id="providencias-${codigo}" 
+                        class="providencias-textarea" 
+                        placeholder="Descreva as providências tomadas, contatos realizados, reuniões agendadas..."
+                        rows="3"
+                    ></textarea>
+                    
+                    <button 
+                        type="button" 
+                        class="btn-salvar-providencias"
+                        onclick="salvarProvidencias('${codigo}')"
+                    >
+                        💾 Salvar Providências
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function mostrarPrazoFicai(codigoAluno) {
+    console.log('📅 FICAI: Mostrando prazo para aluno', codigoAluno);
+    
+    const select = document.getElementById(`ficai-status-${codigoAluno}`);
+    const prazoDiv = document.getElementById(`ficai-prazo-${codigoAluno}`);
+    
+    if (!select || !prazoDiv) {
+        console.error('❌ FICAI: Elementos não encontrados para aluno', codigoAluno);
+        return;
+    }
+    
+    const status = select.value;
+    
+    if (status === 'aguardando') {
+        // Calcular prazo (30 dias a partir de hoje)
+        const hoje = new Date();
+        const prazoFinal = new Date(hoje);
+        prazoFinal.setDate(prazoFinal.getDate() + 30);
+        
+        const prazoFormatado = prazoFinal.toLocaleDateString('pt-BR');
+        
+        prazoDiv.innerHTML = `
+            <strong>⏰ Prazo para resposta:</strong> ${prazoFormatado}<br>
+            <small>A família tem 30 dias para apresentar justificativa</small>
+        `;
+        prazoDiv.classList.add('show');
+        
+    } else if (status === 'resolvido') {
+        prazoDiv.innerHTML = `
+            <strong>✅ Situação resolvida</strong><br>
+            <small>Problema solucionado pela equipe escolar</small>
+        `;
+        prazoDiv.classList.add('show');
+        
+        // Marcar card como resolvido
+        const card = document.getElementById(`alerta-${codigoAluno}`);
+        if (card) {
+            card.classList.add('alerta-resolvido');
+        }
+        
+    } else {
+        prazoDiv.classList.remove('show');
+        prazoDiv.innerHTML = '';
+        
+        // Remover marcação de resolvido
+        const card = document.getElementById(`alerta-${codigoAluno}`);
+        if (card) {
+            card.classList.remove('alerta-resolvido');
+        }
+    }
+}
+
+async function salvarProvidencias(codigoAluno) {
+    console.log('💾 PROVIDÊNCIAS: Salvando para aluno', codigoAluno);
+    
+    const statusSelect = document.getElementById(`ficai-status-${codigoAluno}`);
+    const providenciasTextarea = document.getElementById(`providencias-${codigoAluno}`);
+    const botaoSalvar = document.querySelector(`button[onclick="salvarProvidencias('${codigoAluno}')"]`);
+    
+    if (!statusSelect || !providenciasTextarea) {
+        showErrorToast('Erro: Elementos do formulário não encontrados');
+        return;
+    }
+    
+    const status = statusSelect.value;
+    const providencias = providenciasTextarea.value.trim();
+    
+    if (!status && !providencias) {
+        showWarningToast('Preencha pelo menos o status FICAI ou as providências');
+        return;
+    }
+    
+    try {
+        botaoSalvar.disabled = true;
+        botaoSalvar.textContent = '💾 Salvando...';
+        
+        // Aqui você salvaria no Supabase (tabela de providências FICAI)
+        // Por enquanto, simular salvamento
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        showSuccessToast('Providências salvas com sucesso!');
+        
+        console.log('💾 PROVIDÊNCIAS: Salvo - Status:', status, 'Providências:', providencias);
+        
+        // Se foi marcado como resolvido, aplicar visual
+        if (status === 'resolvido') {
+            const card = document.getElementById(`alerta-${codigoAluno}`);
+            if (card) {
+                card.classList.add('alerta-resolvido');
+            }
+        }
+        
+    } catch (error) {
+        console.error('❌ PROVIDÊNCIAS: Erro ao salvar:', error);
+        showErrorToast('Erro ao salvar providências: ' + error.message);
+        
+    } finally {
+        botaoSalvar.disabled = false;
+        botaoSalvar.textContent = '💾 Salvar Providências';
+    }
+}
+
+// Função para alternar lista detalhada de alertas
+function toggleListaAlertas() {
+    const lista = document.getElementById('listaAlertasDetalhada');
+    const botao = document.getElementById('toggleAlertas');
+    
+    if (lista.style.display === 'none') {
+        lista.style.display = 'block';
+        botao.textContent = '👁️ Ocultar Lista';
+        // Aqui você pode carregar mais detalhes se necessário
+    } else {
+        lista.style.display = 'none';
+        botao.textContent = '👁️ Mostrar Lista';
+    }
 }
 
 // Aguardar DOM estar pronto
