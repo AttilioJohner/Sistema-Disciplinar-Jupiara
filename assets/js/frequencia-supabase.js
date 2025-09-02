@@ -323,6 +323,16 @@ class FrequenciaSupabaseManager {
     const chave = `${this.turmaAtual}_${this.mesAtual}_${this.anoAtual}`;
     const dados = this.dadosFrequencia.get(chave);
     
+    console.log(`🔍 DEBUG mostrarResumoAlunos - Chave buscada: ${chave}`);
+    console.log(`📊 DEBUG - Dados encontrados:`, dados);
+    console.log(`👥 DEBUG - Quantidade de alunos:`, dados ? dados.alunos.length : 0);
+    
+    if (dados && dados.alunos.length > 0) {
+      console.log(`🎓 DEBUG - Primeiro aluno:`, dados.alunos[0]);
+      console.log(`📅 DEBUG - Dias do primeiro aluno:`, dados.alunos[0].dias);
+      console.log(`🔢 DEBUG - Quantidade de dias do primeiro aluno:`, Object.keys(dados.alunos[0].dias || {}).length);
+    }
+    
     if (!dados || !dados.alunos.length) {
       container.innerHTML = '<div class="info-text">Nenhum dado encontrado para esta turma.</div>';
       return;
@@ -412,17 +422,30 @@ class FrequenciaSupabaseManager {
     }
     
     // Detectar dias com dados
+    console.log(`🔍 DEBUG mostrarTabelaDias - Iniciando detecção de dias`);
+    console.log(`👥 DEBUG - Total de alunos na turma: ${dados.alunos.length}`);
+    
     const diasSet = new Set();
-    dados.alunos.forEach(aluno => {
+    dados.alunos.forEach((aluno, index) => {
+      console.log(`👤 DEBUG - Aluno ${index + 1}/${dados.alunos.length}: ${aluno.nome} (${aluno.codigo})`);
+      console.log(`📅 DEBUG - Dias do aluno ${aluno.codigo}:`, aluno.dias);
+      
       if (aluno.dias && typeof aluno.dias === 'object') {
-        Object.keys(aluno.dias).forEach(dia => diasSet.add(dia));
+        const diasDoAluno = Object.keys(aluno.dias);
+        console.log(`🔢 DEBUG - Aluno ${aluno.codigo} tem ${diasDoAluno.length} dias:`, diasDoAluno);
+        
+        diasDoAluno.forEach(dia => {
+          diasSet.add(dia);
+          console.log(`➕ DEBUG - Dia ${dia} adicionado ao set (status: ${aluno.dias[dia]})`);
+        });
+      } else {
+        console.warn(`⚠️ DEBUG - Aluno ${aluno.codigo} não tem estrutura de dias válida:`, aluno.dias);
       }
     });
     
     const dias = Array.from(diasSet).sort((a, b) => parseInt(a) - parseInt(b));
-    console.log(`📅 Debug - Dias encontrados para ${this.turmaAtual}:`, dias);
-    console.log(`📊 Debug - Total de dias: ${dias.length}`);
-    console.log(`🔍 Debug - Exemplo de aluno:`, dados.alunos[0]);
+    console.log(`📅 DEBUG - Dias FINAIS encontrados para ${this.turmaAtual}:`, dias);
+    console.log(`📊 DEBUG - Total de dias FINAIS: ${dias.length}`);
     
     const thead = document.getElementById('tabela-head');
     const tbody = document.getElementById('tabela-body');
