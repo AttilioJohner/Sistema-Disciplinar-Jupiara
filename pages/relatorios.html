@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="../assets/css/dashboard.css">
     <link rel="stylesheet" href="../assets/css/frequencia.css">
+    <link rel="stylesheet" href="../assets/css/relatorios-avancado.css">
     
     <!-- APENAS SUPABASE -->
     <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
@@ -110,42 +111,85 @@
         <div class="content-area">
             <div class="main-content">
                 
-                <!-- TÍTULO -->
-                <div class="module-title">
-                    📊 Relatórios Integrados
+                <!-- TÍTULO E CONTROLES PRINCIPAIS -->
+                <div class="reports-header">
+                    <div class="module-title">
+                        📊 Dashboard de Análise Escolar Avançado
+                    </div>
+                    <div class="reports-controls">
+                        <select id="periodoAnalise" class="form-select" onchange="atualizarDashboardCompleto()">
+                            <option value="30">Últimos 30 dias</option>
+                            <option value="60" selected>Últimos 2 meses</option>
+                            <option value="90">Últimos 3 meses</option>
+                            <option value="180">Últimos 6 meses</option>
+                            <option value="365">Último ano</option>
+                            <option value="todos">Todos os períodos</option>
+                        </select>
+                        <button class="btn btn-success" onclick="exportarDashboardCompleto()">
+                            📄 Exportar Dashboard PDF
+                        </button>
+                    </div>
                 </div>
 
-                <!-- ESTATÍSTICAS RÁPIDAS -->
-                <div class="quick-stats">
-                    <div class="stat-card stat-primary">
-                        <div class="stat-icon">👥</div>
-                        <div class="stat-content">
-                            <div class="stat-number" id="totalAlunosRelatorio">0</div>
-                            <div class="stat-label">Total de Alunos</div>
+                <!-- ESTATÍSTICAS PRINCIPAIS EXPANDIDAS -->
+                <div class="dashboard-stats-grid">
+                    <div class="stat-card-advanced stat-primary">
+                        <div class="stat-advanced-content">
+                            <div class="stat-icon-large">👥</div>
+                            <div class="stat-details">
+                                <div class="stat-number-large" id="totalAlunosAtivos">0</div>
+                                <div class="stat-label-main">Alunos Ativos</div>
+                                <div class="stat-sublabel" id="distribuicaoTurmas">0 turmas ativas</div>
+                            </div>
+                            <div class="stat-trend" id="trendAlunos">
+                                <span class="trend-arrow">↗</span>
+                                <span class="trend-text">+2.5%</span>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="stat-card stat-danger">
-                        <div class="stat-icon">❌</div>
-                        <div class="stat-content">
-                            <div class="stat-number" id="totalFaltasRelatorio">0</div>
-                            <div class="stat-label">Total de Faltas</div>
+                    <div class="stat-card-advanced stat-warning">
+                        <div class="stat-advanced-content">
+                            <div class="stat-icon-large">📉</div>
+                            <div class="stat-details">
+                                <div class="stat-number-large" id="mediaFrequenciaGeral">0%</div>
+                                <div class="stat-label-main">Frequência Média</div>
+                                <div class="stat-sublabel" id="statusFrequencia">Meta: 75%</div>
+                            </div>
+                            <div class="stat-trend" id="trendFrequencia">
+                                <span class="trend-arrow">↘</span>
+                                <span class="trend-text">-1.2%</span>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="stat-card stat-warning">
-                        <div class="stat-icon">⚖️</div>
-                        <div class="stat-content">
-                            <div class="stat-number" id="totalMedidasRelatorio">0</div>
-                            <div class="stat-label">Medidas Aplicadas</div>
+                    <div class="stat-card-advanced stat-danger">
+                        <div class="stat-advanced-content">
+                            <div class="stat-icon-large">🚨</div>
+                            <div class="stat-details">
+                                <div class="stat-number-large" id="alunosRisco">0</div>
+                                <div class="stat-label-main">Alunos em Risco</div>
+                                <div class="stat-sublabel" id="nivelRiscoMedio">Crítico/Alto</div>
+                            </div>
+                            <div class="stat-trend" id="trendRisco">
+                                <span class="trend-arrow">↗</span>
+                                <span class="trend-text">+5.3%</span>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="stat-card stat-info">
-                        <div class="stat-icon">🚨</div>
-                        <div class="stat-content">
-                            <div class="stat-number" id="alertasAtivosRelatorio">0</div>
-                            <div class="stat-label">Alertas FICAI</div>
+                    <div class="stat-card-advanced stat-info">
+                        <div class="stat-advanced-content">
+                            <div class="stat-icon-large">⚖️</div>
+                            <div class="stat-details">
+                                <div class="stat-number-large" id="totalMedidasPeriodo">0</div>
+                                <div class="stat-label-main">Medidas Aplicadas</div>
+                                <div class="stat-sublabel" id="efetividadeMedidas">Efetividade: 67%</div>
+                            </div>
+                            <div class="stat-trend" id="trendMedidas">
+                                <span class="trend-arrow">↘</span>
+                                <span class="trend-text">-8.1%</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -210,75 +254,268 @@
                     </div>
                 </div>
 
-                <!-- SEÇÃO DE GRÁFICOS -->
-                <div class="management-section">
-                    <div class="management-title">
-                        📈 Análise Gráfica
+                <!-- DASHBOARD PRINCIPAL DE GRÁFICOS -->
+                <div class="analytics-dashboard">
+                    
+                    <!-- SEÇÃO: ANÁLISE COMPARATIVA ENTRE TURMAS -->
+                    <div class="analytics-section">
+                        <div class="section-header">
+                            <h2>📊 Análise Comparativa por Turma</h2>
+                            <div class="section-controls">
+                                <select id="metricaComparacao" class="form-select" onchange="atualizarGraficosComparativos()">
+                                    <option value="frequencia">Frequência %</option>
+                                    <option value="faltas">Total de Faltas</option>
+                                    <option value="medidas">Medidas Disciplinares</option>
+                                    <option value="risco">Nível de Risco</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="charts-comparative-grid">
+                            <div class="chart-card-large">
+                                <div class="chart-header">
+                                    <h3>📈 Comparativo Geral entre Turmas</h3>
+                                    <p>Performance de todas as turmas na métrica selecionada</p>
+                                </div>
+                                <canvas id="chartComparativoTurmas" height="120"></canvas>
+                            </div>
+                            
+                            <div class="chart-card-medium">
+                                <div class="chart-header">
+                                    <h3>🎯 Ranking de Turmas</h3>
+                                    <p>Classificação por performance</p>
+                                </div>
+                                <canvas id="chartRankingTurmas" height="120"></canvas>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="charts-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; margin: 2rem 0;">
-                        <div class="chart-card" style="background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                            <div class="chart-header">
-                                <h3 style="margin: 0 0 0.5rem 0; color: #333;">📊 Faltas por Turma</h3>
-                                <p style="margin: 0; color: #666; font-size: 0.9rem;">Distribuição de faltas por turma</p>
-                            </div>
-                            <div class="chart-container" style="position: relative; height: 300px;">
-                                <canvas id="chartFaltasPorTurma"></canvas>
-                            </div>
-                        </div>
-
-                        <div class="chart-card" style="background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                            <div class="chart-header">
-                                <h3 style="margin: 0 0 0.5rem 0; color: #333;">🎯 Top 10 Alunos</h3>
-                                <p style="margin: 0; color: #666; font-size: 0.9rem;">Alunos com mais faltas</p>
-                            </div>
-                            <div class="chart-container" style="position: relative; height: 300px;">
-                                <canvas id="chartTopAlunosFaltas"></canvas>
+                    <!-- SEÇÃO: ANÁLISE DE FREQUÊNCIA DETALHADA -->
+                    <div class="analytics-section">
+                        <div class="section-header">
+                            <h2>📅 Análise de Frequência Avançada</h2>
+                            <div class="section-controls">
+                                <button class="btn btn-outline-primary" onclick="alternarVisualizacaoFrequencia()">
+                                    📊 Alternar Visualização
+                                </button>
                             </div>
                         </div>
-
-                        <div class="chart-card" style="background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                            <div class="chart-header">
-                                <h3 style="margin: 0 0 0.5rem 0; color: #333;">📅 Frequência Mensal</h3>
-                                <p style="margin: 0; color: #666; font-size: 0.9rem;">Evolução ao longo do tempo</p>
+                        
+                        <div class="charts-frequency-grid">
+                            <div class="chart-card-medium">
+                                <div class="chart-header">
+                                    <h3>📊 Frequência por Turma (Mensal)</h3>
+                                    <p>Evolução temporal da presença</p>
+                                </div>
+                                <canvas id="chartFrequenciaTemporal"></canvas>
                             </div>
-                            <div class="chart-container" style="position: relative; height: 300px;">
-                                <canvas id="chartFrequenciaMensal"></canvas>
+                            
+                            <div class="chart-card-medium">
+                                <div class="chart-header">
+                                    <h3>🚨 Alunos com Baixa Frequência</h3>
+                                    <p>Identificação de casos críticos</p>
+                                </div>
+                                <canvas id="chartBaixaFrequencia"></canvas>
+                            </div>
+                            
+                            <div class="chart-card-full">
+                                <div class="chart-header">
+                                    <h3>📊 Heatmap de Frequência por Turma</h3>
+                                    <p>Mapa de calor mostrando padrões de frequência</p>
+                                </div>
+                                <canvas id="chartHeatmapFrequencia" height="80"></canvas>
                             </div>
                         </div>
-
-                        <div class="chart-card" style="background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                            <div class="chart-header">
-                                <h3 style="margin: 0 0 0.5rem 0; color: #333;">🚨 Status FICAI</h3>
-                                <p style="margin: 0; color: #666; font-size: 0.9rem;">Distribuição dos alertas</p>
+                    </div>
+                    
+                    <!-- SEÇÃO: ANÁLISE DE MEDIDAS DISCIPLINARES -->
+                    <div class="analytics-section">
+                        <div class="section-header">
+                            <h2>⚖️ Análise de Medidas Disciplinares</h2>
+                            <div class="section-controls">
+                                <select id="tipoMedidaAnalise" class="form-select" onchange="atualizarGraficosMedidas()">
+                                    <option value="todos">Todos os Tipos</option>
+                                    <option value="advertencia">Advertências</option>
+                                    <option value="suspensao">Suspensões</option>
+                                    <option value="outros">Outros</option>
+                                </select>
                             </div>
-                            <div class="chart-container" style="position: relative; height: 300px;">
-                                <canvas id="chartStatusFICAI"></canvas>
+                        </div>
+                        
+                        <div class="charts-measures-grid">
+                            <div class="chart-card-medium">
+                                <div class="chart-header">
+                                    <h3>📊 Medidas por Turma</h3>
+                                    <p>Distribuição de medidas aplicadas</p>
+                                </div>
+                                <canvas id="chartMedidasPorTurma"></canvas>
+                            </div>
+                            
+                            <div class="chart-card-medium">
+                                <div class="chart-header">
+                                    <h3>📈 Evolução das Medidas</h3>
+                                    <p>Tendência temporal das medidas</p>
+                                </div>
+                                <canvas id="chartEvolucaoMedidas"></canvas>
+                            </div>
+                            
+                            <div class="chart-card-full">
+                                <div class="chart-header">
+                                    <h3>🎯 Efetividade das Medidas</h3>
+                                    <p>Análise do impacto das medidas na frequência</p>
+                                </div>
+                                <canvas id="chartEfetividadeMedidas" height="80"></canvas>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- RELATÓRIOS DETALHADOS -->
-                <div class="table-container">
-                    <div class="table-header">
-                        <div class="table-title">
-                            📋 Relatório Detalhado
+                <!-- SEÇÃO: RANKINGS E ANÁLISES ESPECIAIS -->
+                <div class="rankings-dashboard">
+                    
+                    <!-- RANKINGS DE ALUNOS -->
+                    <div class="analytics-section">
+                        <div class="section-header">
+                            <h2>🏆 Rankings e Casos Especiais</h2>
+                            <div class="section-controls">
+                                <select id="tipoRanking" class="form-select" onchange="atualizarRankings()">
+                                    <option value="faltosos">Alunos Mais Faltosos</option>
+                                    <option value="problematicos">Alunos Problemáticos</option>
+                                    <option value="melhores">Melhor Frequência</option>
+                                    <option value="recuperacao">Em Recuperação</option>
+                                </select>
+                                <select id="limitePorTurma" class="form-select" onchange="atualizarRankings()">
+                                    <option value="">Todas as Turmas</option>
+                                    <!-- Será populado dinamicamente -->
+                                </select>
+                            </div>
                         </div>
-                        <div class="table-actions">
-                            <button class="btn btn-info btn-small" onclick="atualizarRelatorioDetalhado()">
-                                🔄 Atualizar
-                            </button>
-                            <button class="btn btn-secondary btn-small" onclick="expandirTodosDetalhes()">
-                                📖 Expandir Todos
-                            </button>
+                        
+                        <div class="rankings-grid">
+                            <div class="ranking-card">
+                                <div class="ranking-header">
+                                    <h3>🚨 Top 10 Casos Críticos</h3>
+                                    <p>Alunos que precisam de atenção imediata</p>
+                                </div>
+                                <div id="rankingCriticos" class="ranking-list">
+                                    <!-- Será populado dinamicamente -->
+                                </div>
+                            </div>
+                            
+                            <div class="ranking-card">
+                                <div class="ranking-header">
+                                    <h3>📉 Frequência Mais Baixa</h3>
+                                    <p>Alunos com menor percentual de presença</p>
+                                </div>
+                                <div id="rankingBaixaFrequencia" class="ranking-list">
+                                    <!-- Será populado dinamicamente -->
+                                </div>
+                            </div>
+                            
+                            <div class="ranking-card">
+                                <div class="ranking-header">
+                                    <h3>⚖️ Mais Medidas Aplicadas</h3>
+                                    <p>Histórico de medidas disciplinares</p>
+                                </div>
+                                <div id="rankingMedidas" class="ranking-list">
+                                    <!-- Será populado dinamicamente -->
+                                </div>
+                            </div>
+                            
+                            <div class="ranking-card">
+                                <div class="ranking-header">
+                                    <h3>📈 Melhorias Recentes</h3>
+                                    <p>Alunos com evolução positiva</p>
+                                </div>
+                                <div id="rankingMelhorias" class="ranking-list">
+                                    <!-- Será populado dinamicamente -->
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
-                    <div id="relatorioDetalhadoContainer" class="table-content">
-                        <div class="loading-state">
-                            <div class="loading-spinner"></div>
-                            <p>Carregando relatórios detalhados...</p>
+                    <!-- ANÁLISE PREDICTIVA -->
+                    <div class="analytics-section">
+                        <div class="section-header">
+                            <h2>🔮 Análise Preditiva e Alertas</h2>
+                            <div class="section-controls">
+                                <button class="btn btn-warning" onclick="gerarAlertas()">
+                                    ⚠️ Gerar Alertas
+                                </button>
+                                <button class="btn btn-info" onclick="exportarPlanosAcao()">
+                                    📋 Planos de Ação
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="prediction-grid">
+                            <div class="prediction-card prediction-danger">
+                                <div class="prediction-icon">🚨</div>
+                                <div class="prediction-content">
+                                    <h3 id="alertasUrgentes">0</h3>
+                                    <p>Alertas Urgentes</p>
+                                    <small>Requerem ação imediata</small>
+                                </div>
+                            </div>
+                            
+                            <div class="prediction-card prediction-warning">
+                                <div class="prediction-icon">⚠️</div>
+                                <div class="prediction-content">
+                                    <h3 id="riscosIminentes">0</h3>
+                                    <p>Riscos Iminentes</p>
+                                    <small>Monitoramento próximo</small>
+                                </div>
+                            </div>
+                            
+                            <div class="prediction-card prediction-info">
+                                <div class="prediction-icon">📊</div>
+                                <div class="prediction-content">
+                                    <h3 id="tendenciaGeral">Estável</h3>
+                                    <p>Tendência Geral</p>
+                                    <small>Análise do período</small>
+                                </div>
+                            </div>
+                            
+                            <div class="prediction-card prediction-success">
+                                <div class="prediction-icon">🎯</div>
+                                <div class="prediction-content">
+                                    <h3 id="metasAtingidas">0%</h3>
+                                    <p>Metas Atingidas</p>
+                                    <small>Frequência > 75%</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RELATÓRIO DETALHADO EXPANDIDO -->
+                <div class="detailed-reports">
+                    <div class="analytics-section">
+                        <div class="section-header">
+                            <h2>📋 Relatório Detalhado Interativo</h2>
+                            <div class="section-controls">
+                                <input type="text" id="pesquisaDetalhada" class="form-input" placeholder="Pesquisar aluno...">
+                                <select id="filtroTurmaDetalhado" class="form-select">
+                                    <option value="">Todas as Turmas</option>
+                                </select>
+                                <select id="filtroRiscoDetalhado" class="form-select">
+                                    <option value="">Todos os Níveis</option>
+                                    <option value="Crítico">Crítico</option>
+                                    <option value="Alto">Alto</option>
+                                    <option value="Médio">Médio</option>
+                                    <option value="Baixo">Baixo</option>
+                                </select>
+                                <button class="btn btn-success" onclick="exportarRelatorioPersonalizado()">
+                                    📊 Exportar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="relatorioDetalhadoContainer" class="detailed-table-container">
+                            <div class="loading-state">
+                                <div class="loading-spinner"></div>
+                                <p>Carregando dashboard avançado...</p>
+                            </div>
                         </div>
                     </div>
                 </div>
