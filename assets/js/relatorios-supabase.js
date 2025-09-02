@@ -105,7 +105,7 @@ class RelatoriosSupabaseManager {
             const { data, error } = await this.supabase
                 .from('medidas')
                 .select('*')
-                .order('data_aplicacao', { ascending: false });
+                .order('data_ocorrencia', { ascending: false });
             
             if (error) throw error;
             console.log('📊 MEDIDAS: Carregados', data?.length || 0, 'registros');
@@ -118,12 +118,20 @@ class RelatoriosSupabaseManager {
 
     async carregarFicaiProvidencias() {
         try {
-            const { data, error } = await this.supabase
-                .from('ficai_providencias')
-                .select('*')
-                .order('data_criacao', { ascending: false });
+            // Tentar diferentes nomes de colunas para ordenação
+            let data, error;
             
-            if (error) throw error;
+            // Primeira tentativa: sem ordenação (mais seguro)
+            ({ data, error } = await this.supabase
+                .from('ficai_providencias')
+                .select('*'));
+            
+            if (error) {
+                // Tabela pode não existir - continuar sem dados FICAI
+                console.log('📊 FICAI: Tabela não existe ou não acessível, continuando sem dados FICAI');
+                return [];
+            }
+            
             console.log('📊 FICAI: Carregados', data?.length || 0, 'registros');
             return data || [];
         } catch (error) {
@@ -286,7 +294,7 @@ class RelatoriosSupabaseManager {
             porTipo[tipo] = (porTipo[tipo] || 0) + 1;
             
             // Encontrar data mais recente
-            const dataMedida = new Date(medida.data_aplicacao);
+            const dataMedida = new Date(medida.data_ocorrencia);
             if (!ultimaData || dataMedida > ultimaData) {
                 ultimaData = dataMedida;
             }
@@ -506,7 +514,7 @@ function aplicarFiltrosRelatorio() {
                 new Date(f.data) >= dataLimite
             );
             const temMedidaRecente = aluno.medidas.some(m => 
-                new Date(m.data_aplicacao) >= dataLimite
+                new Date(m.data_ocorrencia) >= dataLimite
             );
             
             return temFrequenciaRecente || temMedidaRecente;
@@ -806,6 +814,9 @@ RelatoriosSupabaseManager.prototype.atualizarRelatorioDetalhado = function(dados
         return;
     }
     
+    // Verificar se há muitos dados (mais de 50)
+    const temMuitosDados = dados.length > 50;
+    
     let html = `
         <div style="margin-bottom: 2rem;">
             <h3 style="margin: 0 0 1rem 0;">📊 Resumo dos Resultados</h3>
@@ -829,7 +840,15 @@ RelatoriosSupabaseManager.prototype.atualizarRelatorioDetalhado = function(dados
             </div>
         </div>
         
-        <div class="table-container">
+        ${temMuitosDados ? `
+            <div style="margin-bottom: 1rem; text-align: center;">
+                <button id="toggleDetalhesBtn" class="btn btn-info" onclick="toggleRelatorioDetalhado()">
+                    📋 Mostrar Tabela Detalhada (${dados.length} registros)
+                </button>
+            </div>
+        ` : ''}
+        
+        <div id="tabelaDetalhadaContainer" class="table-container" style="${temMuitosDados ? 'display: none;' : ''}">
             <table class="data-table">
                 <thead>
                     <tr>
@@ -874,6 +893,28 @@ RelatoriosSupabaseManager.prototype.atualizarRelatorioDetalhado = function(dados
     
     container.innerHTML = html;
 };
+
+// Função para alternar exibição da tabela detalhada
+function toggleRelatorioDetalhado() {
+    const container = document.getElementById('tabelaDetalhadaContainer');
+    const btn = document.getElementById('toggleDetalhesBtn');
+    
+    if (!container || !btn) return;
+    
+    const isVisible = container.style.display !== 'none';
+    
+    if (isVisible) {
+        container.style.display = 'none';
+        btn.innerHTML = btn.innerHTML.replace('🙈 Esconder', '📋 Mostrar');
+        btn.classList.remove('btn-secondary');
+        btn.classList.add('btn-info');
+    } else {
+        container.style.display = 'block';
+        btn.innerHTML = btn.innerHTML.replace('📋 Mostrar', '🙈 Esconder');
+        btn.classList.remove('btn-info');
+        btn.classList.add('btn-secondary');
+    }
+}
 
 // Funções de exportação
 function exportarRelatorioCompleto() {
