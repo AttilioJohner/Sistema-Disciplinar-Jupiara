@@ -485,47 +485,114 @@ class FrequenciaSupabaseManager {
   }
 
   mostrarTabelaDias() {
-    console.log('🔍 DEBUG - mostrarTabelaDias() iniciado');
-    console.log(`📊 DEBUG - Turma atual: ${this.turmaAtual}, Mês: ${this.mesAtual}, Ano: ${this.anoAtual}`);
+    console.log('🔍 DEBUG - mostrarTabelaDias() iniciado - Substituindo por visualização diária');
     
-    // Aguardar um momento para o DOM estar pronto
-    setTimeout(() => {
-      const container = document.getElementById('frequenciaContainer');
-      const tabelaContainer = document.getElementById('tabela-container');
-      
-      console.log(`🎯 DEBUG - Container encontrado:`, !!container);
-      console.log(`🎯 DEBUG - Tabela container encontrado:`, !!tabelaContainer);
-      console.log('🔍 DEBUG - Document ready state:', document.readyState);
-      
-      if (!container) {
-        console.error('❌ DEBUG - frequenciaContainer não encontrado!');
-        return;
+    if (!this.turmaAtual) {
+      console.warn('⚠️ DEBUG - Turma não selecionada');
+      showToast('Selecione uma turma primeiro', 'warning');
+      return;
+    }
+    
+    const container = document.getElementById('frequenciaContainer');
+    if (!container) {
+      console.error('❌ DEBUG - frequenciaContainer não encontrado!');
+      return;
+    }
+    
+    console.log(`🎯 DEBUG - Compilando visualização diária para turma: ${this.turmaAtual}`);
+    
+    // Compilar TODOS os dados da turma (todos os meses/anos) - igual ao resumo
+    const alunosDaTurma = new Map();
+    
+    // Percorrer todos os períodos carregados
+    this.dadosFrequencia.forEach((periodo, chave) => {
+      if (periodo.turma === this.turmaAtual) {
+        console.log(`📊 DEBUG - Processando período: ${chave} com ${periodo.alunos.length} alunos`);
+        
+        periodo.alunos.forEach(aluno => {
+          // Se aluno não existe no Map, criar
+          if (!alunosDaTurma.has(aluno.codigo)) {
+            alunosDaTurma.set(aluno.codigo, {
+              codigo: aluno.codigo,
+              nome: aluno.nome,
+              diasDetalhados: new Map() // Map com dia -> status
+            });
+          }
+          
+          const alunoCompilado = alunosDaTurma.get(aluno.codigo);
+          
+          // Adicionar todos os dias deste período
+          if (aluno.dias) {
+            Object.entries(aluno.dias).forEach(([dia, status]) => {
+              alunoCompilado.diasDetalhados.set(dia, status);
+            });
+          }
+        });
       }
-      
-      if (!tabelaContainer) {
-        console.error('❌ DEBUG - tabela-container não encontrado!');
-        console.log('🔍 DEBUG - Todos os elementos com id que contém "tabela":', 
-          Array.from(document.querySelectorAll('*[id*="tabela"]')).map(el => ({id: el.id, tag: el.tagName})));
-        
-        // Tentar buscar diretamente
-        const tabelaContainerDireto = document.querySelector('#tabela-container');
-        const tabelaContainerQuery = document.querySelector('div[id="tabela-container"]');
-        
-        console.log('🎯 DEBUG - Busca direta #tabela-container:', !!tabelaContainerDireto);
-        console.log('🎯 DEBUG - Busca div[id="tabela-container"]:', !!tabelaContainerQuery);
-        console.log('🎯 DEBUG - Existe elemento?', tabelaContainerDireto || tabelaContainerQuery);
-        
-        if (tabelaContainerDireto || tabelaContainerQuery) {
-          console.log('✅ DEBUG - Elemento encontrado! Prosseguindo...');
-          this._executarTabelaDias(container, tabelaContainerDireto || tabelaContainerQuery);
-        } else {
-          console.error('❌ DEBUG - Nenhum elemento tabela-container foi encontrado!');
-          return;
-        }
-      } else {
-        this._executarTabelaDias(container, tabelaContainer);
-      }
-    }, 100);
+    });
+    
+    if (alunosDaTurma.size === 0) {
+      container.innerHTML = `
+        <div class="info-text">
+          ⚠️ Nenhum dado encontrado para a turma ${this.turmaAtual}
+        </div>
+      `;
+      return;
+    }
+    
+    // Coletar todos os dias únicos e ordenar
+    const todosOsDias = new Set();
+    alunosDaTurma.forEach(aluno => {
+      aluno.diasDetalhados.forEach((status, dia) => {
+        todosOsDias.add(dia);
+      });
+    });
+    
+    const diasOrdenados = Array.from(todosOsDias).sort((a, b) => parseInt(a) - parseInt(b));
+    console.log(`📅 DEBUG - Dias encontrados: ${diasOrdenados.join(', ')}`);
+    
+    // Converter Map para Array
+    const alunosArray = Array.from(alunosDaTurma.values());
+    
+    // Renderizar tabela por dias
+    container.innerHTML = `
+      <div style="margin-bottom: 15px;">
+        <h3>📅 Visualização por Dias - Turma ${this.turmaAtual}</h3>
+        <p style="color: #666; font-size: 0.9rem;">
+          ${alunosArray.length} alunos • ${diasOrdenados.length} dias registrados
+        </p>
+        <button class="btn btn-secondary btn-small" onclick="voltarResumoAlunos()" style="margin-top: 10px;">
+          ◀ Voltar às Estatísticas
+        </button>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Nome</th>
+              ${diasOrdenados.map(dia => `<th>Dia ${dia}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${alunosArray.map(aluno => `
+              <tr>
+                <td><strong>${aluno.codigo}</strong></td>
+                <td>${aluno.nome}</td>
+                ${diasOrdenados.map(dia => {
+                  const status = aluno.diasDetalhados.get(dia) || '';
+                  const classe = status ? `freq-${status}` : '';
+                  return `<td class="${classe}">${status || '-'}</td>`;
+                }).join('')}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+    
+    console.log(`✅ DEBUG - Tabela diária renderizada: ${alunosArray.length} alunos x ${diasOrdenados.length} dias`);
+    showToast(`Visualização por dias: ${diasOrdenados.length} dias de ${this.getNomeMes(this.mesAtual) || 'todos os meses'}`, 'success');
   }
   
   _executarTabelaDias(container, tabelaContainer) {
