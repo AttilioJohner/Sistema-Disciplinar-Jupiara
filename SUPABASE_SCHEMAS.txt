@@ -28,7 +28,7 @@ create table public.frequencia (
   constraint frequencia_pkey primary key (id),
   constraint frequencia_status_ck check (
     (
-      status = any (array['P'::text, 'F'::text, 'A'::text])
+      status = any (array['P'::text, 'F'::text, 'A'::text, 'FC'::text])
     )
   )
 ) TABLESPACE pg_default;
@@ -56,4 +56,4 @@ PONTOS IMPORTANTES:
 2. Campos com nomes em português e caracteres especiais têm aspas duplas
 3. As tabelas 'frequencia' e 'medidas' usam 'codigo_matricula' (text) como referência
 4. Telefones são bigint (números grandes)
-5. Status da frequência: 'P' (Presente), 'F' (Falta), 'A' (Atestado)
+5. Status da frequência: 'P' (Presente), 'F' (Falta), 'A' (Atestado), 'FC' (Falta Controlada)

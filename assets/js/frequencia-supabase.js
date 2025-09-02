@@ -78,7 +78,8 @@ class FrequenciaSupabaseManager {
       // Buscar todas as frequências
       const { data: frequencias, error } = await this.supabase
         .from('frequencia')
-        .select('*');
+        .select('*')
+        .order('data', { ascending: false });
       
       if (error) {
         console.error('❌ Erro ao buscar frequências:', error);
@@ -92,37 +93,44 @@ class FrequenciaSupabaseManager {
       
       if (frequencias && frequencias.length > 0) {
         frequencias.forEach(registro => {
-          const chave = `${registro.turma}_${registro.mes}_${registro.ano}`;
+          // Extrair mês e ano da data
+          const dataObj = new Date(registro.data);
+          const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+          const ano = String(dataObj.getFullYear());
+          const dia = String(dataObj.getDate()).padStart(2, '0');
+          
+          const chave = `${registro.turma}_${mes}_${ano}`;
           
           if (!gruposDados.has(chave)) {
             gruposDados.set(chave, {
               turma: registro.turma,
-              mes: registro.mes,
-              ano: registro.ano,
-              alunos: []
+              mes: mes,
+              ano: ano,
+              alunos: new Map()
             });
           }
           
-          // Processar dias (assumindo que está em formato JSON)
-          let dias = {};
-          if (registro.dias && typeof registro.dias === 'object') {
-            dias = registro.dias;
-          } else if (registro.dias && typeof registro.dias === 'string') {
-            try {
-              dias = JSON.parse(registro.dias);
-            } catch (e) {
-              console.warn('Erro ao parsear dias:', registro.dias);
-              dias = {};
-            }
+          const grupo = gruposDados.get(chave);
+          const codigoAluno = registro.codigo_matricula;
+          
+          // Se aluno não existe no grupo, criar
+          if (!grupo.alunos.has(codigoAluno)) {
+            grupo.alunos.set(codigoAluno, {
+              id: codigoAluno,
+              codigo: codigoAluno,
+              nome: registro.nome_completo,
+              dias: {}
+            });
           }
           
-          gruposDados.get(chave).alunos.push({
-            id: registro.codigo || registro.id,
-            codigo: registro.codigo,
-            nome: registro.nome,
-            dias: dias
-          });
+          // Adicionar status do dia
+          grupo.alunos.get(codigoAluno).dias[dia] = registro.status;
         });
+        
+        // Converter Maps de alunos para arrays
+        for (const [chave, grupo] of gruposDados) {
+          grupo.alunos = Array.from(grupo.alunos.values());
+        }
       }
       
       this.dadosFrequencia = gruposDados;
@@ -409,18 +417,21 @@ class FrequenciaSupabaseManager {
       const dias = {};
       diasColunas.forEach(({ index, dia }) => {
         const valor = row[index]?.trim().toUpperCase();
-        if (valor && ['P', 'F', 'A'].includes(valor)) {
+        if (valor && ['P', 'F', 'A', 'FC'].includes(valor)) {
           dias[dia] = valor;
         }
       });
       
-      dadosParaInserir.push({
-        codigo,
-        nome,
-        mes,
-        turma,
-        ano,
-        dias: JSON.stringify(dias)
+      // Para cada dia com dados, criar um registro separado
+      Object.keys(dias).forEach(dia => {
+        const dataRegistro = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+        dadosParaInserir.push({
+          codigo_matricula: codigo,
+          nome_completo: nome,
+          turma: turma,
+          data: dataRegistro,
+          status: dias[dia]
+        });
       });
     }
     
@@ -438,7 +449,7 @@ class FrequenciaSupabaseManager {
       
       const { data, error } = await this.supabase
         .from('frequencia')
-        .upsert(lote, { onConflict: 'codigo,mes,turma,ano' });
+        .upsert(lote, { onConflict: 'codigo_matricula,data' });
       
       if (error) {
         console.error('❌ Erro ao salvar lote:', error);
@@ -477,8 +488,7 @@ async function inicializarModuloFrequencia() {
       return;
     }
     
-    // Verificar se tem permissão (auth temporariamente desabilitado)
-    console.log('🛑 RequireAuth DESABILITADO temporariamente - corrigindo loops');
+    // Sistema de frequência carregado
     
     showToast('Carregando módulo de frequência...', 'info');
     
