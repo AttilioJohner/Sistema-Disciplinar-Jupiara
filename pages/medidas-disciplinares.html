@@ -703,9 +703,15 @@
                     <form id="formMedida" onsubmit="salvarMedida(event)">
                         <div class="form-grid">
                             <div class="form-group">
+                                <label class="form-label">Turma *</label>
+                                <select id="turmaMedida" class="form-select" onchange="carregarAlunosPorTurmaMedida()" required>
+                                    <option value="">Selecione a turma...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
                                 <label class="form-label">Aluno *</label>
-                                <select id="alunoMedida" class="form-select" required>
-                                    <option value="">Selecione o aluno...</option>
+                                <select id="alunoMedida" class="form-select" required disabled>
+                                    <option value="">Primeiro selecione uma turma...</option>
                                 </select>
                             </div>
                             
@@ -954,19 +960,62 @@
                     turma: item.turma
                 }));
 
-                // Preencher select de medidas disciplinares
+                // Guardar dados para uso posterior
+                window.alunosMedidasGlobal = alunos;
+
+                // Preencher select de turmas
+                const selectTurmaMedida = document.getElementById('turmaMedida');
+                if (selectTurmaMedida) {
+                    const turmasUnicas = [...new Set(alunos.map(aluno => aluno.turma))].sort();
+                    selectTurmaMedida.innerHTML = '<option value="">Selecione a turma...</option>';
+                    turmasUnicas.forEach(turma => {
+                        selectTurmaMedida.innerHTML += `<option value="${turma}">${turma}</option>`;
+                    });
+                }
+
+                // Select de alunos começa desabilitado
                 const selectMedida = document.getElementById('alunoMedida');
                 if (selectMedida) {
-                    selectMedida.innerHTML = '<option value="">Selecione um aluno...</option>';
-                    alunos.forEach(aluno => {
-                        selectMedida.innerHTML += `<option value="${aluno.codigo}">${aluno.nome} (${aluno.turma})</option>`;
-                    });
+                    selectMedida.innerHTML = '<option value="">Primeiro selecione uma turma...</option>';
+                    selectMedida.disabled = true;
                 }
 
                 console.log(`✅ ${alunos.length} alunos carregados nos selects`);
             } catch (error) {
                 console.error('❌ Erro ao carregar alunos para os selects:', error);
             }
+        }
+
+        // Função para carregar alunos por turma no formulário de medidas
+        function carregarAlunosPorTurmaMedida() {
+            const selectTurma = document.getElementById('turmaMedida');
+            const selectAluno = document.getElementById('alunoMedida');
+            
+            if (!selectTurma || !selectAluno || !window.alunosMedidasGlobal) return;
+            
+            const turmaSelecionada = selectTurma.value;
+            
+            // Limpar seleção atual do aluno
+            selectAluno.value = '';
+            
+            if (!turmaSelecionada) {
+                selectAluno.innerHTML = '<option value="">Primeiro selecione uma turma...</option>';
+                selectAluno.disabled = true;
+                return;
+            }
+            
+            // Filtrar alunos pela turma selecionada
+            const alunosDaTurma = window.alunosMedidasGlobal.filter(aluno => aluno.turma === turmaSelecionada);
+            
+            // Atualizar select de alunos
+            selectAluno.innerHTML = '<option value="">Selecione um aluno...</option>';
+            alunosDaTurma.forEach(aluno => {
+                selectAluno.innerHTML += `<option value="${aluno.codigo}">${aluno.nome}</option>`;
+            });
+            
+            selectAluno.disabled = false;
+            
+            console.log(`✅ Carregados ${alunosDaTurma.length} alunos da turma ${turmaSelecionada} para o formulário de medidas`);
         }
 
         // Controlar exibição do campo de suspensão
