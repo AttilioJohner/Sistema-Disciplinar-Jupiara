@@ -596,7 +596,22 @@
 
 .no-alertas {
   text-align: center;
-  padding: 2rem;
+  padding: 3rem 2rem;
   color: #6c757d;
-  font-style: italic;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 8px;
+  border-left: 4px solid #007bff;
+  margin: 1rem 0;
+}
+
+.no-alertas strong {
+  color: #495057;
+  font-size: 1.1rem;
+}
+
+.no-alertas small {
+  display: block;
+  margin-top: 0.5rem;
+  line-height: 1.4;
+  color: #6c757d;
 }

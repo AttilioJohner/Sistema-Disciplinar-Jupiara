@@ -1906,7 +1906,9 @@ async function atualizarAlertasMes() {
         if (!registros || registros.length === 0) {
             alertasContainer.innerHTML = `
                 <div class="no-alertas">
-                    📊 Nenhum registro de frequência encontrado para ${mesSelect.options[mesSelect.selectedIndex].text}/${anoAtual}
+                    📅 <strong>Sem dados</strong><br>
+                    <small>Nenhum registro de frequência encontrado para <strong>${mesSelect.options[mesSelect.selectedIndex].text}/${anoAtual}</strong><br>
+                    Lance as frequências deste mês primeiro para visualizar os alertas.</small>
                 </div>
             `;
             return;
