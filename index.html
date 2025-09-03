@@ -237,33 +237,6 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    // Verificar fallback de login antes do requireAuth
-    const loginFallback = localStorage.getItem('loginSuccess');
-    if (loginFallback && !window.localAuth?.getCurrentUser()) {
-      try {
-        const loginData = JSON.parse(loginFallback);
-        const isExpired = (Date.now() - loginData.timestamp) > (24 * 60 * 60 * 1000);
-        
-        if (!isExpired) {
-          console.log('📝 Usando fallback de login:', loginData.email);
-          // Simular usuário logado para o requireAuth
-          setTimeout(() => {
-            if (typeof carregarEstatisticasDashboard === 'function') {
-              carregarEstatisticasDashboard();
-              if (typeof carregarAlunosDashboard === 'function') {
-                carregarAlunosDashboard();
-              }
-            }
-          }, 1000);
-          return;
-        } else {
-          localStorage.removeItem('loginSuccess');
-        }
-      } catch (error) {
-        console.error('Erro ao processar fallback de login:', error);
-        localStorage.removeItem('loginSuccess');
-      }
-    }
     
     requireAuth({
       loginPath: 'pages/login.html',

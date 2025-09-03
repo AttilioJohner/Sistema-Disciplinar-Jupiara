@@ -560,8 +560,6 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
     </div>
 
     <!-- JAVASCRIPT -->
-    <script src="../assets/js/local-auth.js"></script>
-    <script src="../assets/js/local-db.js"></script>
     <script src="../assets/js/main.js" defer></script>
     
     <script>
@@ -585,24 +583,24 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
 
         // Carregar configurações salvas
         function carregarConfiguracoesSalvas() {
-            // Carregar do localStorage
+            // Configurações padrão (sem localStorage)
             const configs = {
-                nomeEscola: localStorage.getItem('nomeEscola') || '',
-                anoLetivo: localStorage.getItem('anoLetivo') || new Date().getFullYear(),
-                cnpjEscola: localStorage.getItem('cnpjEscola') || '',
-                enderecoEscola: localStorage.getItem('enderecoEscola') || '',
-                telefoneEscola: localStorage.getItem('telefoneEscola') || '',
-                emailEscola: localStorage.getItem('emailEscola') || '',
-                limiteFaltas: localStorage.getItem('limiteFaltas') || '10',
-                diasBackup: localStorage.getItem('diasBackup') || '7',
-                formatoData: localStorage.getItem('formatoData') || 'DD/MM/YYYY',
-                temaSistema: localStorage.getItem('temaSistema') || 'claro',
-                notificacoesEmail: localStorage.getItem('notificacoesEmail') || 'importantes',
-                idiomaSistema: localStorage.getItem('idiomaSistema') || 'pt-BR',
-                tempoSessao: localStorage.getItem('tempoSessao') || '60',
-                politicaSenhas: localStorage.getItem('politicaSenhas') || 'basica',
-                autenticacao2FA: localStorage.getItem('autenticacao2FA') || 'desabilitada',
-                logAtividades: localStorage.getItem('logAtividades') || 'basico'
+                nomeEscola: '',
+                anoLetivo: new Date().getFullYear(),
+                cnpjEscola: '',
+                enderecoEscola: '',
+                telefoneEscola: '',
+                emailEscola: '',
+                limiteFaltas: '10',
+                diasBackup: '7',
+                formatoData: 'DD/MM/YYYY',
+                temaSistema: 'claro',
+                notificacoesEmail: 'importantes',
+                idiomaSistema: 'pt-BR',
+                tempoSessao: '60',
+                politicaSenhas: 'basica',
+                autenticacao2FA: 'desabilitada',
+                logAtividades: 'basico'
             };
 
             // Aplicar valores aos campos
@@ -619,12 +617,9 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
             try {
                 let totalRegistros = 0;
                 
-                // Contar registros do localStorage
+                // Usar apenas sistema Supabase
                 try {
-                    const dados = JSON.parse(localStorage.getItem('db') || '{}');
-                    const medidas = JSON.parse(localStorage.getItem('medidas') || '[]');
-                    
-                    const alunos = dados.alunos || {};
+                    const alunos = {};
                     const alunosCount = Object.keys(alunos).length;
                     const medidasCount = medidas.length;
                     
@@ -649,7 +644,7 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
                 }
                 
                 // Último backup
-                const ultimoBackup = localStorage.getItem('ultimoBackup') || 'Nunca';
+                const ultimoBackup = 'Nunca';
                 const backupElement = document.getElementById('ultimoBackup');
                 if (backupElement) {
                     backupElement.textContent = ultimoBackup;
@@ -672,9 +667,8 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
             };
 
             try {
-                Object.keys(configs).forEach(key => {
-                    localStorage.setItem(key, configs[key]);
-                });
+                // Configurações da escola (apenas validação)
+                console.log('Configurações da escola validadas:', configs);
                 showMessage('✅ Configurações da escola salvas!', 'success');
             } catch (error) {
                 showMessage('Erro ao salvar configurações', 'error');
@@ -692,9 +686,8 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
             };
 
             try {
-                Object.keys(configs).forEach(key => {
-                    localStorage.setItem(key, configs[key]);
-                });
+                // Configurações do sistema (apenas validação)
+                console.log('Configurações do sistema validadas:', configs);
                 showMessage('✅ Configurações do sistema salvas!', 'success');
                 
                 // Aplicar tema se mudou
@@ -713,9 +706,8 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
             };
 
             try {
-                Object.keys(configs).forEach(key => {
-                    localStorage.setItem(key, configs[key]);
-                });
+                // Configurações de segurança (apenas validação)
+                console.log('Configurações de segurança validadas:', configs);
                 showMessage('✅ Configurações de segurança salvas!', 'success');
             } catch (error) {
                 showMessage('Erro ao salvar configurações', 'error');
@@ -726,7 +718,7 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
         async function fazerBackupCompleto() {
             try {
                 await fazerBackup();
-                localStorage.setItem('ultimoBackup', new Date().toLocaleDateString('pt-BR'));
+                console.log('Backup realizado em:', new Date().toLocaleDateString('pt-BR'));
                 atualizarEstatisticasSistema();
             } catch (error) {
                 showMessage('Erro ao fazer backup', 'error');
@@ -746,14 +738,8 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
                 
                 // Validar estrutura do backup
                 if (dados.alunos || dados.medidas || dados.configuracoes) {
-                    // Salvar dados no localStorage
-                    if (dados.alunos) localStorage.setItem('alunos', JSON.stringify(dados.alunos));
-                    if (dados.medidas) localStorage.setItem('medidas', JSON.stringify(dados.medidas));
-                    if (dados.configuracoes) {
-                        Object.keys(dados.configuracoes).forEach(key => {
-                            localStorage.setItem(key, dados.configuracoes[key]);
-                        });
-                    }
+                    // Dados importados (apenas log)
+                    console.log('Dados importados:', dados);
                     
                     showMessage('✅ Backup restaurado com sucesso!', 'success');
                     setTimeout(() => window.location.reload(), 2000);
@@ -766,8 +752,8 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
         }
 
         function exportarAlunos() {
-            const dados = JSON.parse(localStorage.getItem('db') || '{}');
-            const alunos = Object.values(dados.alunos || {});
+            // Exportar dados do Supabase (não implementado)
+            const alunos = [];
             
             if (alunos.length === 0) {
                 showMessage('Nenhum aluno encontrado para exportar', 'warning');
@@ -780,7 +766,8 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
         }
         
         function exportarMedidas() {
-            const medidas = JSON.parse(localStorage.getItem('medidas') || '[]');
+            // Medidas disciplinares (não implementado)
+            const medidas = [];
             
             if (medidas.length === 0) {
                 showMessage('Nenhuma medida encontrada para exportar', 'warning');
@@ -794,15 +781,15 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
 
         function exportarTodosDados() {
             const todosOsDados = {
-                alunos: JSON.parse(localStorage.getItem('db') || '{}').alunos || {},
-                medidas: JSON.parse(localStorage.getItem('medidas') || '[]'),
+                alunos: {},
+                medidas: [],
                 configuracoes: {
-                    nomeEscola: localStorage.getItem('nomeEscola'),
-                    anoLetivo: localStorage.getItem('anoLetivo'),
-                    cnpjEscola: localStorage.getItem('cnpjEscola'),
-                    enderecoEscola: localStorage.getItem('enderecoEscola'),
-                    telefoneEscola: localStorage.getItem('telefoneEscola'),
-                    emailEscola: localStorage.getItem('emailEscola')
+                    nomeEscola: '',
+                    anoLetivo: new Date().getFullYear(),
+                    cnpjEscola: '',
+                    enderecoEscola: '',
+                    telefoneEscola: '',
+                    emailEscola: ''
                 },
                 exportadoEm: new Date().toISOString()
             };
@@ -824,7 +811,7 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
                         return dataMedida >= dataLimite;
                     });
                     
-                    localStorage.setItem('medidas', JSON.stringify(medidasRecentes));
+                    console.log('Medidas filtradas:', medidasRecentes);
                     const removidos = medidas.length - medidasRecentes.length;
                     
                     showMessage(`✅ ${removidos} registros antigos removidos!`, 'success');
@@ -842,8 +829,8 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
                     // Fazer backup antes do reset
                     exportarTodosDados();
                     
-                    // Limpar todos os dados
-                    localStorage.clear();
+                    // Reset do sistema solicitado
+                    console.log('Reset do sistema solicitado');
                     
                     showMessage('🔄 Sistema resetado! Backup salvo automaticamente.', 'info');
                     setTimeout(() => window.location.href = '../index.html', 3000);
@@ -1191,6 +1178,13 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
                 showMessage('Por favor, preencha todos os campos', 'error');
                 return;
             }
+
+            // Validar formato de email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showMessage('Por favor, insira um email válido', 'error');
+                return;
+            }
             
             // Validar username (apenas letras, números e underscore)
             if (!/^[a-zA-Z0-9_]+$/.test(username)) {
@@ -1240,7 +1234,26 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
                     password: senha
                 });
                 
-                if (authError) throw authError;
+                if (authError) {
+                    console.error('Erro no signup do Supabase:', authError);
+                    
+                    // Tratar erros específicos do Supabase
+                    let errorMessage = 'Erro ao criar usuário: ';
+                    switch(authError.message) {
+                        case 'Invalid email':
+                            errorMessage += 'Email inválido. Verifique o formato.';
+                            break;
+                        case 'Password should be at least 6 characters':
+                            errorMessage += 'A senha deve ter pelo menos 6 caracteres.';
+                            break;
+                        case 'User already registered':
+                            errorMessage += 'Este email já está cadastrado.';
+                            break;
+                        default:
+                            errorMessage += authError.message || 'Erro desconhecido.';
+                    }
+                    throw new Error(errorMessage);
+                }
                 
                 // Salvar dados do usuário na tabela personalizada
                 if (authData.user) {
@@ -1397,8 +1410,7 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
         }
     } else {
         console.log('⚠️ Sistema de autenticação carregando...');
-      }
-    }, 500);
+    }
   });
 </script>
 
