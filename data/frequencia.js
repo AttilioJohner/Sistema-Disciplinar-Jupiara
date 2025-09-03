@@ -547,9 +547,169 @@ export const FrequenciaUtils = {
     }
 };
 
+/**
+ * Lista frequência acumulada por aluno (compatibilidade com legado)
+ * @param {Object} options - Opções de filtro
+ * @param {string} options.turma - Filtrar por turma
+ * @param {number} options.limit - Limite de registros (padrão: 1000)
+ * @param {number} options.offset - Offset para paginação (padrão: 0)
+ * @returns {Promise<{data: Array, error: any, count: number}>}
+ */
+export async function listFrequenciaAcumulada({ turma = null, limit = 1000, offset = 0 } = {}) {
+    try {
+        const client = await getClient();
+        
+        let query = client
+            .from('v_frequencia_acumulado_aluno')
+            .select('*', { count: 'exact' });
+        
+        if (turma) {
+            query = query.eq('turma', turma);
+        }
+        
+        query = query
+            .order('turma', { ascending: true })
+            .order('nome_completo', { ascending: true })
+            .range(offset, offset + limit - 1);
+        
+        const { data, error, count } = await query;
+        
+        console.log(`📊 Frequência acumulada consultada: ${data?.length || 0} de ${count || 0} total`);
+        
+        return { data, error, count };
+    } catch (error) {
+        console.error('❌ Erro ao listar frequência acumulada:', error);
+        return { data: null, error, count: 0 };
+    }
+}
+
+/**
+ * Lista datas de faltas de um aluno específico
+ * @param {string} codigo_matricula - Código do aluno
+ * @returns {Promise<{data: Array, error: any}>}
+ */
+export async function listFaltasDoAluno(codigo_matricula) {
+    try {
+        const client = await getClient();
+        
+        const { data, error } = await client
+            .from('frequencia')
+            .select('data, status')
+            .eq('codigo_matricula', codigo_matricula)
+            .eq('status', 'F')
+            .order('data', { ascending: false });
+        
+        console.log(`📅 Faltas consultadas para ${codigo_matricula}: ${data?.length || 0} registros`);
+        
+        return { data, error };
+    } catch (error) {
+        console.error(`❌ Erro ao listar faltas do aluno ${codigo_matricula}:`, error);
+        return { data: null, error };
+    }
+}
+
+/**
+ * Lista resumo mensal da turma
+ * @param {Object} options - Opções de filtro
+ * @param {string} options.turma - Turma específica
+ * @param {string} options.mes - Mês no formato 'YYYY-MM-01'
+ * @returns {Promise<{data: Array, error: any}>}
+ */
+export async function listMensalDaTurma({ turma = null, mes = null } = {}) {
+    try {
+        const client = await getClient();
+        
+        let query = client.from('mv_frequencia_mensal_aluno').select('*');
+        
+        if (turma) {
+            query = query.eq('turma', turma);
+        }
+        
+        if (mes) {
+            query = query.eq('mes', mes); // formato 'YYYY-MM-01'
+        }
+        
+        const { data, error } = await query
+            .order('pct_presenca_operacional', { ascending: false });
+        
+        console.log(`📊 Resumo mensal consultado: ${data?.length || 0} registros`);
+        
+        return { data, error };
+    } catch (error) {
+        console.error('❌ Erro ao listar resumo mensal:', error);
+        return { data: null, error };
+    }
+}
+
+/**
+ * Lista comparativo de frequência por turma no mês
+ * @param {string} mes - Mês no formato 'YYYY-MM-01'
+ * @returns {Promise<{data: Array, error: any}>}
+ */
+export async function listComparativoTurmas(mes) {
+    try {
+        const client = await getClient();
+        
+        // Como o Supabase não suporta GROUP BY direto no JS client,
+        // vamos buscar todos os dados e agregar no cliente
+        const { data, error } = await client
+            .from('mv_frequencia_mensal_aluno')
+            .select('turma, pct_presenca_operacional')
+            .eq('mes', mes);
+        
+        if (error) {
+            return { data: null, error };
+        }
+        
+        // Agregar por turma no cliente
+        const turmasMap = new Map();
+        
+        (data || []).forEach(row => {
+            const turma = row.turma;
+            if (!turmasMap.has(turma)) {
+                turmasMap.set(turma, {
+                    turma,
+                    totalAlunos: 0,
+                    somaPresenca: 0
+                });
+            }
+            const stats = turmasMap.get(turma);
+            stats.totalAlunos++;
+            stats.somaPresenca += (row.pct_presenca_operacional || 0);
+        });
+        
+        // Calcular médias
+        const resultado = Array.from(turmasMap.values()).map(stats => ({
+            turma: stats.turma,
+            totalAlunos: stats.totalAlunos,
+            media_presenca: stats.totalAlunos > 0 ? 
+                stats.somaPresenca / stats.totalAlunos : 0
+        })).sort((a, b) => a.turma.localeCompare(b.turma));
+        
+        console.log(`📊 Comparativo de turmas para ${mes}: ${resultado.length} turmas`);
+        
+        return { data: resultado, error: null };
+    } catch (error) {
+        console.error('❌ Erro ao listar comparativo de turmas:', error);
+        return { data: null, error };
+    }
+}
+
 // Exportar função debug globalmente para console (apenas em desenvolvimento)
 if (typeof window !== 'undefined') {
     window.debugFreq = debugFreq;
+    window.getResumoAcumuladoAluno = getResumoAcumuladoAluno;
+    window.getFaltasAluno = getFaltasAluno;
+    window.getResumoMensalAtualAluno = getResumoMensalAtualAluno;
+    window.getResumoMensalAluno = getResumoMensalAluno;
+    window.getEstatisticasFrequencia = getEstatisticasFrequencia;
+    window.FrequenciaUtils = FrequenciaUtils;
+    
+    // Adicionar novas funções para compatibilidade
+    window.listFrequenciaAcumulada = listFrequenciaAcumulada;
+    window.listFaltasDoAluno = listFaltasDoAluno;
+    window.listMensalDaTurma = listMensalDaTurma;
+    window.listComparativoTurmas = listComparativoTurmas;
 }
 
 console.log('✅ Camada de dados de frequência carregada');

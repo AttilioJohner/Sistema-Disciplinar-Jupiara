@@ -182,23 +182,34 @@ export async function getTurmasDisponiveis() {
 
 /**
  * Obtém estatísticas gerais de notas disciplinares
+ * @param {Object} options - Opções de filtro
+ * @param {string} options.turma - Filtrar por turma específica
  * @returns {Promise<{data: Object, error: any}>}
  */
-export async function getEstatisticasNotas() {
+export async function getEstatisticasNotas({ turma = null } = {}) {
     try {
         const client = await getClient();
         
-        const { data, error } = await client
+        let query = client
             .from('v_nota_disciplinar_atual')
-            .select('nota_atual, turma');
+            .select('nota_atual, turma, data_ultima_negativa');
+        
+        if (turma) {
+            query = query.eq('turma', turma);
+        }
+        
+        const { data, error } = await query;
         
         if (error) {
             return { data: null, error };
         }
         
         // Calcular estatísticas
+        const hoje = new Date();
+        const difDias = (d) => d ? Math.floor((hoje - new Date(d)) / (1000*60*60*24)) : Infinity;
+        
         const notas = data.map(item => item.nota_atual).filter(nota => nota !== null);
-        const media = notas.length > 0 ? (notas.reduce((a, b) => a + b, 0) / notas.length).toFixed(2) : 0;
+        const media = notas.length > 0 ? (notas.reduce((a, b) => a + b, 0) / notas.length) : 0;
         const notaMax = notas.length > 0 ? Math.max(...notas) : 0;
         const notaMin = notas.length > 0 ? Math.min(...notas) : 0;
         
@@ -208,25 +219,46 @@ export async function getEstatisticasNotas() {
         const regulares = notas.filter(n => n >= 5.0 && n < 7.0).length;
         const criticos = notas.filter(n => n < 5.0).length;
         
-        // Por turma
-        const turmas = [...new Set(data.map(item => item.turma))];
-        const estatisticasPorTurma = turmas.map(turma => {
-            const notasTurma = data.filter(item => item.turma === turma).map(item => item.nota_atual);
-            const mediaTurma = notasTurma.length > 0 ? 
-                (notasTurma.reduce((a, b) => a + b, 0) / notasTurma.length).toFixed(2) : 0;
-            
-            return {
-                turma,
-                totalAlunos: notasTurma.length,
-                mediaNota: parseFloat(mediaTurma),
-                alunosExcelentes: notasTurma.filter(n => n >= 9.0).length,
-                alunosCriticos: notasTurma.filter(n => n < 5.0).length
-            };
-        });
+        // Calcular bônus ativo (60+ dias sem negativas)
+        let bonusAtivo = 0;
+        for (const item of data) {
+            const dias = difDias(item.data_ultima_negativa);
+            if (dias > 60) {
+                bonusAtivo++;
+            }
+        }
+        
+        // Por turma (se não filtrado)
+        let estatisticasPorTurma = [];
+        if (!turma) {
+            const turmas = [...new Set(data.map(item => item.turma))];
+            estatisticasPorTurma = turmas.map(t => {
+                const alunosTurma = data.filter(item => item.turma === t);
+                const notasTurma = alunosTurma.map(item => item.nota_atual);
+                const mediaTurma = notasTurma.length > 0 ? 
+                    (notasTurma.reduce((a, b) => a + b, 0) / notasTurma.length) : 0;
+                
+                let bonusTurma = 0;
+                for (const aluno of alunosTurma) {
+                    if (difDias(aluno.data_ultima_negativa) > 60) {
+                        bonusTurma++;
+                    }
+                }
+                
+                return {
+                    turma: t,
+                    totalAlunos: notasTurma.length,
+                    mediaNota: parseFloat(mediaTurma.toFixed(2)),
+                    alunosExcelentes: notasTurma.filter(n => n >= 9.0).length,
+                    alunosCriticos: notasTurma.filter(n => n < 5.0).length,
+                    alunosComBonus: bonusTurma
+                };
+            });
+        }
         
         const estatisticas = {
             totalAlunos: data.length,
-            mediaNota: parseFloat(media),
+            mediaNota: parseFloat(media.toFixed(2)),
             notaMaxima: notaMax,
             notaMinima: notaMin,
             distribuicao: {
@@ -235,6 +267,8 @@ export async function getEstatisticasNotas() {
                 regulares,
                 criticos
             },
+            bonusAtivo,
+            bonusAtivoPct: data.length > 0 ? parseFloat((100 * bonusAtivo / data.length).toFixed(2)) : 0,
             porTurma: estatisticasPorTurma
         };
         

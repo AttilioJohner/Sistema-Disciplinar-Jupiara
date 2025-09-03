@@ -89,26 +89,56 @@ O sistema foi migrado para utilizar **views otimizadas do Postgres**, eliminando
 - `v_frequencia_diaria_turma` - Frequência diária por turma
 - `mv_frequencia_mensal_aluno` - Materialized view para dados mensais
 
-### 🗂️ Camadas de Dados
+### 🗂️ Camadas de Dados (Views Supabase)
 
-#### `data/notas.js`
+#### `data/notas.js` - Camada de Notas Disciplinares
 ```javascript
-// Exemplo de uso da camada de notas
-import { listNotasDisciplinares, getNotaDisciplinar } from './data/notas.js';
+// Funções disponíveis
+import { 
+    listNotasDisciplinares,      // Lista notas com filtros e paginação
+    getNotaDisciplinar,          // Obtém nota de um aluno específico
+    getContadoresDisciplinar,    // Obtém contadores detalhados
+    getTurmasDisponiveis,        // Lista turmas únicas
+    getEstatisticasNotas         // Estatísticas agregadas com bônus
+} from './data/notas.js';
 
-const { data, error } = await listNotasDisciplinares({
-  turma: '3° A',
-  limit: 50
-});
+// Exemplo de uso
+const { data, error } = await getEstatisticasNotas({ turma: '3° A' });
 ```
 
-#### `data/frequencia.js`
+#### `data/frequencia.js` - Camada de Frequência Escolar
 ```javascript
-// Exemplo de uso da camada de frequência
-import { getResumoAcumuladoAluno } from './data/frequencia.js';
+// Funções disponíveis
+import { 
+    listFrequenciaAcumulada,     // Frequência acumulada por aluno
+    listFaltasDoAluno,           // Lista datas de faltas
+    listMensalDaTurma,           // Resumo mensal por turma
+    listComparativoTurmas,       // Comparativo entre turmas
+    getEstatisticasFrequencia    // Estatísticas gerais
+} from './data/frequencia.js';
 
-const { data, error } = await getResumoAcumuladoAluno('12345');
+// Exemplo de uso
+const { data, error } = await listFrequenciaAcumulada({ turma: '3° A' });
 ```
+
+### 🔧 Adaptadores Globais (Legado)
+
+#### `adapters/globals.js` - Compatibilidade com Código Legado
+
+Para manter compatibilidade com código existente, os adaptadores expõem funções no `window.*`:
+
+```javascript
+// Importar adaptadores no início do arquivo
+import '../adapters/globals.js';
+
+// Funções disponíveis globalmente
+window.getTurmasDisponiveis()     // Lista turmas do sistema
+window.getEstatisticasNotas()     // Estatísticas de notas
+window.listFrequenciaAcumulada()  // Frequência acumulada
+window.listComparativoTurmas()    // Comparativo entre turmas
+```
+
+**Nota:** Os adaptadores mapeiam automaticamente as funções modernas para os nomes esperados pelo código legado, garantindo retrocompatibilidade.
 
 ## 📊 Estrutura do Banco de Dados
 

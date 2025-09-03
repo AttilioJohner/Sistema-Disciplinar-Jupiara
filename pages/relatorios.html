@@ -790,20 +790,25 @@
         
         import { 
             getEstatisticasFrequencia, 
-            getResumoMensalAluno,
             listFrequenciaAcumulada,
+            listMensalDaTurma,
+            listComparativoTurmas,
             FrequenciaUtils 
         } from '../data/frequencia.js';
         
-        // Tornar funções disponíveis globalmente
+        // Importar adaptadores globais para compatibilidade
+        import '../adapters/globals.js';
+        
+        // Tornar funções disponíveis globalmente (caso não sejam pelos adapters)
         window.listNotasDisciplinares = listNotasDisciplinares;
         window.getEstatisticasNotas = getEstatisticasNotas;
         window.getTurmasDisponiveis = getTurmasDisponiveis;
         window.NotasUtils = NotasUtils;
         
         window.getEstatisticasFrequencia = getEstatisticasFrequencia;
-        window.getResumoMensalAluno = getResumoMensalAluno;
         window.listFrequenciaAcumulada = listFrequenciaAcumulada;
+        window.listMensalDaTurma = listMensalDaTurma;
+        window.listComparativoTurmas = listComparativoTurmas;
         window.FrequenciaUtils = FrequenciaUtils;
     </script>
 
