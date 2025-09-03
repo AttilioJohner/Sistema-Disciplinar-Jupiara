@@ -53,6 +53,128 @@
             font-weight: 500;
         }
         
+        /* Sistema de Loading */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+        }
+        
+        .loading-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .loading-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .loading-subtitle {
+            color: #666;
+            margin-bottom: 25px;
+            font-size: 0.9em;
+        }
+        
+        .progress-container {
+            background: #f0f0f0;
+            border-radius: 10px;
+            height: 12px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+        
+        .progress-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .loading-steps {
+            text-align: left;
+            margin-top: 20px;
+        }
+        
+        .loading-step {
+            display: flex;
+            align-items: center;
+            padding: 5px 0;
+            font-size: 0.85em;
+            color: #666;
+        }
+        
+        .loading-step.active {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        .loading-step.completed {
+            color: #28a745;
+        }
+        
+        .loading-step-icon {
+            margin-right: 8px;
+            width: 16px;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Top Loading Bar */
+        .top-loading-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: #f0f0f0;
+            z-index: 9998;
+            overflow: hidden;
+        }
+        
+        .top-loading-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
         /* Resumos */
         .faltas-resumo, .medidas-resumo {
             display: grid;
@@ -972,6 +1094,48 @@
         </div>
     </div>
 
+    <!-- Sistema de Loading -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-card">
+            <div class="loading-spinner"></div>
+            <div class="loading-title">Carregando Sistema</div>
+            <div class="loading-subtitle">Preparando dados disciplinares...</div>
+            
+            <div class="progress-container">
+                <div id="loadingProgressBar" class="progress-bar"></div>
+            </div>
+            <div id="loadingProgressText" class="progress-text">0%</div>
+            
+            <div class="loading-steps">
+                <div id="loadingStep1" class="loading-step">
+                    <span class="loading-step-icon">⏳</span>
+                    <span>Conectando ao banco de dados...</span>
+                </div>
+                <div id="loadingStep2" class="loading-step">
+                    <span class="loading-step-icon">⏳</span>
+                    <span>Carregando lista de alunos...</span>
+                </div>
+                <div id="loadingStep3" class="loading-step">
+                    <span class="loading-step-icon">⏳</span>
+                    <span>Calculando estatísticas...</span>
+                </div>
+                <div id="loadingStep4" class="loading-step">
+                    <span class="loading-step-icon">⏳</span>
+                    <span>Carregando registros recentes...</span>
+                </div>
+                <div id="loadingStep5" class="loading-step">
+                    <span class="loading-step-icon">⏳</span>
+                    <span>Finalizando interface...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Loading Bar -->
+    <div id="topLoadingBar" class="top-loading-bar" style="display: none;">
+        <div id="topLoadingProgress" class="top-loading-progress"></div>
+    </div>
+
     <!-- JAVASCRIPT -->
     
     <script src="../assets/js/main.js" defer></script>
@@ -987,10 +1151,106 @@
     </script>
     
     <script>
-        // Inicialização da página
+        // Sistema de Loading Inteligente
+        class LoadingManager {
+            constructor() {
+                this.overlay = document.getElementById('loadingOverlay');
+                this.topBar = document.getElementById('topLoadingBar');
+                this.progressBar = document.getElementById('loadingProgressBar');
+                this.progressText = document.getElementById('loadingProgressText');
+                this.topProgress = document.getElementById('topLoadingProgress');
+                this.currentStep = 0;
+                this.totalSteps = 5;
+                this.isVisible = false;
+            }
+            
+            show(title = 'Carregando Sistema', subtitle = 'Preparando dados disciplinares...') {
+                if (this.isVisible) return;
+                
+                document.querySelector('.loading-title').textContent = title;
+                document.querySelector('.loading-subtitle').textContent = subtitle;
+                
+                this.overlay.style.display = 'flex';
+                this.topBar.style.display = 'block';
+                this.isVisible = true;
+                this.currentStep = 0;
+                this.updateProgress(0);
+            }
+            
+            hide() {
+                setTimeout(() => {
+                    this.overlay.style.display = 'none';
+                    this.topBar.style.display = 'none';
+                    this.isVisible = false;
+                }, 500);
+            }
+            
+            updateProgress(percentage, stepText = null) {
+                this.progressBar.style.width = percentage + '%';
+                this.progressText.textContent = Math.round(percentage) + '%';
+                this.topProgress.style.width = percentage + '%';
+                
+                if (stepText) {
+                    const stepNumber = Math.ceil((percentage / 100) * this.totalSteps);
+                    this.setStepActive(stepNumber, stepText);
+                }
+            }
+            
+            setStepActive(stepNumber, text = null) {
+                // Limpar estados anteriores
+                for (let i = 1; i <= this.totalSteps; i++) {
+                    const step = document.getElementById(`loadingStep${i}`);
+                    if (step) {
+                        step.classList.remove('active', 'completed');
+                        const icon = step.querySelector('.loading-step-icon');
+                        if (i < stepNumber) {
+                            step.classList.add('completed');
+                            icon.textContent = '✅';
+                        } else if (i === stepNumber) {
+                            step.classList.add('active');
+                            icon.textContent = '🔄';
+                            if (text) {
+                                step.querySelector('span:last-child').textContent = text;
+                            }
+                        } else {
+                            icon.textContent = '⏳';
+                        }
+                    }
+                }
+            }
+            
+            async simulateProgress(duration = 2000) {
+                const steps = [
+                    { progress: 20, text: 'Conectando ao banco de dados...' },
+                    { progress: 40, text: 'Carregando lista de alunos...' },
+                    { progress: 60, text: 'Calculando estatísticas...' },
+                    { progress: 80, text: 'Carregando registros recentes...' },
+                    { progress: 100, text: 'Finalizando interface...' }
+                ];
+                
+                for (let i = 0; i < steps.length; i++) {
+                    await new Promise(resolve => {
+                        setTimeout(() => {
+                            this.updateProgress(steps[i].progress, steps[i].text);
+                            resolve();
+                        }, duration / steps.length);
+                    });
+                }
+            }
+        }
+        
+        // Instância global do loading
+        window.loadingManager = new LoadingManager();
+        
+        // Inicialização da página com loading
         document.addEventListener('DOMContentLoaded', function() {
             console.log('📋 Página de Medidas Disciplinares carregada');
-            inicializarMedidasDisciplinares();
+            
+            // Mostrar loading imediatamente
+            window.loadingManager.show();
+            
+            // Inicializar sistema com progresso
+            inicializarMedidasDisciplinaresComLoading();
         });
 
         // Carregar alunos para os selects dos formulários
@@ -1204,7 +1464,87 @@
             }
         }
 
-        // Função de inicialização otimizada com carregamento progressivo
+        // Nova função de inicialização com sistema de loading
+        async function inicializarMedidasDisciplinaresComLoading() {
+            try {
+                // ETAPA 1: Conectar ao banco (20%)
+                window.loadingManager.updateProgress(10, 'Conectando ao banco de dados...');
+                
+                // Verificar se sistema Supabase está pronto
+                if (!window.supabaseClient) {
+                    await new Promise(resolve => {
+                        const check = setInterval(() => {
+                            if (window.supabaseClient) {
+                                clearInterval(check);
+                                resolve();
+                            }
+                        }, 200);
+                    });
+                }
+                
+                window.loadingManager.updateProgress(20, 'Conectado ao banco de dados');
+                
+                // ETAPA 2: Carregar lista de alunos (40%)
+                window.loadingManager.updateProgress(25, 'Carregando lista de alunos...');
+                
+                // Definir data atual no formulário
+                const hoje = new Date().toISOString().split('T')[0];
+                const dataMedida = document.getElementById('dataMedida');
+                if (dataMedida) dataMedida.value = hoje;
+                
+                await Promise.all([
+                    carregarSelectsAlunos(),
+                    carregarTurmasEAlunos()
+                ]);
+                
+                window.loadingManager.updateProgress(40, 'Alunos carregados com sucesso');
+                
+                // ETAPA 3: Calcular estatísticas (60%)
+                window.loadingManager.updateProgress(45, 'Calculando estatísticas...');
+                await carregarEstatisticasMedidas();
+                window.loadingManager.updateProgress(60, 'Estatísticas calculadas');
+                
+                // ETAPA 4: Carregar registros recentes (80%)
+                window.loadingManager.updateProgress(65, 'Carregando registros recentes...');
+                await carregarRegistrosRecentes();
+                window.loadingManager.updateProgress(80, 'Registros carregados');
+                
+                // ETAPA 5: Finalizar interface (100%)
+                window.loadingManager.updateProgress(85, 'Configurando alertas...');
+                
+                // Carregar alertas em background
+                if (typeof carregarAlertas === 'function') {
+                    await carregarAlertas();
+                }
+                
+                window.loadingManager.updateProgress(95, 'Finalizando interface...');
+                
+                // Pequena pausa para mostrar conclusão
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                window.loadingManager.updateProgress(100, 'Sistema carregado com sucesso!');
+                
+                // Aguardar um pouco antes de esconder
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Esconder loading
+                window.loadingManager.hide();
+                
+                console.log('✅ Sistema de medidas disciplinares inicializado com sucesso');
+                
+            } catch (error) {
+                console.error('❌ Erro ao inicializar sistema:', error);
+                window.loadingManager.updateProgress(100, 'Erro no carregamento - verifique a conexão');
+                
+                // Esconder loading após erro
+                setTimeout(() => {
+                    window.loadingManager.hide();
+                    showMessage('Erro ao carregar sistema. Recarregue a página.', 'error');
+                }, 2000);
+            }
+        }
+
+        // Função de inicialização otimizada com carregamento progressivo (ANTIGA - mantida como backup)
         async function inicializarMedidasDisciplinares() {
             try {
                 showMessage('Carregando módulo de medidas...', 'success');
@@ -1489,16 +1829,35 @@
                             medidasPorAluno[medida.codigo_matricula].push(medida);
                         });
                         
-                        // Calcular nota para cada aluno (simplificado para evitar async em forEach)
-                        for (const aluno of todosAlunos) {
-                            try {
-                                const dadosNota = await obterNotaDisciplinar(aluno.codigo);
-                                const notaAluno = typeof dadosNota === 'object' ? dadosNota.nota_atual : dadosNota;
-                                somaNotas += parseFloat(notaAluno) || 8.0;
-                            } catch (error) {
-                                console.warn(`Erro ao obter nota do aluno ${aluno.codigo}:`, error);
-                                somaNotas += 8.0; // Fallback
+                        // Otimização: Buscar todas as notas de uma vez usando a view
+                        try {
+                            const { data: todasNotas, error: notasError } = await window.supabaseClient
+                                .from('v_nota_disciplinar_atual')
+                                .select('codigo_aluno, nota_atual');
+                            
+                            if (!notasError && todasNotas) {
+                                // Criar mapa de notas por aluno
+                                const notasPorAluno = {};
+                                todasNotas.forEach(nota => {
+                                    notasPorAluno[nota.codigo_aluno] = nota.nota_atual;
+                                });
+                                
+                                // Somar notas de todos os alunos
+                                todosAlunos.forEach(aluno => {
+                                    const notaAluno = notasPorAluno[aluno.codigo] || 8.0;
+                                    somaNotas += parseFloat(notaAluno) || 8.0;
+                                });
+                                
+                                console.log(`📊 Notas calculadas via view: ${todasNotas.length} alunos processados`);
+                            } else {
+                                console.warn('Usando fallback para cálculo de notas:', notasError);
+                                // Fallback: todos com nota 8.0
+                                somaNotas = todosAlunos.length * 8.0;
                             }
+                        } catch (viewError) {
+                            console.warn('Erro ao buscar notas via view, usando fallback:', viewError);
+                            // Fallback: todos com nota 8.0
+                            somaNotas = todosAlunos.length * 8.0;
                         }
                         
                         mediaNotaEscola = (somaNotas / totalAlunos).toFixed(2);
@@ -1770,6 +2129,11 @@
         // ======= FUNÇÃO DE CARREGAMENTO DA FICHA DISCIPLINAR =======
         
         async function carregarFichaDisciplinar() {
+            // Mostrar loading rápido para ficha
+            if (window.loadingManager && !window.loadingManager.isVisible) {
+                window.loadingManager.show('Carregando Ficha', 'Buscando dados do aluno...');
+                window.loadingManager.updateProgress(30, 'Carregando dados do aluno...');
+            }
             try {
                 console.log('FICHA: Funcao carregarFichaDisciplinar iniciada');
                 const selectAluno = document.getElementById('alunoConsulta');
@@ -1916,8 +2280,19 @@
                 
                 console.log('FICHA: Carregando frequência...');
                 
+                // Atualizar progresso antes de exibir
+                if (window.loadingManager && window.loadingManager.isVisible) {
+                    window.loadingManager.updateProgress(80, 'Processando dados...');
+                }
+                
                 // Exibir ficha completa
                 await exibirFichaDisciplinar(alunoData, medidas);
+                
+                // Finalizar loading
+                if (window.loadingManager && window.loadingManager.isVisible) {
+                    window.loadingManager.updateProgress(100, 'Ficha carregada!');
+                    setTimeout(() => window.loadingManager.hide(), 500);
+                }
                 
                 fichaContainer.style.display = 'block';
                 btnExportar.disabled = false;
@@ -1927,6 +2302,12 @@
             } catch (error) {
                 console.error('FICHA: ERRO CAPTURADO na funcao carregarFichaDisciplinar:', error);
                 console.error('FICHA: Stack trace:', error.stack);
+                
+                // Esconder loading em caso de erro
+                if (window.loadingManager && window.loadingManager.isVisible) {
+                    window.loadingManager.updateProgress(100, 'Erro ao carregar ficha');
+                    setTimeout(() => window.loadingManager.hide(), 1000);
+                }
                 showMessage('❌ Erro ao carregar ficha disciplinar: ' + error.message, 'error');
                 const fichaContainer = document.getElementById('fichaAluno');
                 const btnExportar = document.getElementById('btnExportarPDF');
