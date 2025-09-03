@@ -1,5 +1,19 @@
-// Sistema de Frequência com Supabase
-console.log('📚 Carregando sistema de frequência com Supabase...');
+/**
+ * ARQUIVO OBSOLETO - FrequenciaSupabaseManager
+ * 
+ * IMPORTANTE: Esta classe foi substituída pelo sistema baseado em views do Postgres.
+ * Utilize a camada data/frequencia.js em vez deste arquivo.
+ * 
+ * Migração:
+ * - FrequenciaSupabaseManager → Use data/frequencia.js
+ * - Consultas diretas → Views: v_frequencia_acumulado_aluno, mv_frequencia_mensal_aluno  
+ * - Cálculos manuais → Views calculam automaticamente
+ * 
+ * @deprecated Use data/frequencia.js com views do Postgres
+ */
+
+// SISTEMA LEGADO - Não mais utilizado
+console.warn('⚠️ ARQUIVO OBSOLETO: frequencia-supabase.js foi substituído por data/frequencia.js');
 
 class FrequenciaSupabaseManager {
   constructor() {

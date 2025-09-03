@@ -424,21 +424,10 @@ async function importMedidasData() {
     
     log("Medidas concluídas: " + success + " novas, " + updated + " atualizadas, " + errors + " erros");
     
-    // Recalcular notas disciplinares automaticamente após importação
+    // REMOVIDO: Recálculo automático de notas
+    // As notas são calculadas automaticamente pelas views do Postgres
     if (success > 0 || updated > 0) {
-        try {
-            log("Recalculando notas disciplinares automaticamente...");
-            
-            // Verificar se as funções estão disponíveis
-            if (typeof window.recalcularTodasNotas === 'function') {
-                const resultado = await window.recalcularTodasNotas();
-                log(`✅ ${resultado.contador} notas disciplinares recalculadas automaticamente!`);
-            } else {
-                log("Função de recálculo não disponível. Acesse a página de Medidas Disciplinares para recalcular.");
-            }
-        } catch (error) {
-            log("Erro ao recalcular notas: " + error.message, "error");
-        }
+        log("✅ Medidas importadas com sucesso! Notas são calculadas automaticamente pelas views.");
     }
 }
 

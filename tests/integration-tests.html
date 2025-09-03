@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testes de Integração - Sistema View-Based</title>
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        
+        .test-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .test-section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .test-case {
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background-color: #f8f9fa;
+        }
+        
+        .test-result {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            margin-top: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .test-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .test-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .test-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        
+        .test-loading {
+            background-color: #cce7ff;
+            color: #0c5aa6;
+            border: 1px solid #99d3ff;
+        }
+        
+        .run-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            margin-right: 10px;
+        }
+        
+        .run-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .test-details {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 0.5rem;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+    
+    <!-- Environment Variables -->
+    <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
+    
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Sistema Principal -->
+    <script src="../assets/js/supabase-config.js"></script>
+</head>
+<body>
+    <div class="test-header">
+        <h1>🧪 Testes de Integração</h1>
+        <p>Sistema View-Based com Views do Postgres</p>
+    </div>
+    
+    <div class="test-section">
+        <h2>🎛️ Controles de Teste</h2>
+        <button class="run-button" onclick="runAllTests()">▶️ Executar Todos os Testes</button>
+        <button class="run-button" onclick="runConnectionTests()">🔗 Testar Conexões</button>
+        <button class="run-button" onclick="runViewTests()">📊 Testar Views</button>
+        <button class="run-button" onclick="runDataLayerTests()">🗂️ Testar Camadas de Dados</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>🔗 Testes de Conexão</h2>
+        <div id="connection-tests">
+            <div class="test-case">
+                <h4>Conexão com Supabase</h4>
+                <div id="supabase-connection" class="test-result test-loading">⏳ Aguardando teste...</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>📊 Testes das Views do Postgres</h2>
+        <div id="view-tests">
+            <div class="test-case">
+                <h4>View: v_nota_disciplinar_atual</h4>
+                <div id="view-notas-atual" class="test-result test-loading">⏳ Aguardando teste...</div>
+                <div id="view-notas-atual-details" class="test-details"></div>
+            </div>
+            
+            <div class="test-case">
+                <h4>View: v_nota_disciplinar_contadores</h4>
+                <div id="view-notas-contadores" class="test-result test-loading">⏳ Aguardando teste...</div>
+                <div id="view-notas-contadores-details" class="test-details"></div>
+            </div>
+            
+            <div class="test-case">
+                <h4>View: v_frequencia_acumulado_aluno</h4>
+                <div id="view-freq-acumulado" class="test-result test-loading">⏳ Aguardando teste...</div>
+                <div id="view-freq-acumulado-details" class="test-details"></div>
+            </div>
+            
+            <div class="test-case">
+                <h4>View: v_frequencia_diaria_turma</h4>
+                <div id="view-freq-diaria" class="test-result test-loading">⏳ Aguardando teste...</div>
+                <div id="view-freq-diaria-details" class="test-details"></div>
+            </div>
+            
+            <div class="test-case">
+                <h4>Materialized View: mv_frequencia_mensal_aluno</h4>
+                <div id="view-freq-mensal" class="test-result test-loading">⏳ Aguardando teste...</div>
+                <div id="view-freq-mensal-details" class="test-details"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🗂️ Testes das Camadas de Dados</h2>
+        <div id="data-layer-tests">
+            <div class="test-case">
+                <h4>Camada data/notas.js</h4>
+                <div id="data-notas" class="test-result test-loading">⏳ Aguardando teste...</div>
+                <div id="data-notas-details" class="test-details"></div>
+            </div>
+            
+            <div class="test-case">
+                <h4>Camada data/frequencia.js</h4>
+                <div id="data-frequencia" class="test-result test-loading">⏳ Aguardando teste...</div>
+                <div id="data-frequencia-details" class="test-details"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>📈 Resultados dos Testes</h2>
+        <div id="test-summary">
+            <div class="test-result test-loading">⏳ Aguardando execução dos testes...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Aguardar módulos carregarem
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Importar camadas de dados
+        const { 
+            listNotasDisciplinares,
+            getNotaDisciplinar,
+            getContadoresDisciplinar,
+            getTurmasDisponiveis,
+            getEstatisticasNotas
+        } = await import('../data/notas.js');
+        
+        const { 
+            getResumoAcumuladoAluno,
+            getFaltasAluno,
+            getResumoMensalAtualAluno,
+            getResumoMensalAluno,
+            getEstatisticasFrequencia
+        } = await import('../data/frequencia.js');
+        
+        let testResults = {
+            total: 0,
+            passed: 0,
+            failed: 0,
+            warnings: 0
+        };
+        
+        function updateTestResult(elementId, status, message, details = '') {
+            const element = document.getElementById(elementId);
+            const detailsElement = document.getElementById(elementId + '-details');
+            
+            testResults.total++;
+            
+            element.className = 'test-result ';
+            if (status === 'success') {
+                element.className += 'test-success';
+                element.innerHTML = '✅ ' + message;
+                testResults.passed++;
+            } else if (status === 'error') {
+                element.className += 'test-error';
+                element.innerHTML = '❌ ' + message;
+                testResults.failed++;
+            } else if (status === 'warning') {
+                element.className += 'test-warning';
+                element.innerHTML = '⚠️ ' + message;
+                testResults.warnings++;
+            }
+            
+            if (detailsElement && details) {
+                detailsElement.textContent = details;
+            }
+        }
+        
+        function updateSummary() {
+            const summaryElement = document.getElementById('test-summary');
+            const passRate = testResults.total > 0 ? Math.round((testResults.passed / testResults.total) * 100) : 0;
+            
+            summaryElement.innerHTML = `
+                <div class="test-result ${testResults.failed === 0 ? 'test-success' : 'test-warning'}">
+                    📊 Resumo: ${testResults.passed}/${testResults.total} testes aprovados (${passRate}%)
+                    ${testResults.failed > 0 ? `| ${testResults.failed} falhas` : ''}
+                    ${testResults.warnings > 0 ? `| ${testResults.warnings} avisos` : ''}
+                </div>
+            `;
+        }
+        
+        // Teste de conexão Supabase
+        window.runConnectionTests = async function() {
+            try {
+                if (window.supabaseClient) {
+                    // Teste básico de conexão
+                    const { error } = await window.supabaseClient
+                        .from('alunos')
+                        .select('*', { count: 'exact', head: true });
+                    
+                    if (error) {
+                        updateTestResult('supabase-connection', 'error', `Erro de conexão: ${error.message}`);
+                    } else {
+                        updateTestResult('supabase-connection', 'success', 'Conexão estabelecida com sucesso');
+                    }
+                } else {
+                    updateTestResult('supabase-connection', 'error', 'Cliente Supabase não inicializado');
+                }
+            } catch (error) {
+                updateTestResult('supabase-connection', 'error', `Erro: ${error.message}`);
+            }
+            updateSummary();
+        };
+        
+        // Teste das views
+        window.runViewTests = async function() {
+            const views = [
+                { id: 'view-notas-atual', name: 'v_nota_disciplinar_atual' },
+                { id: 'view-notas-contadores', name: 'v_nota_disciplinar_contadores' },
+                { id: 'view-freq-acumulado', name: 'v_frequencia_acumulado_aluno' },
+                { id: 'view-freq-diaria', name: 'v_frequencia_diaria_turma' },
+                { id: 'view-freq-mensal', name: 'mv_frequencia_mensal_aluno' }
+            ];
+            
+            for (const view of views) {
+                try {
+                    const { data, error, count } = await window.supabaseClient
+                        .from(view.name)
+                        .select('*', { count: 'exact' })
+                        .limit(5);
+                    
+                    if (error) {
+                        updateTestResult(view.id, 'error', `Erro: ${error.message}`, 
+                            `Código: ${error.code} | Detalhes: ${error.details}`);
+                    } else {
+                        updateTestResult(view.id, 'success', 
+                            `View funcionando | ${count} registros total`, 
+                            `Amostra: ${data?.length || 0} registros retornados`);
+                    }
+                } catch (error) {
+                    updateTestResult(view.id, 'error', `Erro: ${error.message}`);
+                }
+            }
+            updateSummary();
+        };
+        
+        // Teste das camadas de dados
+        window.runDataLayerTests = async function() {
+            // Teste camada de notas
+            try {
+                const result = await listNotasDisciplinares({ limit: 3 });
+                if (result.error) {
+                    updateTestResult('data-notas', 'error', `Erro: ${result.error.message}`);
+                } else {
+                    updateTestResult('data-notas', 'success', 
+                        `Camada funcionando | ${result.count} alunos total`,
+                        `Amostra: ${result.data?.length || 0} registros retornados`);
+                }
+            } catch (error) {
+                updateTestResult('data-notas', 'error', `Erro: ${error.message}`);
+            }
+            
+            // Teste camada de frequência
+            try {
+                const result = await getEstatisticasFrequencia();
+                if (result.error) {
+                    updateTestResult('data-frequencia', 'error', `Erro: ${result.error.message}`);
+                } else {
+                    updateTestResult('data-frequencia', 'success', 
+                        `Camada funcionando | Média geral: ${result.data?.mediaGeral || 'N/A'}%`,
+                        `Turmas analisadas: ${result.data?.porTurma?.length || 0}`);
+                }
+            } catch (error) {
+                updateTestResult('data-frequencia', 'error', `Erro: ${error.message}`);
+            }
+            
+            updateSummary();
+        };
+        
+        // Executar todos os testes
+        window.runAllTests = async function() {
+            // Reset resultados
+            testResults = { total: 0, passed: 0, failed: 0, warnings: 0 };
+            
+            console.log('🧪 Iniciando testes de integração...');
+            
+            await runConnectionTests();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await runViewTests();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await runDataLayerTests();
+            
+            console.log('✅ Testes concluídos:', testResults);
+        };
+        
+        // Executar testes automaticamente após 3 segundos
+        setTimeout(() => {
+            console.log('🤖 Executando testes automaticamente...');
+            runAllTests();
+        }, 3000);
+        
+    </script>
+</body>
+</html>

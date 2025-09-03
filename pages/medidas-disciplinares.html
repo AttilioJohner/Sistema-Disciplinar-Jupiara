@@ -1189,6 +1189,12 @@
                         </div>
                         
                         <div class="form-group">
+                            <button type="button" class="btn btn-secondary" onclick="window.debugFreq()">
+                                📅 Debug Frequência (Views)
+                            </button>
+                        </div>
+                        
+                        <div class="form-group">
                             <button type="button" class="btn btn-secondary" onclick="analisarTiposMedidas()">
                                 🔍 Analisar Tipos de Medidas
                             </button>
@@ -2771,8 +2777,9 @@
         }
         
         
-        // Função para calcular pontos de uma medida
-        function calcularPontosMedida(tipoMedida, diasSuspensao = 1) {
+        // Função para calcular pontos de uma medida (apenas para exibição)
+        // NOTA: Cálculos oficiais são feitos nas views do Postgres
+        function calcularPontosMedidaExibicao(tipoMedida, diasSuspensao = 1) {
             let pontos = 0;
             
             // Medidas positivas
@@ -2827,7 +2834,7 @@
                 const dataFormatada = new Date(medida.data_registro).toLocaleDateString('pt-BR');
                 const tipoMedida = medida.tipo_medida || 'N/A';
                 const diasSuspensao = medida.dias_suspensao || 1;
-                const pontos = calcularPontosMedida(tipoMedida, diasSuspensao);
+                const pontos = calcularPontosMedidaExibicao(tipoMedida, diasSuspensao);
                 const isPositiva = isMedidaPositiva(tipoMedida);
                 
                 // Debug para verificar pontos

@@ -162,9 +162,14 @@ function sumDisciplineScoresByAluno(medidasAluno) {
 }
 
 /**
- * Função integrada de cálculo de pontos (baseada no sistema existente)
+ * OBSOLETO: Função integrada de cálculo de pontos
+ * REMOVIDO: Substituída pelas views do Postgres
+ * Use: data/notas.js com as views v_nota_disciplinar_atual e v_nota_disciplinar_contadores
  */
 function calcularPontosMedidaIntegrado(tipoMedida, diasSuspensao = 1) {
+    console.warn('⚠️ FUNÇÃO OBSOLETA: calcularPontosMedidaIntegrado() foi substituída pelas views');
+    console.warn('🔄 Use a camada data/notas.js em vez desta função');
+    return 0; // Evita erros mas não calcula
     if (!tipoMedida) return 0;
     
     const tipoNormalizado = tipoMedida.toLowerCase()

@@ -1,11 +1,28 @@
+/**
+ * ARQUIVO OBSOLETO - FrequenciaManager
+ * 
+ * IMPORTANTE: Esta classe foi substituída pelo sistema baseado em views do Postgres.
+ * Utilize a camada data/frequencia.js em vez deste arquivo.
+ * 
+ * Migração:
+ * - FrequenciaManager.carregarDados() → window.getResumoAcumuladoAluno()
+ * - FrequenciaManager.obterResumo() → window.getResumoMensalAtualAluno() 
+ * - FrequenciaManager.calcularPresencas() → views do Postgres calculam automaticamente
+ * 
+ * @deprecated Use data/frequencia.js com views: v_frequencia_acumulado_aluno, mv_frequencia_mensal_aluno
+ */
 class FrequenciaManager {
   constructor() {
+    console.warn('⚠️ CLASSE OBSOLETA: FrequenciaManager foi substituída pelas views do Postgres');
+    console.warn('🔄 Use a camada data/frequencia.js em vez desta classe');
+    
     this.dadosFrequencia = new Map(); // turma -> {mes, ano, alunos: [...]}
     this.turmaAtual = '';
     this.mesAtual = '';
     this.anoAtual = '';
     
-    this.init();
+    // Não inicializar para evitar conflitos
+    // this.init();
   }
 
   async init() {

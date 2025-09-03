@@ -1248,138 +1248,30 @@
 
   // ======= SISTEMA DE PONTUAÇÃO DISCIPLINAR =======
   
-  // Calcular pontos de uma medida disciplinar
+  // OBSOLETO: Calcular pontos de uma medida disciplinar
+  // REMOVIDO: Esta função foi substituída pelas views do Postgres
+  // Use as views: v_nota_disciplinar_atual e v_nota_disciplinar_contadores
   function calcularPontosMedida(tipoMedida, diasSuspensao = 1) {
-    if (!tipoMedida) return 0;
-    
-    // Normalizar o tipo de medida para minúsculas e remover acentos/espaços extras
-    const tipoNormalizado = tipoMedida.toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
-      .replace(/\s+/g, ' ') // Normaliza espaços
-      .trim();
-    
-    // Mapeamento flexível de tipos de medida
-    const mapeamentos = {
-      // Tipos positivos
-      'fato observado positivo': 0.1,
-      'fato positivo': 0.1,
-      'comportamento positivo': 0.1,
-      'observacao positiva': 0.1,
-      'elogio': 0.1,
-      
-      // Tipos negativos
-      'fato observado negativo': -0.1,
-      'fato negativo': -0.1,
-      'comportamento negativo': -0.1,
-      'observacao negativa': -0.1,
-      'ocorrencia': -0.1,
-      
-      // Advertências
-      'advertencia verbal': -0.3,
-      'advertencia escrita': -0.3,
-      'advertencia': -0.3,
-      'adv verbal': -0.3,
-      'adv escrita': -0.3,
-      'chamada atencao': -0.3,
-      
-      // Suspensões
-      'suspensao': -0.5 * parseInt(diasSuspensao || 1),
-      'suspensao temporaria': -0.5 * parseInt(diasSuspensao || 1),
-      'afastamento': -0.5 * parseInt(diasSuspensao || 1),
-      
-      // Ações educativas
-      'acao educativa': -1.0,
-      'medida educativa': -1.0,
-      'atividade educativa': -1.0,
-      'trabalho educativo': -1.0,
-      'orientacao educativa': -1.0,
-      'encaminhamento': -1.0
-    };
-    
-    // Buscar correspondência exata ou parcial
-    let pontos = mapeamentos[tipoNormalizado];
-    
-    // Se não encontrou correspondência exata, tentar busca parcial
-    if (pontos === undefined) {
-      for (const [tipo, valor] of Object.entries(mapeamentos)) {
-        if (tipoNormalizado.includes(tipo) || tipo.includes(tipoNormalizado)) {
-          pontos = valor;
-          break;
-        }
-      }
-    }
-    
-    console.log(`Tipo: "${tipoMedida}" → Normalizado: "${tipoNormalizado}" → Pontos: ${pontos || 0}`);
-    return pontos || 0;
+    console.warn('⚠️ FUNÇÃO OBSOLETA: calcularPontosMedida() foi substituída pelas views do Postgres');
+    console.warn('🔄 Use a camada de dados data/notas.js em vez desta função');
+    return 0; // Retorna 0 para evitar erros, mas não calcula mais
   }
 
-  // Calcular nota disciplinar total de um aluno
+  // OBSOLETO: Calcular nota disciplinar total de um aluno
+  // REMOVIDO: Esta função foi substituída pelas views do Postgres
+  // Use: window.getNotaDisciplinar(codigo_aluno) da camada data/notas.js
   async function calcularNotaDisciplinar(alunoId, dadosAluno = null) {
-    try {
-      let notaBase = 8.0; // Nota inicial
-      
-      // Se não passou os dados do aluno, buscar
-      if (!dadosAluno) {
-        const alunoDoc = await window.db.collection('alunos').doc(alunoId).get();
-        if (!alunoDoc.exists) return notaBase;
-        dadosAluno = alunoDoc.data();
-      }
-
-      // Buscar todas as medidas disciplinares do aluno
-      let medidas = [];
-      
-      if (dadosAluno.codigo) {
-        const medidasPorCodigo = await window.db.collection('medidas_disciplinares')
-          .where('codigo_aluno', '==', dadosAluno.codigo)
-          .get();
-        medidasPorCodigo.forEach(doc => {
-          medidas.push(doc.data());
-        });
-      }
-      
-      if (medidas.length === 0 && dadosAluno.nome_completo) {
-        const medidasPorNome = await window.db.collection('medidas_disciplinares')
-          .where('nome_aluno', '==', dadosAluno.nome_completo)
-          .get();
-        medidasPorNome.forEach(doc => {
-          medidas.push(doc.data());
-        });
-      }
-
-      // Calcular pontos das medidas
-      let totalPontos = 0;
-      medidas.forEach(medida => {
-        const pontos = calcularPontosMedida(medida.tipo_medida, medida.dias_suspensao);
-        totalPontos += pontos;
-      });
-
-      // Nota final = nota base + pontos acumulados (não pode ser menor que 0)
-      const notaFinal = Math.max(0, notaBase + totalPontos);
-      return Math.round(notaFinal * 10) / 10; // Arredondar para 1 casa decimal
-      
-    } catch (error) {
-      console.error('Erro ao calcular nota disciplinar:', error);
-      return 8.0;
-    }
+    console.warn('⚠️ FUNÇÃO OBSOLETA: calcularNotaDisciplinar() foi substituída pelas views');
+    console.warn('🔄 Use window.getNotaDisciplinar(codigo_aluno) da camada data/notas.js');
+    return 8.0; // Retorna nota base para evitar erros
   }
 
-  // Atualizar nota disciplinar de um aluno no Sistema Local
+  // OBSOLETO: Atualizar nota disciplinar de um aluno no Sistema Local
+  // REMOVIDO: As notas são calculadas automaticamente pelas views do Postgres
   async function atualizarNotaDisciplinar(alunoId, dadosAluno = null) {
-    try {
-      const novaNota = await calcularNotaDisciplinar(alunoId, dadosAluno);
-      
-      await window.db.collection('alunos').doc(alunoId).update({
-        nota_disciplinar: novaNota,
-        ultima_atualizacao_nota: new Date().toISOString()
-      });
-      
-      console.log(`Nota disciplinar atualizada para ${novaNota} (aluno: ${alunoId})`);
-      return novaNota;
-    } catch (error) {
-      console.error('Erro ao atualizar nota disciplinar:', error);
-      return null;
-    }
+    console.warn('⚠️ FUNÇÃO OBSOLETA: atualizarNotaDisciplinar() não é mais necessária');
+    console.warn('🔄 As notas são calculadas automaticamente pelas views do Postgres');
+    return null;
   }
 
   // Inicializar notas disciplinares para todos os alunos
@@ -1501,12 +1393,18 @@
   window.carregarFichaDisciplinar = carregarFichaDisciplinar;
   window.exportarFichaPDF = exportarFichaPDF;
   
-  // Expor funções de pontuação
+  // REMOVIDO: Funções de pontuação obsoletas
+  // As seguintes funções foram substituídas pelas views do Postgres:
+  // - calcularPontosMedida() → use data/notas.js
+  // - calcularNotaDisciplinar() → use window.getNotaDisciplinar()
+  // - atualizarNotaDisciplinar() → não necessário (views automáticas)
+  // - inicializarNotasDisciplinares() → não necessário 
+  // - recalcularTodasNotas() → não necessário
+  
+  // Manter apenas para compatibilidade (emitem warnings)
   window.calcularPontosMedida = calcularPontosMedida;
   window.calcularNotaDisciplinar = calcularNotaDisciplinar;
   window.atualizarNotaDisciplinar = atualizarNotaDisciplinar;
-  window.inicializarNotasDisciplinares = inicializarNotasDisciplinares;
-  window.recalcularTodasNotas = recalcularTodasNotas;
   window.analisarTiposMedidas = analisarTiposMedidas;
 
   // Expor funções globais

@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testes Unitários - Funções de Utilidade</title>
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        
+        .test-header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .test-section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .test-case {
+            border-left: 4px solid #e9ecef;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+            background-color: #f8f9fa;
+        }
+        
+        .test-pass {
+            border-left-color: #28a745;
+            background-color: #d4edda;
+        }
+        
+        .test-fail {
+            border-left-color: #dc3545;
+            background-color: #f8d7da;
+        }
+        
+        .test-code {
+            font-family: 'Courier New', monospace;
+            background-color: #f1f3f4;
+            padding: 0.5rem;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+            font-size: 0.9em;
+        }
+        
+        .run-button {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        
+        .run-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+        }
+        
+        .summary {
+            padding: 1rem;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .summary-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .summary-partial {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        
+        .summary-fail {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-header">
+        <h1>🧪 Testes Unitários</h1>
+        <p>Funções de Utilidade e Formatação</p>
+    </div>
+    
+    <div class="test-section">
+        <h2>🎛️ Controles</h2>
+        <button class="run-button" onclick="runAllTests()">▶️ Executar Todos os Testes</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>📊 NotasUtils - Formatação e Classificação</h2>
+        <div id="notas-utils-tests"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>📈 FrequenciaUtils - Percentuais e Status</h2>
+        <div id="frequencia-utils-tests"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>📊 Resumo dos Testes</h2>
+        <div id="test-summary" class="summary">
+            ⏳ Aguardando execução dos testes...
+        </div>
+    </div>
+
+    <script type="module">
+        // Importar utilitários
+        const { NotasUtils } = await import('../data/notas.js');
+        const { FrequenciaUtils } = await import('../data/frequencia.js');
+        
+        let testResults = [];
+        
+        function assert(condition, description, input = '', expected = '', actual = '') {
+            const passed = !!condition;
+            testResults.push({
+                passed,
+                description,
+                input: input.toString(),
+                expected: expected.toString(),
+                actual: actual.toString()
+            });
+            
+            return passed;
+        }
+        
+        function renderTestResults(containerId, results) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            results.forEach(result => {
+                const testCase = document.createElement('div');
+                testCase.className = `test-case ${result.passed ? 'test-pass' : 'test-fail'}`;
+                
+                testCase.innerHTML = `
+                    <div>
+                        ${result.passed ? '✅' : '❌'} <strong>${result.description}</strong>
+                    </div>
+                    ${result.input ? `<div class="test-code">Input: ${result.input}</div>` : ''}
+                    ${result.expected ? `<div class="test-code">Esperado: ${result.expected}</div>` : ''}
+                    ${result.actual && !result.passed ? `<div class="test-code">Recebido: ${result.actual}</div>` : ''}
+                `;
+                
+                container.appendChild(testCase);
+            });
+        }
+        
+        function testNotasUtils() {
+            const results = [];
+            
+            // Teste formatarNota
+            let result = NotasUtils.formatarNota(7.5);
+            results.push({
+                passed: result === '7.50',
+                description: 'formatarNota() deve formatar número com 2 decimais',
+                input: '7.5',
+                expected: '7.50',
+                actual: result
+            });
+            
+            result = NotasUtils.formatarNota('invalid');
+            results.push({
+                passed: result === 'N/A',
+                description: 'formatarNota() deve retornar N/A para entrada inválida',
+                input: "'invalid'",
+                expected: 'N/A',
+                actual: result
+            });
+            
+            // Teste getCorNota
+            result = NotasUtils.getCorNota(9.5);
+            results.push({
+                passed: result === 'badge-success',
+                description: 'getCorNota() deve retornar badge-success para nota >= 9.0',
+                input: '9.5',
+                expected: 'badge-success',
+                actual: result
+            });
+            
+            result = NotasUtils.getCorNota(7.5);
+            results.push({
+                passed: result === 'badge-primary',
+                description: 'getCorNota() deve retornar badge-primary para nota >= 7.0',
+                input: '7.5',
+                expected: 'badge-primary',
+                actual: result
+            });
+            
+            result = NotasUtils.getCorNota(5.5);
+            results.push({
+                passed: result === 'badge-warning',
+                description: 'getCorNota() deve retornar badge-warning para nota >= 5.0',
+                input: '5.5',
+                expected: 'badge-warning',
+                actual: result
+            });
+            
+            result = NotasUtils.getCorNota(3.0);
+            results.push({
+                passed: result === 'badge-danger',
+                description: 'getCorNota() deve retornar badge-danger para nota < 5.0',
+                input: '3.0',
+                expected: 'badge-danger',
+                actual: result
+            });
+            
+            // Teste getDescricaoNota
+            result = NotasUtils.getDescricaoNota(9.7);
+            results.push({
+                passed: result === 'Exemplar',
+                description: 'getDescricaoNota() deve retornar "Exemplar" para nota >= 9.5',
+                input: '9.7',
+                expected: 'Exemplar',
+                actual: result
+            });
+            
+            result = NotasUtils.getDescricaoNota(8.8);
+            results.push({
+                passed: result === 'Muito Bom',
+                description: 'getDescricaoNota() deve retornar "Muito Bom" para nota >= 8.5',
+                input: '8.8',
+                expected: 'Muito Bom',
+                actual: result
+            });
+            
+            result = NotasUtils.getDescricaoNota(4.2);
+            results.push({
+                passed: result === 'Insuficiente',
+                description: 'getDescricaoNota() deve retornar "Insuficiente" para nota >= 4.0',
+                input: '4.2',
+                expected: 'Insuficiente',
+                actual: result
+            });
+            
+            result = NotasUtils.getDescricaoNota(2.1);
+            results.push({
+                passed: result === 'Crítico',
+                description: 'getDescricaoNota() deve retornar "Crítico" para nota < 4.0',
+                input: '2.1',
+                expected: 'Crítico',
+                actual: result
+            });
+            
+            // Teste isBonusAtivo
+            result = NotasUtils.isBonusAtivo(null);
+            results.push({
+                passed: result === true,
+                description: 'isBonusAtivo() deve retornar true para null (nunca teve negativa)',
+                input: 'null',
+                expected: 'true',
+                actual: result
+            });
+            
+            // Data há 70 dias (bônus ativo)
+            const dataAntiga = new Date();
+            dataAntiga.setDate(dataAntiga.getDate() - 70);
+            result = NotasUtils.isBonusAtivo(dataAntiga);
+            results.push({
+                passed: result === true,
+                description: 'isBonusAtivo() deve retornar true para data > 60 dias',
+                input: '70 dias atrás',
+                expected: 'true',
+                actual: result
+            });
+            
+            // Data há 30 dias (bônus inativo)
+            const dataRecente = new Date();
+            dataRecente.setDate(dataRecente.getDate() - 30);
+            result = NotasUtils.isBonusAtivo(dataRecente);
+            results.push({
+                passed: result === false,
+                description: 'isBonusAtivo() deve retornar false para data <= 60 dias',
+                input: '30 dias atrás',
+                expected: 'false',
+                actual: result
+            });
+            
+            return results;
+        }
+        
+        function testFrequenciaUtils() {
+            const results = [];
+            
+            // Teste formatarPercentual
+            let result = FrequenciaUtils.formatarPercentual(87.345);
+            results.push({
+                passed: result === '87,35%',
+                description: 'formatarPercentual() deve formatar com 2 decimais e vírgula',
+                input: '87.345',
+                expected: '87,35%',
+                actual: result
+            });
+            
+            result = FrequenciaUtils.formatarPercentual('invalid');
+            results.push({
+                passed: result === 'N/A',
+                description: 'formatarPercentual() deve retornar N/A para entrada inválida',
+                input: "'invalid'",
+                expected: 'N/A',
+                actual: result
+            });
+            
+            // Teste getCorPresenca
+            result = FrequenciaUtils.getCorPresenca(96);
+            results.push({
+                passed: result === 'success',
+                description: 'getCorPresenca() deve retornar "success" para presença >= 95%',
+                input: '96',
+                expected: 'success',
+                actual: result
+            });
+            
+            result = FrequenciaUtils.getCorPresenca(88);
+            results.push({
+                passed: result === 'primary',
+                description: 'getCorPresenca() deve retornar "primary" para presença >= 85%',
+                input: '88',
+                expected: 'primary',
+                actual: result
+            });
+            
+            result = FrequenciaUtils.getCorPresenca(78);
+            results.push({
+                passed: result === 'warning',
+                description: 'getCorPresenca() deve retornar "warning" para presença >= 75%',
+                input: '78',
+                expected: 'warning',
+                actual: result
+            });
+            
+            result = FrequenciaUtils.getCorPresenca(65);
+            results.push({
+                passed: result === 'danger',
+                description: 'getCorPresenca() deve retornar "danger" para presença < 75%',
+                input: '65',
+                expected: 'danger',
+                actual: result
+            });
+            
+            // Teste getDescricaoPresenca
+            result = FrequenciaUtils.getDescricaoPresenca(97);
+            results.push({
+                passed: result === 'Excelente',
+                description: 'getDescricaoPresenca() deve retornar "Excelente" para presença >= 95%',
+                input: '97',
+                expected: 'Excelente',
+                actual: result
+            });
+            
+            result = FrequenciaUtils.getDescricaoPresenca(82);
+            results.push({
+                passed: result === 'Boa',
+                description: 'getDescricaoPresenca() deve retornar "Boa" para presença >= 80%',
+                input: '82',
+                expected: 'Boa',
+                actual: result
+            });
+            
+            result = FrequenciaUtils.getDescricaoPresenca(76);
+            results.push({
+                passed: result === 'Regular',
+                description: 'getDescricaoPresenca() deve retornar "Regular" para presença >= 75%',
+                input: '76',
+                expected: 'Regular',
+                actual: result
+            });
+            
+            result = FrequenciaUtils.getDescricaoPresenca(60);
+            results.push({
+                passed: result === 'Crítica',
+                description: 'getDescricaoPresenca() deve retornar "Crítica" para presença < 75%',
+                input: '60',
+                expected: 'Crítica',
+                actual: result
+            });
+            
+            // Teste isPresencaCritica
+            result = FrequenciaUtils.isPresencaCritica(74);
+            results.push({
+                passed: result === true,
+                description: 'isPresencaCritica() deve retornar true para presença < 75%',
+                input: '74',
+                expected: 'true',
+                actual: result
+            });
+            
+            result = FrequenciaUtils.isPresencaCritica(85);
+            results.push({
+                passed: result === false,
+                description: 'isPresencaCritica() deve retornar false para presença >= 75%',
+                input: '85',
+                expected: 'false',
+                actual: result
+            });
+            
+            return results;
+        }
+        
+        function updateSummary() {
+            const summaryElement = document.getElementById('test-summary');
+            const totalTests = testResults.length;
+            const passedTests = testResults.filter(t => t.passed).length;
+            const passRate = totalTests > 0 ? Math.round((passedTests / totalTests) * 100) : 0;
+            
+            let className = 'summary ';
+            let status = '';
+            
+            if (passedTests === totalTests) {
+                className += 'summary-success';
+                status = '✅ Todos os testes passaram!';
+            } else if (passedTests > 0) {
+                className += 'summary-partial';
+                status = '⚠️ Alguns testes falharam';
+            } else {
+                className += 'summary-fail';
+                status = '❌ Todos os testes falharam';
+            }
+            
+            summaryElement.className = className;
+            summaryElement.innerHTML = `
+                ${status}<br>
+                ${passedTests}/${totalTests} testes aprovados (${passRate}%)
+            `;
+        }
+        
+        window.runAllTests = function() {
+            console.log('🧪 Executando testes unitários...');
+            
+            // Reset
+            testResults = [];
+            
+            // Executar testes
+            const notasResults = testNotasUtils();
+            const frequenciaResults = testFrequenciaUtils();
+            
+            testResults = [...notasResults, ...frequenciaResults];
+            
+            // Renderizar resultados
+            renderTestResults('notas-utils-tests', notasResults);
+            renderTestResults('frequencia-utils-tests', frequenciaResults);
+            
+            // Atualizar resumo
+            updateSummary();
+            
+            console.log('✅ Testes unitários concluídos:', {
+                total: testResults.length,
+                passed: testResults.filter(t => t.passed).length,
+                failed: testResults.filter(t => !t.passed).length
+            });
+        };
+        
+        // Executar testes automaticamente
+        setTimeout(() => {
+            runAllTests();
+        }, 1000);
+        
+    </script>
+</body>
+</html>

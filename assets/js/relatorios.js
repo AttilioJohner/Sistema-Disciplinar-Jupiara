@@ -1,12 +1,25 @@
-// relatorios.js — Relatórios com subcoleções e collectionGroup
-// Exemplos de relatórios:
-// - Por aluno: totais, intervalos por data.
-// - Globais: últimos registros, contagens no período, ranking por turma.
+/**
+ * ARQUIVO OBSOLETO - relatorios.js
+ * 
+ * IMPORTANTE: Este sistema de relatórios foi substituído pela página pages/relatorios.html
+ * que utiliza views do Postgres para cálculos otimizados.
+ * 
+ * Migração:
+ * - Relatórios por aluno → pages/relatorios.html (aba Disciplinar)
+ * - Relatórios globais → pages/relatorios.html (aba Frequência)
+ * - Cálculos locais → views: v_nota_disciplinar_atual, v_frequencia_acumulado_aluno
+ * 
+ * @deprecated Use pages/relatorios.html com sistema baseado em views
+ */
 
-// Requisitos no HTML (exemplo):
-// - Inputs para filtros: dataInicio, dataFim, alunoId, turma
-// - Containers de saída: #relatorioAluno, #relatorioGlobal
-// - local-db.js deve ter window.db
+// RELATÓRIOS LEGADOS - Substituídos por pages/relatorios.html
+// - Por aluno: totais, intervalos por data. → MIGRADO
+// - Globais: últimos registros, contagens no período, ranking por turma. → MIGRADO
+
+// SISTEMA LEGADO - Não mais utilizado:
+// - Inputs para filtros: dataInicio, dataFim, alunoId, turma → Interface moderna em relatorios.html
+// - Containers de saída: #relatorioAluno, #relatorioGlobal → Sistema tabbed moderno
+// - local-db.js deve ter window.db → Supabase views
 
 (function () {
   'use strict';
