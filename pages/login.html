@@ -52,7 +52,7 @@
       </div>
 
       <form class="login-form" id="loginForm">
-        <input type="email" id="email" class="login-input" placeholder="Email" required>
+        <input type="text" id="loginInput" class="login-input" placeholder="Email ou Nome de Usuário" required>
         <input type="password" id="password" class="login-input" placeholder="Senha" required>
         <button type="submit" class="login-button" id="loginButton">
           🔐 Entrar no Sistema
@@ -69,6 +69,32 @@
       const messageEl = document.getElementById('message');
       messageEl.textContent = text;
       messageEl.className = `message ${type}`;
+    }
+
+    // Função para login com username
+    async function loginWithUsername(username, password) {
+      try {
+        // Buscar usuário pelo username nos metadados
+        const { data: { users }, error } = await window.supabaseClient.auth.admin.listUsers();
+        
+        if (error) throw error;
+        
+        // Encontrar usuário com username correspondente
+        const user = users.find(u => 
+          u.user_metadata?.username?.toLowerCase() === username.toLowerCase()
+        );
+        
+        if (!user) {
+          throw new Error('Usuário não encontrado');
+        }
+        
+        // Fazer login com o email encontrado
+        return await window.unifiedAuth.signIn(user.email, password);
+        
+      } catch (error) {
+        console.error('Erro no login com username:', error);
+        return { success: false, error: error.message };
+      }
     }
 
     // Verificar se já está logado
@@ -91,12 +117,12 @@
     document.getElementById('loginForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       
-      const email = document.getElementById('email').value.trim();
+      const loginInput = document.getElementById('loginInput').value.trim();
       const password = document.getElementById('password').value;
       const button = document.getElementById('loginButton');
 
-      if (!email || !password) {
-        showMessage('❌ Preencha email e senha', 'error');
+      if (!loginInput || !password) {
+        showMessage('❌ Preencha usuário/email e senha', 'error');
         return;
       }
 
@@ -104,7 +130,16 @@
       button.textContent = '⏳ Entrando...';
       
       try {
-        const result = await window.unifiedAuth.signIn(email, password);
+        let result;
+        
+        // Verificar se é email ou username
+        if (loginInput.includes('@')) {
+          // Login com email
+          result = await window.unifiedAuth.signIn(loginInput, password);
+        } else {
+          // Login com username - buscar email correspondente
+          result = await loginWithUsername(loginInput, password);
+        }
         
         if (result.success) {
           showMessage('✅ Login realizado com sucesso!', 'success');
