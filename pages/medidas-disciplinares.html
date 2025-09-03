@@ -2201,10 +2201,30 @@
                     posicaoRanking = `${alunosComMais + 1}º de ${medidasPorAluno.length}`;
                 }
                 
-                // Obter nota disciplinar das views
-                const resultadoNota = await obterNotaDisciplinar(aluno.codigo || aluno.id || selectAluno.value);
-                const dadosNota = resultadoNota.data || { nota_atual: 8.0 };
-                const notaDisciplinar = dadosNota.nota_atual || 8.0;
+                // Obter nota disciplinar das views (nova implementação)
+                let notaDisciplinar = 8.0;
+                let dadosNota = null;
+                
+                try {
+                    const codigoAluno = aluno.codigo || aluno.id || selectAluno.value;
+                    
+                    const { data: notaData, error } = await window.supabaseClient
+                        .from('v_nota_disciplinar_atual')
+                        .select('*')
+                        .eq('codigo_aluno', codigoAluno)
+                        .limit(1);
+                    
+                    if (!error && notaData && notaData.length > 0) {
+                        dadosNota = notaData[0];
+                        notaDisciplinar = dadosNota.nota_atual || 8.0;
+                        console.log(`📊 Nota obtida das views para ${codigoAluno}:`, notaDisciplinar);
+                    } else {
+                        console.log(`⚠️ Nota não encontrada para ${codigoAluno}, usando padrão 8.0`);
+                    }
+                } catch (error) {
+                    console.warn('Erro ao obter nota das views:', error);
+                }
+                
                 const mencao = obterMencaoDisciplinar(notaDisciplinar);
                 
                 container.innerHTML = `
