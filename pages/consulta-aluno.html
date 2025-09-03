@@ -1013,18 +1013,25 @@
                 }
 
                 // Buscar total de alunos
-                const { count: totalAlunos } = await window.supabaseClient
+                const { count: totalAlunos, error: alunosError } = await window.supabaseClient
                     .from('alunos')
                     .select('*', { count: 'exact', head: true });
 
+                if (alunosError) {
+                    console.warn('Erro ao buscar total de alunos:', alunosError);
+                }
                 document.getElementById('totalAlunos').textContent = totalAlunos || 0;
 
                 // Buscar frequências para calcular média
                 const hoje = new Date().toISOString().split('T')[0];
-                const { data: frequencias } = await window.supabaseClient
-                    .from('frequencias')
+                const { data: frequencias, error: freqError } = await window.supabaseClient
+                    .from('frequencia')
                     .select('*')
                     .eq('data', hoje);
+
+                if (freqError) {
+                    console.warn('Erro ao buscar frequências:', freqError);
+                }
 
                 if (frequencias && frequencias.length > 0) {
                     const presencas = frequencias.filter(f => f.status === 'presente').length;
@@ -1035,9 +1042,13 @@
                 }
 
                 // Calcular média disciplinar
-                const { data: medidas } = await window.supabaseClient
+                const { data: medidas, error: medidasGeralError } = await window.supabaseClient
                     .from('medidas')
                     .select('*');
+
+                if (medidasGeralError) {
+                    console.warn('Erro ao buscar medidas gerais:', medidasGeralError);
+                }
 
                 if (medidas) {
                     // Agrupar medidas por aluno
@@ -1113,21 +1124,27 @@
                 studentData = aluno;
 
                 // Buscar medidas disciplinares
-                const { data: medidas } = await window.supabaseClient
+                const { data: medidas, error: medidasError } = await window.supabaseClient
                     .from('medidas')
                     .select('*')
                     .eq('aluno_codigo', codigoAluno)
                     .order('data_registro', { ascending: false });
 
+                if (medidasError) {
+                    console.warn('Erro ao buscar medidas:', medidasError);
+                }
                 medidasData = medidas || [];
 
                 // Buscar frequências
-                const { data: frequencias } = await window.supabaseClient
-                    .from('frequencias')
+                const { data: frequencias, error: frequenciasError } = await window.supabaseClient
+                    .from('frequencia')
                     .select('*')
                     .eq('aluno_codigo', codigoAluno)
                     .order('data', { ascending: false });
 
+                if (frequenciasError) {
+                    console.warn('Erro ao buscar frequências:', frequenciasError);
+                }
                 frequenciaData = frequencias || [];
 
                 // Preencher dados do aluno
@@ -1159,16 +1176,17 @@
         function preencherDadosAluno() {
             if (!studentData) return;
 
-            // Avatar com iniciais
-            const nomes = studentData.nome_completo.split(' ');
+            // Avatar com iniciais - tratamento de erros
+            const nomeCompleto = studentData.nome_completo || studentData.nome || 'Aluno';
+            const nomes = nomeCompleto.split(' ');
             const iniciais = nomes[0][0] + (nomes[nomes.length - 1][0] || '');
             document.getElementById('studentAvatar').textContent = iniciais.toUpperCase();
 
             // Dados básicos
-            document.getElementById('studentName').textContent = studentData.nome_completo;
-            document.getElementById('studentCode').textContent = studentData.codigo;
-            document.getElementById('studentClass').textContent = studentData.turma || 'N/A';
-            document.getElementById('studentShift').textContent = studentData.turno || 'N/A';
+            document.getElementById('studentName').textContent = nomeCompleto;
+            document.getElementById('studentCode').textContent = studentData.codigo || studentData.id || 'N/A';
+            document.getElementById('studentClass').textContent = studentData.turma || studentData.Turma || 'N/A';
+            document.getElementById('studentShift').textContent = studentData.turno || studentData.Turno || 'N/A';
         }
 
         // Função para preencher ficha disciplinar
