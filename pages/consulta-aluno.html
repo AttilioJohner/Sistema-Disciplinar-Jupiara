@@ -1,491 +1,1487 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Consulta de Aluno - Portal dos Pais</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal dos Pais - E.E.C.M. Jupiara</title>
+    
+    <!-- Supabase e configurações -->
+    <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
+    <script src="../assets/js/env-config.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-only.js"></script>
+    
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="../assets/css/style.css">
-  <link rel="stylesheet" href="../assets/css/components.css">
-  <link rel="stylesheet" href="../assets/css/dashboard.css">
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-  <style>
-    /* CSS styles preserved for parent portal */
-    :root {
-      --primary-blue: #0078d4;
-      --light-blue: #f3f9ff;
-      --gray-100: #f8f9fa;
-      --gray-200: #e9ecef;
-      --gray-300: #dee2e6;
-      --gray-400: #ced4da;
-      --gray-500: #adb5bd;
-      --gray-600: #6c757d;
-      --gray-700: #495057;
-      --gray-800: #343a40;
-      --gray-900: #212529;
-      --success: #28a745;
-      --danger: #dc3545;
-      --warning: #ffc107;
-      --info: #17a2b8;
-    }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+        /* Header Estilizado */
+        .header {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
 
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: var(--gray-100);
-      color: var(--gray-800);
-      line-height: 1.6;
-    }
+        .header-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
 
-    /* Header principal */
-    .header-main {
-      background: linear-gradient(135deg, var(--primary-blue) 0%, #106ebe 100%);
-      color: white;
-      padding: 2rem 0;
-      text-align: center;
-      box-shadow: 0 4px 20px rgba(0,120,212,0.3);
-      margin-bottom: 2rem;
-    }
+        .logo-img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
 
-    .header-content {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 1rem;
-    }
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
 
-    .header-title {
-      font-size: 2.5rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
-    }
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
 
-    .header-subtitle {
-      font-size: 1.2rem;
-      opacity: 0.9;
-    }
+        /* Seção de Busca */
+        .search-section {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
 
-    /* Container principal */
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 1rem 4rem;
-    }
+        .search-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
 
-    /* Cards */
-    .card {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      margin-bottom: 2rem;
-      overflow: hidden;
-      transition: all 0.3s ease;
-    }
+        .search-title {
+            font-size: 1.8em;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-    .card:hover {
-      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    }
+        .search-form {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
 
-    .card-header {
-      background: var(--light-blue);
-      padding: 1.5rem;
-      border-bottom: 1px solid var(--gray-200);
-    }
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
 
-    .card-title {
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: var(--primary-blue);
-      margin: 0;
-    }
+        .form-label {
+            display: block;
+            color: #34495e;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
 
-    .card-body {
-      padding: 2rem;
-    }
+        .form-input {
+            width: 100%;
+            padding: 12px 20px;
+            border: 2px solid #e0e6ed;
+            border-radius: 12px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
 
-    /* Formulário de busca */
-    .search-form {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
 
-    .input-group {
-      position: relative;
-    }
+        .btn-search {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
 
-    .form-input {
-      width: 100%;
-      padding: 1rem;
-      border: 2px solid var(--gray-300);
-      border-radius: 8px;
-      font-size: 1rem;
-      transition: all 0.3s ease;
-      background: white;
-    }
+        .btn-search:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
 
-    .form-input:focus {
-      outline: none;
-      border-color: var(--primary-blue);
-      box-shadow: 0 0 0 3px rgba(0,120,212,0.1);
-    }
+        .btn-search:active {
+            transform: translateY(0);
+        }
 
-    .btn {
-      padding: 1rem 2rem;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      text-decoration: none;
-      justify-content: center;
-    }
+        /* Cards de Estatísticas */
+        .stats-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
 
-    .btn-primary {
-      background: linear-gradient(135deg, var(--primary-blue) 0%, #106ebe 100%);
-      color: white;
-    }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
 
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(0,120,212,0.3);
-    }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--card-color-1), var(--card-color-2));
+        }
 
-    .btn-secondary {
-      background: var(--gray-600);
-      color: white;
-    }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+        }
 
-    .btn-secondary:hover {
-      background: var(--gray-700);
-      transform: translateY(-2px);
-    }
+        .stat-card.blue { --card-color-1: #3498db; --card-color-2: #2980b9; }
+        .stat-card.green { --card-color-1: #2ecc71; --card-color-2: #27ae60; }
+        .stat-card.orange { --card-color-1: #f39c12; --card-color-2: #e67e22; }
+        .stat-card.purple { --card-color-1: #9b59b6; --card-color-2: #8e44ad; }
 
-    /* Informações do aluno */
-    .student-info {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, var(--card-color-1), var(--card-color-2));
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
 
-    .info-item {
-      background: var(--light-blue);
-      padding: 1.5rem;
-      border-radius: 8px;
-      border-left: 4px solid var(--primary-blue);
-    }
+        .stat-value {
+            font-size: 2.2em;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
 
-    .info-label {
-      font-size: 0.875rem;
-      color: var(--gray-600);
-      font-weight: 500;
-      margin-bottom: 0.5rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.95em;
+            font-weight: 500;
+        }
 
-    .info-value {
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: var(--gray-800);
-    }
+        .stat-change {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(46, 204, 113, 0.1);
+            color: #27ae60;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
 
-    /* Tabelas */
-    .table-responsive {
-      overflow-x: auto;
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
+        .stat-change.negative {
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+        }
 
-    .data-table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-    }
+        /* Seção de Resultados */
+        .results-section {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
 
-    .data-table th {
-      background: var(--gray-800);
-      color: white;
-      padding: 1rem;
-      text-align: left;
-      font-weight: 600;
-      font-size: 0.875rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-    .data-table td {
-      padding: 1rem;
-      border-bottom: 1px solid var(--gray-200);
-      font-size: 0.875rem;
-    }
+        .student-info {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
 
-    .data-table tbody tr:hover {
-      background: var(--light-blue);
-    }
+        .student-header {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            padding-bottom: 25px;
+            border-bottom: 2px solid #e0e6ed;
+            margin-bottom: 25px;
+        }
 
-    /* Status badges */
-    .status-badge {
-      padding: 0.25rem 0.75rem;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
+        .student-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5em;
+            color: white;
+            font-weight: 700;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
 
-    .status-presente {
-      background: rgba(40, 167, 69, 0.1);
-      color: var(--success);
-    }
+        .student-details h2 {
+            color: #2c3e50;
+            font-size: 1.8em;
+            margin-bottom: 10px;
+        }
 
-    .status-ausente {
-      background: rgba(220, 53, 69, 0.1);
-      color: var(--danger);
-    }
+        .student-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
 
-    .status-justificado {
-      background: rgba(255, 193, 7, 0.1);
-      color: #856404;
-    }
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #7f8c8d;
+            font-size: 0.95em;
+        }
 
-    /* Mensagens de feedback */
-    .message {
-      padding: 1rem;
-      border-radius: 8px;
-      margin: 1rem 0;
-      font-weight: 500;
-    }
+        .meta-item strong {
+            color: #34495e;
+        }
 
-    .message.success {
-      background: rgba(40, 167, 69, 0.1);
-      color: var(--success);
-      border: 1px solid rgba(40, 167, 69, 0.2);
-    }
+        /* Tabs */
+        .tabs-container {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            padding: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        }
 
-    .message.error {
-      background: rgba(220, 53, 69, 0.1);
-      color: var(--danger);
-      border: 1px solid rgba(220, 53, 69, 0.2);
-    }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
 
-    .message.warning {
-      background: rgba(255, 193, 7, 0.1);
-      color: #856404;
-      border: 1px solid rgba(255, 193, 7, 0.2);
-    }
+        .tab {
+            background: #f8f9fa;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 600;
+            color: #7f8c8d;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 150px;
+            text-align: center;
+        }
 
-    .message.info {
-      background: rgba(23, 162, 184, 0.1);
-      color: var(--info);
-      border: 1px solid rgba(23, 162, 184, 0.2);
-    }
+        .tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
 
-    /* Estados de loading */
-    .loading-state {
-      text-align: center;
-      padding: 3rem 1rem;
-      color: var(--gray-600);
-    }
+        .tab:hover:not(.active) {
+            background: #e9ecef;
+        }
 
-    .loading-state .spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid var(--gray-300);
-      border-top: 4px solid var(--primary-blue);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 1rem;
-    }
+        .tab-content {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
 
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
+        .tab-pane {
+            display: none;
+        }
 
-    /* Responsividade */
-    @media (max-width: 768px) {
-      .container {
-        padding: 0 0.5rem 2rem;
-      }
+        .tab-pane.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
 
-      .header-title {
-        font-size: 2rem;
-      }
+        /* Score Disciplinar */
+        .disciplinary-score {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
 
-      .header-subtitle {
-        font-size: 1rem;
-      }
+        .score-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
 
-      .search-form {
-        grid-template-columns: 1fr;
-      }
+        .score-title {
+            font-size: 1.5em;
+            color: #2c3e50;
+            font-weight: 600;
+        }
 
-      .student-info {
-        grid-template-columns: 1fr;
-      }
+        .score-value {
+            font-size: 3em;
+            font-weight: 900;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
 
-      .card-body {
-        padding: 1rem;
-      }
+        .score-bar {
+            height: 30px;
+            background: #dee2e6;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 20px;
+        }
 
-      .data-table {
-        font-size: 0.75rem;
-      }
+        .score-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e74c3c, #f39c12, #2ecc71);
+            border-radius: 15px;
+            transition: width 1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 15px;
+            color: white;
+            font-weight: 700;
+        }
 
-      .data-table th,
-      .data-table td {
-        padding: 0.5rem;
-      }
-    }
+        /* Timeline de Medidas */
+        .timeline {
+            position: relative;
+            padding-left: 40px;
+        }
 
-    @media (max-width: 480px) {
-      .header-main {
-        padding: 1rem 0;
-      }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #dee2e6;
+        }
 
-      .header-title {
-        font-size: 1.5rem;
-      }
+        .timeline-item {
+            position: relative;
+            margin-bottom: 25px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
 
-      .btn {
-        padding: 0.75rem 1rem;
-        font-size: 0.875rem;
-      }
+        .timeline-item:hover {
+            background: white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
 
-      .info-item {
-        padding: 1rem;
-      }
-    }
+        .timeline-marker {
+            position: absolute;
+            left: -30px;
+            top: 25px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+        }
 
-    /* Animações */
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
+        .timeline-marker.positive {
+            border-color: #2ecc71;
+        }
 
-    .card {
-      animation: fadeIn 0.6s ease-out;
-    }
+        .timeline-marker.negative {
+            border-color: #e74c3c;
+        }
 
-    .info-item:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(0,120,212,0.1);
-      transition: all 0.3s ease;
-    }
-  </style>
+        .timeline-date {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .timeline-title {
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .timeline-description {
+            color: #7f8c8d;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+
+        .timeline-points {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .timeline-points.positive {
+            background: rgba(46, 204, 113, 0.1);
+            color: #27ae60;
+        }
+
+        .timeline-points.negative {
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+        }
+
+        /* Gráficos de Frequência */
+        .chart-container {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-title {
+            font-size: 1.3em;
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        /* Tabela de Frequência */
+        .frequency-table {
+            width: 100%;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .frequency-table thead {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .frequency-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        .frequency-table tbody tr {
+            border-bottom: 1px solid #e0e6ed;
+            transition: all 0.3s ease;
+        }
+
+        .frequency-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .frequency-table td {
+            padding: 15px;
+            color: #34495e;
+            font-size: 0.95em;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: rgba(46, 204, 113, 0.1);
+            color: #27ae60;
+        }
+
+        .badge-danger {
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+        }
+
+        .badge-warning {
+            background: rgba(243, 156, 18, 0.1);
+            color: #e67e22;
+        }
+
+        .badge-info {
+            background: rgba(52, 152, 219, 0.1);
+            color: #2980b9;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #7f8c8d;
+        }
+
+        .empty-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-title {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #34495e;
+            margin-bottom: 10px;
+        }
+
+        .empty-description {
+            font-size: 1em;
+        }
+
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Alert Messages */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: none;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-error {
+            background: rgba(231, 76, 60, 0.1);
+            color: #c0392b;
+            border: 2px solid rgba(231, 76, 60, 0.2);
+        }
+
+        .alert-success {
+            background: rgba(46, 204, 113, 0.1);
+            color: #27ae60;
+            border: 2px solid rgba(46, 204, 113, 0.2);
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .search-form {
+                flex-direction: column;
+            }
+
+            .form-group {
+                width: 100%;
+            }
+
+            .btn-search {
+                width: 100%;
+            }
+
+            .stats-section {
+                grid-template-columns: 1fr;
+            }
+
+            .student-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                width: 100%;
+            }
+
+            .timeline {
+                padding-left: 20px;
+            }
+
+            .timeline-marker {
+                left: -11px;
+                width: 20px;
+                height: 20px;
+            }
+
+            .frequency-table {
+                font-size: 0.85em;
+            }
+
+            .frequency-table th, .frequency-table td {
+                padding: 10px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <!-- Header -->
-  <header class="header-main">
-    <div class="header-content">
-      <h1 class="header-title">🏫 Portal dos Pais</h1>
-      <p class="header-subtitle">Consulta de Informações dos Alunos</p>
-    </div>
-  </header>
-
-  <!-- Main Container -->
-  <div class="container">
-    <!-- Search Form -->
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title">🔍 Buscar Aluno</h2>
-      </div>
-      <div class="card-body">
-        <form class="search-form" id="searchForm">
-          <div class="input-group">
-            <input 
-              type="text" 
-              id="searchInput" 
-              class="form-input" 
-              placeholder="Digite o nome ou CPF do aluno..."
-              required
-            >
-          </div>
-          <button type="submit" class="btn btn-primary">
-            🔍 Pesquisar
-          </button>
-        </form>
-        <div id="message"></div>
-      </div>
-    </div>
-
-    <!-- Student Information -->
-    <div class="card" id="studentCard" style="display: none;">
-      <div class="card-header">
-        <h2 class="card-title">📋 Informações do Aluno</h2>
-      </div>
-      <div class="card-body">
-        <div class="student-info" id="studentInfo">
-          <!-- Student data will be populated here -->
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-logo">
+                <img src="../assets/images/logo-escola.jpeg" alt="Logo EECM Jupiara" class="logo-img">
+            </div>
+            <h1>Portal dos Pais</h1>
+            <p>Acompanhe o desempenho disciplinar e frequência do seu filho</p>
         </div>
-      </div>
-    </div>
 
-    <!-- Student Records -->
-    <div class="card" id="recordsCard" style="display: none;">
-      <div class="card-header">
-        <h2 class="card-title">📊 Histórico Acadêmico</h2>
-      </div>
-      <div class="card-body">
-        <div class="table-responsive">
-          <table class="data-table" id="recordsTable">
-            <thead>
-              <tr>
-                <th>Data</th>
-                <th>Tipo</th>
-                <th>Descrição</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Records will be populated here -->
-            </tbody>
-          </table>
+        <!-- Cards de Estatísticas Gerais -->
+        <div class="stats-section" id="statsSection">
+            <div class="stat-card blue">
+                <div class="stat-icon">👥</div>
+                <div class="stat-value" id="totalAlunos">0</div>
+                <div class="stat-label">Total de Alunos</div>
+                <span class="stat-change">Atualizado hoje</span>
+            </div>
+
+            <div class="stat-card green">
+                <div class="stat-icon">✅</div>
+                <div class="stat-value" id="mediaFrequencia">0%</div>
+                <div class="stat-label">Média de Frequência</div>
+            </div>
+
+            <div class="stat-card orange">
+                <div class="stat-icon">📊</div>
+                <div class="stat-value" id="mediaDisciplinar">0</div>
+                <div class="stat-label">Média Disciplinar Geral</div>
+            </div>
+
+            <div class="stat-card purple">
+                <div class="stat-icon">📅</div>
+                <div class="stat-value" id="diasLetivos">0</div>
+                <div class="stat-label">Dias Letivos</div>
+            </div>
         </div>
-      </div>
+
+        <!-- Seção de Busca -->
+        <div class="search-section">
+            <h2 class="search-title">
+                🔍 Consultar Informações do Aluno
+            </h2>
+            
+            <div id="alertMessage" class="alert"></div>
+
+            <div class="search-form">
+                <div class="form-group">
+                    <label class="form-label">Código do Aluno</label>
+                    <input type="text" id="codigoAluno" class="form-input" placeholder="Digite o código do aluno...">
+                </div>
+                <button class="btn-search" onclick="buscarAluno()">
+                    Buscar Aluno
+                </button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Buscando informações do aluno...</p>
+            </div>
+        </div>
+
+        <!-- Seção de Resultados -->
+        <div class="results-section" id="resultsSection">
+            <!-- Informações do Aluno -->
+            <div class="student-info">
+                <div class="student-header">
+                    <div class="student-avatar" id="studentAvatar">--</div>
+                    <div class="student-details">
+                        <h2 id="studentName">--</h2>
+                        <div class="student-meta">
+                            <span class="meta-item">
+                                <strong>Código:</strong> <span id="studentCode">--</span>
+                            </span>
+                            <span class="meta-item">
+                                <strong>Turma:</strong> <span id="studentClass">--</span>
+                            </span>
+                            <span class="meta-item">
+                                <strong>Turno:</strong> <span id="studentShift">--</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs de Navegação -->
+            <div class="tabs-container">
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('disciplinar')">
+                        📋 Ficha Disciplinar
+                    </button>
+                    <button class="tab" onclick="switchTab('frequencia')">
+                        📅 Frequência
+                    </button>
+                    <button class="tab" onclick="switchTab('resumo')">
+                        📊 Resumo Geral
+                    </button>
+                </div>
+            </div>
+
+            <!-- Conteúdo das Tabs -->
+            <div class="tab-content">
+                <!-- Tab Disciplinar -->
+                <div id="disciplinar" class="tab-pane active">
+                    <div class="disciplinary-score">
+                        <div class="score-header">
+                            <div class="score-title">Nota Disciplinar</div>
+                            <div class="score-value" id="notaDisciplinar">--</div>
+                        </div>
+                        <div class="score-bar">
+                            <div class="score-fill" id="scoreFill">--</div>
+                        </div>
+                        <p style="color: #7f8c8d; text-align: center;">
+                            Escala: 0 (Crítico) - 10 (Exemplar)
+                        </p>
+                    </div>
+
+                    <h3 style="color: #2c3e50; margin-bottom: 20px; font-size: 1.3em;">
+                        📝 Histórico de Medidas Disciplinares
+                    </h3>
+                    <div class="timeline" id="timelineMedidas">
+                        <!-- Timeline será preenchida via JS -->
+                    </div>
+                </div>
+
+                <!-- Tab Frequência -->
+                <div id="frequencia" class="tab-pane">
+                    <div class="chart-container">
+                        <h3 class="chart-title">📊 Gráfico de Frequência Mensal</h3>
+                        <canvas id="frequencyChart"></canvas>
+                    </div>
+
+                    <h3 style="color: #2c3e50; margin-bottom: 20px; font-size: 1.3em;">
+                        📅 Detalhamento de Faltas
+                    </h3>
+                    <table class="frequency-table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Tipo</th>
+                                <th>Período</th>
+                                <th>Justificativa</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="frequencyTableBody">
+                            <!-- Tabela será preenchida via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Tab Resumo -->
+                <div id="resumo" class="tab-pane">
+                    <div class="stats-section">
+                        <div class="stat-card green">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-value" id="percentualFrequencia">--%</div>
+                            <div class="stat-label">Frequência Total</div>
+                        </div>
+
+                        <div class="stat-card blue">
+                            <div class="stat-icon">✅</div>
+                            <div class="stat-value" id="totalPresencas">0</div>
+                            <div class="stat-label">Presenças</div>
+                        </div>
+
+                        <div class="stat-card orange">
+                            <div class="stat-icon">❌</div>
+                            <div class="stat-value" id="totalFaltas">0</div>
+                            <div class="stat-label">Faltas</div>
+                        </div>
+
+                        <div class="stat-card purple">
+                            <div class="stat-icon">📋</div>
+                            <div class="stat-value" id="totalMedidas">0</div>
+                            <div class="stat-label">Medidas Disciplinares</div>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3 class="chart-title">📈 Evolução do Comportamento</h3>
+                        <canvas id="behaviorChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <script>
-    // Clean base for parent portal functionality
-    console.log('🏫 Portal dos Pais - Base limpa carregada');
-    
-    // Show message function
-    function showMessage(text, type = 'info') {
-      const messageEl = document.getElementById('message');
-      messageEl.innerHTML = `<div class="message ${type}">${text}</div>`;
-    }
+    <script>
+        // Variáveis globais
+        let studentData = null;
+        let medidasData = [];
+        let frequenciaData = [];
+        let frequencyChart = null;
+        let behaviorChart = null;
 
-    // Search form handler
-    document.getElementById('searchForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const searchTerm = document.getElementById('searchInput').value.trim();
-      
-      if (!searchTerm) {
-        showMessage('Digite um termo de busca válido.', 'warning');
-        return;
-      }
-      
-      showMessage('🔍 Funcionalidade em desenvolvimento...', 'info');
-    });
-  </script>
+        // Função para mostrar mensagem
+        function showMessage(message, type) {
+            const alert = document.getElementById('alertMessage');
+            alert.className = `alert alert-${type} show`;
+            alert.textContent = message;
+            
+            setTimeout(() => {
+                alert.classList.remove('show');
+            }, 5000);
+        }
+
+        // Função para alternar tabs
+        function switchTab(tabName) {
+            // Remover active de todas as tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remover active de todos os painéis
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('active');
+            });
+            
+            // Ativar tab clicada
+            event.target.classList.add('active');
+            
+            // Ativar painel correspondente
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        // Função para calcular pontos de medida
+        function calcularPontosMedida(tipoMedida, diasSuspensao = 1) {
+            let pontos = 0;
+            
+            // Medidas positivas
+            if (tipoMedida === 'Elogio Individual') pontos = 0.5;
+            else if (tipoMedida === 'Elogio Coletivo') pontos = 0.3;
+            else if (tipoMedida === 'Fato Observado Positivo') pontos = 0.1;
+            
+            // Medidas negativas
+            else if (tipoMedida === 'Fato Observado Negativo') pontos = -0.1;
+            else if (tipoMedida === 'Advertência Verbal' || tipoMedida === 'Advertência Escrita' || tipoMedida === 'Advertência') pontos = -0.3;
+            else if (tipoMedida === 'Suspensão') {
+                pontos = -0.5 * diasSuspensao;
+            }
+            else if (tipoMedida === 'Ação Educativa') pontos = -1.0;
+            
+            return pontos;
+        }
+
+        // Função para verificar se é medida positiva
+        function isMedidaPositiva(tipoMedida) {
+            return ['Elogio Individual', 'Elogio Coletivo', 'Fato Observado Positivo'].includes(tipoMedida);
+        }
+
+        // Função para calcular nota disciplinar
+        function calcularNotaDisciplinar(medidas) {
+            if (!medidas || medidas.length === 0) return 10;
+            
+            let totalPontos = 0;
+            medidas.forEach(medida => {
+                const pontos = calcularPontosMedida(medida.tipo_medida, medida.dias_suspensao);
+                totalPontos += pontos;
+            });
+            
+            // Sistema de nota: começa com 10 e subtrai pontos negativos ou soma positivos
+            let nota = 10 + totalPontos;
+            
+            // Limitar entre 0 e 10
+            nota = Math.max(0, Math.min(10, nota));
+            
+            return nota.toFixed(1);
+        }
+
+        // Função para carregar estatísticas gerais
+        async function carregarEstatisticasGerais() {
+            try {
+                // Aguardar supabaseClient estar disponível
+                if (!window.supabaseClient) {
+                    await new Promise(resolve => {
+                        const check = setInterval(() => {
+                            if (window.supabaseClient) {
+                                clearInterval(check);
+                                resolve();
+                            }
+                        }, 100);
+                    });
+                }
+
+                // Buscar total de alunos
+                const { count: totalAlunos } = await window.supabaseClient
+                    .from('alunos')
+                    .select('*', { count: 'exact', head: true });
+
+                document.getElementById('totalAlunos').textContent = totalAlunos || 0;
+
+                // Buscar frequências para calcular média
+                const hoje = new Date().toISOString().split('T')[0];
+                const { data: frequencias } = await window.supabaseClient
+                    .from('frequencias')
+                    .select('*')
+                    .eq('data', hoje);
+
+                if (frequencias && frequencias.length > 0) {
+                    const presencas = frequencias.filter(f => f.status === 'presente').length;
+                    const percentual = ((presencas / frequencias.length) * 100).toFixed(0);
+                    document.getElementById('mediaFrequencia').textContent = `${percentual}%`;
+                } else {
+                    document.getElementById('mediaFrequencia').textContent = '100%';
+                }
+
+                // Calcular média disciplinar
+                const { data: medidas } = await window.supabaseClient
+                    .from('medidas')
+                    .select('*');
+
+                if (medidas) {
+                    // Agrupar medidas por aluno
+                    const medidasPorAluno = {};
+                    medidas.forEach(medida => {
+                        if (!medidasPorAluno[medida.aluno_codigo]) {
+                            medidasPorAluno[medida.aluno_codigo] = [];
+                        }
+                        medidasPorAluno[medida.aluno_codigo].push(medida);
+                    });
+
+                    // Calcular média das notas
+                    let somaNotas = 0;
+                    let totalAlunosComMedidas = 0;
+                    
+                    for (const codigo in medidasPorAluno) {
+                        const nota = calcularNotaDisciplinar(medidasPorAluno[codigo]);
+                        somaNotas += parseFloat(nota);
+                        totalAlunosComMedidas++;
+                    }
+
+                    const mediaDisciplinar = totalAlunosComMedidas > 0 ? (somaNotas / totalAlunosComMedidas).toFixed(1) : 10;
+                    document.getElementById('mediaDisciplinar').textContent = mediaDisciplinar;
+                }
+
+                // Dias letivos (exemplo fixo)
+                document.getElementById('diasLetivos').textContent = '200';
+
+            } catch (error) {
+                console.error('Erro ao carregar estatísticas:', error);
+            }
+        }
+
+        // Função principal para buscar aluno
+        async function buscarAluno() {
+            const codigoAluno = document.getElementById('codigoAluno').value.trim();
+            
+            if (!codigoAluno) {
+                showMessage('Por favor, digite o código do aluno', 'error');
+                return;
+            }
+
+            // Mostrar loading
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('resultsSection').style.display = 'none';
+
+            try {
+                // Aguardar supabaseClient
+                if (!window.supabaseClient) {
+                    await new Promise(resolve => {
+                        const check = setInterval(() => {
+                            if (window.supabaseClient) {
+                                clearInterval(check);
+                                resolve();
+                            }
+                        }, 100);
+                    });
+                }
+
+                // Buscar dados do aluno
+                const { data: aluno, error: alunoError } = await window.supabaseClient
+                    .from('alunos')
+                    .select('*')
+                    .eq('codigo', codigoAluno)
+                    .single();
+
+                if (alunoError || !aluno) {
+                    showMessage('Aluno não encontrado. Verifique o código digitado.', 'error');
+                    document.getElementById('loading').classList.remove('active');
+                    return;
+                }
+
+                studentData = aluno;
+
+                // Buscar medidas disciplinares
+                const { data: medidas } = await window.supabaseClient
+                    .from('medidas')
+                    .select('*')
+                    .eq('aluno_codigo', codigoAluno)
+                    .order('data_registro', { ascending: false });
+
+                medidasData = medidas || [];
+
+                // Buscar frequências
+                const { data: frequencias } = await window.supabaseClient
+                    .from('frequencias')
+                    .select('*')
+                    .eq('aluno_codigo', codigoAluno)
+                    .order('data', { ascending: false });
+
+                frequenciaData = frequencias || [];
+
+                // Preencher dados do aluno
+                preencherDadosAluno();
+
+                // Preencher ficha disciplinar
+                preencherFichaDisciplinar();
+
+                // Preencher dados de frequência
+                preencherDadosFrequencia();
+
+                // Preencher resumo geral
+                preencherResumoGeral();
+
+                // Esconder loading e mostrar resultados
+                document.getElementById('loading').classList.remove('active');
+                document.getElementById('resultsSection').style.display = 'block';
+
+                showMessage('Dados carregados com sucesso!', 'success');
+
+            } catch (error) {
+                console.error('Erro ao buscar aluno:', error);
+                showMessage('Erro ao buscar dados do aluno. Tente novamente.', 'error');
+                document.getElementById('loading').classList.remove('active');
+            }
+        }
+
+        // Função para preencher dados do aluno
+        function preencherDadosAluno() {
+            if (!studentData) return;
+
+            // Avatar com iniciais
+            const nomes = studentData.nome_completo.split(' ');
+            const iniciais = nomes[0][0] + (nomes[nomes.length - 1][0] || '');
+            document.getElementById('studentAvatar').textContent = iniciais.toUpperCase();
+
+            // Dados básicos
+            document.getElementById('studentName').textContent = studentData.nome_completo;
+            document.getElementById('studentCode').textContent = studentData.codigo;
+            document.getElementById('studentClass').textContent = studentData.turma || 'N/A';
+            document.getElementById('studentShift').textContent = studentData.turno || 'N/A';
+        }
+
+        // Função para preencher ficha disciplinar
+        function preencherFichaDisciplinar() {
+            // Calcular e exibir nota disciplinar
+            const nota = calcularNotaDisciplinar(medidasData);
+            document.getElementById('notaDisciplinar').textContent = nota;
+            
+            // Preencher barra de progresso
+            const fillElement = document.getElementById('scoreFill');
+            const percentual = (nota / 10) * 100;
+            fillElement.style.width = `${percentual}%`;
+            fillElement.textContent = `${percentual.toFixed(0)}%`;
+
+            // Preencher timeline de medidas
+            const timeline = document.getElementById('timelineMedidas');
+            
+            if (medidasData.length === 0) {
+                timeline.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">✅</div>
+                        <div class="empty-title">Comportamento Exemplar!</div>
+                        <div class="empty-description">
+                            O aluno não possui medidas disciplinares registradas
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            let timelineHTML = '';
+            medidasData.forEach(medida => {
+                const data = new Date(medida.data_registro).toLocaleDateString('pt-BR');
+                const pontos = calcularPontosMedida(medida.tipo_medida, medida.dias_suspensao);
+                const isPositiva = isMedidaPositiva(medida.tipo_medida);
+                
+                timelineHTML += `
+                    <div class="timeline-item">
+                        <div class="timeline-marker ${isPositiva ? 'positive' : 'negative'}">
+                            ${isPositiva ? '✓' : '!'}
+                        </div>
+                        <div class="timeline-date">${data}</div>
+                        <div class="timeline-title">${medida.tipo_medida}</div>
+                        <div class="timeline-description">
+                            ${medida.descricao || 'Sem descrição detalhada'}
+                        </div>
+                        <span class="timeline-points ${isPositiva ? 'positive' : 'negative'}">
+                            ${pontos > 0 ? '+' : ''}${pontos} pontos
+                        </span>
+                    </div>
+                `;
+            });
+
+            timeline.innerHTML = timelineHTML;
+        }
+
+        // Função para preencher dados de frequência
+        function preencherDadosFrequencia() {
+            // Preencher tabela de frequência
+            const tbody = document.getElementById('frequencyTableBody');
+            
+            if (frequenciaData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px; color: #7f8c8d;">
+                            Nenhum registro de frequência encontrado
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            let tableHTML = '';
+            // Mostrar apenas faltas e atrasos
+            const faltasEAtrasos = frequenciaData.filter(f => 
+                f.status === 'ausente' || 
+                f.status === 'falta_controlada' || 
+                f.status === 'atestado'
+            );
+
+            if (faltasEAtrasos.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px; color: #27ae60;">
+                            ✅ Aluno sem faltas registradas!
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            faltasEAtrasos.forEach(freq => {
+                const data = new Date(freq.data).toLocaleDateString('pt-BR');
+                let statusBadge = '';
+                let statusText = '';
+                
+                switch(freq.status) {
+                    case 'ausente':
+                        statusBadge = 'badge-danger';
+                        statusText = 'Falta';
+                        break;
+                    case 'falta_controlada':
+                        statusBadge = 'badge-warning';
+                        statusText = 'Falta Controlada';
+                        break;
+                    case 'atestado':
+                        statusBadge = 'badge-info';
+                        statusText = 'Atestado';
+                        break;
+                }
+
+                tableHTML += `
+                    <tr>
+                        <td>${data}</td>
+                        <td><span class="badge ${statusBadge}">${statusText}</span></td>
+                        <td>${freq.periodo || 'Integral'}</td>
+                        <td>${freq.justificativa || '-'}</td>
+                        <td>${freq.aprovado ? '✅ Aprovado' : '⏳ Pendente'}</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = tableHTML;
+
+            // Criar gráfico de frequência
+            criarGraficoFrequencia();
+        }
+
+        // Função para criar gráfico de frequência
+        function criarGraficoFrequencia() {
+            const ctx = document.getElementById('frequencyChart').getContext('2d');
+            
+            // Destruir gráfico anterior se existir
+            if (frequencyChart) {
+                frequencyChart.destroy();
+            }
+
+            // Agrupar frequências por mês
+            const mesesData = {};
+            const hoje = new Date();
+            
+            for (let i = 5; i >= 0; i--) {
+                const mes = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+                const mesKey = mes.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+                mesesData[mesKey] = { presencas: 0, faltas: 0 };
+            }
+
+            frequenciaData.forEach(freq => {
+                const data = new Date(freq.data);
+                const mesKey = data.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+                
+                if (mesesData[mesKey]) {
+                    if (freq.status === 'presente') {
+                        mesesData[mesKey].presencas++;
+                    } else {
+                        mesesData[mesKey].faltas++;
+                    }
+                }
+            });
+
+            const labels = Object.keys(mesesData);
+            const presencas = labels.map(key => mesesData[key].presencas);
+            const faltas = labels.map(key => mesesData[key].faltas);
+
+            frequencyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Presenças',
+                            data: presencas,
+                            backgroundColor: 'rgba(46, 204, 113, 0.6)',
+                            borderColor: 'rgba(46, 204, 113, 1)',
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Faltas',
+                            data: faltas,
+                            backgroundColor: 'rgba(231, 76, 60, 0.6)',
+                            borderColor: 'rgba(231, 76, 60, 1)',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Função para preencher resumo geral
+        function preencherResumoGeral() {
+            // Calcular estatísticas de frequência
+            const totalDias = frequenciaData.length;
+            const presencas = frequenciaData.filter(f => f.status === 'presente').length;
+            const faltas = frequenciaData.filter(f => 
+                f.status === 'ausente' || 
+                f.status === 'falta_controlada'
+            ).length;
+            
+            const percentualFreq = totalDias > 0 ? ((presencas / totalDias) * 100).toFixed(1) : 100;
+
+            document.getElementById('percentualFrequencia').textContent = `${percentualFreq}%`;
+            document.getElementById('totalPresencas').textContent = presencas;
+            document.getElementById('totalFaltas').textContent = faltas;
+            document.getElementById('totalMedidas').textContent = medidasData.length;
+
+            // Criar gráfico de evolução
+            criarGraficoEvolucao();
+        }
+
+        // Função para criar gráfico de evolução do comportamento
+        function criarGraficoEvolucao() {
+            const ctx = document.getElementById('behaviorChart').getContext('2d');
+            
+            // Destruir gráfico anterior se existir
+            if (behaviorChart) {
+                behaviorChart.destroy();
+            }
+
+            // Agrupar medidas por mês e calcular evolução
+            const mesesData = {};
+            const hoje = new Date();
+            
+            for (let i = 5; i >= 0; i--) {
+                const mes = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+                const mesKey = mes.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+                mesesData[mesKey] = 10; // Nota inicial
+            }
+
+            // Calcular nota acumulada por mês
+            let notaAcumulada = 10;
+            const labels = Object.keys(mesesData);
+            const notas = [];
+
+            labels.forEach(mesKey => {
+                // Filtrar medidas do mês
+                const [mesNome, ano] = mesKey.split(' ');
+                const medidasMes = medidasData.filter(medida => {
+                    const dataMedida = new Date(medida.data_registro);
+                    const mesKeyMedida = dataMedida.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+                    return mesKeyMedida === mesKey;
+                });
+
+                // Calcular pontos do mês
+                medidasMes.forEach(medida => {
+                    const pontos = calcularPontosMedida(medida.tipo_medida, medida.dias_suspensao);
+                    notaAcumulada += pontos;
+                });
+
+                // Limitar entre 0 e 10
+                notaAcumulada = Math.max(0, Math.min(10, notaAcumulada));
+                notas.push(notaAcumulada);
+            });
+
+            behaviorChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Nota Disciplinar',
+                        data: notas,
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 10,
+                            ticks: {
+                                stepSize: 2
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Carregar estatísticas ao iniciar
+        window.addEventListener('DOMContentLoaded', () => {
+            carregarEstatisticasGerais();
+        });
+    </script>
 </body>
 </html>
