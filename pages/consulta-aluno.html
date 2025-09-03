@@ -14,6 +14,9 @@
     <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
+    <!-- Serviços de notas disciplinares -->
+    <script type="module" src="../assets/js/notas-disciplinares.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -920,6 +923,8 @@
         let studentData = null;
         let medidasData = [];
         let frequenciaData = [];
+        let notaDisciplinarData = null;
+        let contadoresData = null;
         let frequencyChart = null;
         let behaviorChart = null;
 
@@ -953,48 +958,62 @@
             document.getElementById(tabName).classList.add('active');
         }
 
-        // Função para calcular pontos de medida
-        function calcularPontosMedida(tipoMedida, diasSuspensao = 1) {
-            let pontos = 0;
-            
-            // Medidas positivas
-            if (tipoMedida === 'Elogio Individual') pontos = 0.5;
-            else if (tipoMedida === 'Elogio Coletivo') pontos = 0.3;
-            else if (tipoMedida === 'Fato Observado Positivo') pontos = 0.1;
-            
-            // Medidas negativas
-            else if (tipoMedida === 'Fato Observado Negativo') pontos = -0.1;
-            else if (tipoMedida === 'Advertência Verbal' || tipoMedida === 'Advertência Escrita' || tipoMedida === 'Advertência') pontos = -0.3;
-            else if (tipoMedida === 'Suspensão') {
-                pontos = -0.5 * diasSuspensao;
-            }
-            else if (tipoMedida === 'Ação Educativa') pontos = -1.0;
-            
-            return pontos;
-        }
-
-        // Função para verificar se é medida positiva
+        // REMOVIDO: Funções de cálculo de nota disciplinar
+        // Agora utilizamos as views do Supabase: v_nota_disciplinar_atual e v_nota_disciplinar_contadores
+        
+        // Função para verificar se é medida positiva (mantida apenas para UI)
         function isMedidaPositiva(tipoMedida) {
             return ['Elogio Individual', 'Elogio Coletivo', 'Fato Observado Positivo'].includes(tipoMedida);
         }
 
-        // Função para calcular nota disciplinar
-        function calcularNotaDisciplinar(medidas) {
-            if (!medidas || medidas.length === 0) return 10;
-            
-            let totalPontos = 0;
-            medidas.forEach(medida => {
-                const pontos = calcularPontosMedida(medida.tipo_medida, medida.dias_suspensao);
-                totalPontos += pontos;
-            });
-            
-            // Sistema de nota: começa com 10 e subtrai pontos negativos ou soma positivos
-            let nota = 10 + totalPontos;
-            
-            // Limitar entre 0 e 10
-            nota = Math.max(0, Math.min(10, nota));
-            
-            return nota.toFixed(1);
+        // Buscar nota disciplinar das views do Supabase
+        async function buscarNotaDisciplinar(codigoAluno) {
+            try {
+                // Aguardar supabaseClient
+                if (!window.supabaseClient) {
+                    await new Promise(resolve => {
+                        const check = setInterval(() => {
+                            if (window.supabaseClient) {
+                                clearInterval(check);
+                                resolve();
+                            }
+                        }, 100);
+                    });
+                }
+
+                // Buscar nota atual
+                const { data: nota, error: notaError } = await window.supabaseClient
+                    .from('v_nota_disciplinar_atual')
+                    .select('*')
+                    .eq('codigo_aluno', codigoAluno)
+                    .limit(1);
+
+                if (notaError) {
+                    console.warn('Erro ao buscar nota disciplinar:', notaError);
+                } else {
+                    notaDisciplinarData = nota?.[0] || null;
+                    console.log('📊 Nota disciplinar obtida:', notaDisciplinarData?.nota_atual);
+                }
+
+                // Buscar contadores detalhados
+                const { data: contadores, error: contadoresError } = await window.supabaseClient
+                    .from('v_nota_disciplinar_contadores')
+                    .select('*')
+                    .eq('codigo_aluno', codigoAluno)
+                    .limit(1);
+
+                if (contadoresError) {
+                    console.warn('Erro ao buscar contadores:', contadoresError);
+                } else {
+                    contadoresData = contadores?.[0] || null;
+                    console.log('📈 Contadores obtidos:', contadoresData);
+                }
+
+            } catch (error) {
+                console.error('Erro ao buscar dados das views:', error);
+                notaDisciplinarData = null;
+                contadoresData = null;
+            }
         }
 
         // Função para carregar estatísticas gerais
@@ -1041,37 +1060,20 @@
                     document.getElementById('mediaFrequencia').textContent = '100%';
                 }
 
-                // Calcular média disciplinar
-                const { data: medidas, error: medidasGeralError } = await window.supabaseClient
-                    .from('medidas')
-                    .select('*');
+                // Calcular média disciplinar via view
+                const { data: notasGerais, error: notasGeralError } = await window.supabaseClient
+                    .from('v_nota_disciplinar_atual')
+                    .select('nota_atual');
 
-                if (medidasGeralError) {
-                    console.warn('Erro ao buscar medidas gerais:', medidasGeralError);
-                }
-
-                if (medidas) {
-                    // Agrupar medidas por aluno
-                    const medidasPorAluno = {};
-                    medidas.forEach(medida => {
-                        if (!medidasPorAluno[medida.codigo_matricula]) {
-                            medidasPorAluno[medida.codigo_matricula] = [];
-                        }
-                        medidasPorAluno[medida.codigo_matricula].push(medida);
-                    });
-
-                    // Calcular média das notas
-                    let somaNotas = 0;
-                    let totalAlunosComMedidas = 0;
-                    
-                    for (const codigo in medidasPorAluno) {
-                        const nota = calcularNotaDisciplinar(medidasPorAluno[codigo]);
-                        somaNotas += parseFloat(nota);
-                        totalAlunosComMedidas++;
-                    }
-
-                    const mediaDisciplinar = totalAlunosComMedidas > 0 ? (somaNotas / totalAlunosComMedidas).toFixed(1) : 10;
+                if (notasGeralError) {
+                    console.warn('Erro ao buscar notas gerais:', notasGeralError);
+                } else if (notasGerais && notasGerais.length > 0) {
+                    // Calcular média das notas atuais
+                    const somaNotas = notasGerais.reduce((sum, item) => sum + (item.nota_atual || 8.0), 0);
+                    const mediaDisciplinar = (somaNotas / notasGerais.length).toFixed(1);
                     document.getElementById('mediaDisciplinar').textContent = mediaDisciplinar;
+                } else {
+                    document.getElementById('mediaDisciplinar').textContent = '8.0';
                 }
 
                 // Dias letivos (exemplo fixo)
@@ -1150,6 +1152,9 @@
                 // Preencher dados do aluno
                 preencherDadosAluno();
 
+                // Buscar nota disciplinar das views
+                await buscarNotaDisciplinar(codigoAluno);
+
                 // Preencher ficha disciplinar
                 preencherFichaDisciplinar();
 
@@ -1191,13 +1196,13 @@
 
         // Função para preencher ficha disciplinar
         function preencherFichaDisciplinar() {
-            // Calcular e exibir nota disciplinar
-            const nota = calcularNotaDisciplinar(medidasData);
-            document.getElementById('notaDisciplinar').textContent = nota;
+            // Exibir nota disciplinar das views
+            const nota = notaDisciplinarData?.nota_atual || 8.0; // Base padrão
+            document.getElementById('notaDisciplinar').textContent = typeof nota === 'number' ? nota.toFixed(2) : nota;
             
             // Preencher barra de progresso
             const fillElement = document.getElementById('scoreFill');
-            const percentual = (nota / 10) * 100;
+            const percentual = (parseFloat(nota) / 10) * 100;
             fillElement.style.width = `${percentual}%`;
             fillElement.textContent = `${percentual.toFixed(0)}%`;
 
@@ -1220,7 +1225,6 @@
             let timelineHTML = '';
             medidasData.forEach(medida => {
                 const data = new Date(medida.data).toLocaleDateString('pt-BR');
-                const pontos = calcularPontosMedida(medida.tipo_medida, medida.dias_suspensao);
                 const isPositiva = isMedidaPositiva(medida.tipo_medida);
                 
                 timelineHTML += `
@@ -1234,7 +1238,7 @@
                             ${medida.especificacao || medida.observacao || 'Sem descrição detalhada'}
                         </div>
                         <span class="timeline-points ${isPositiva ? 'positive' : 'negative'}">
-                            ${pontos > 0 ? '+' : ''}${pontos} pontos
+                            ${isPositiva ? 'Positiva' : 'Negativa'}
                         </span>
                     </div>
                 `;
@@ -1409,7 +1413,19 @@
             document.getElementById('percentualFrequencia').textContent = `${percentualFreq}%`;
             document.getElementById('totalPresencas').textContent = presencas;
             document.getElementById('totalFaltas').textContent = faltas;
-            document.getElementById('totalMedidas').textContent = medidasData.length;
+            
+            // Total de medidas dos contadores ou fallback para array atual
+            const totalMedidas = contadoresData ? 
+                (contadoresData.fato_observado_negativo || 0) +
+                (contadoresData.fato_observado_positivo || 0) +
+                (contadoresData.advertencia || 0) +
+                (contadoresData.suspensoes_dias || 0) +
+                (contadoresData.acoes_educativas || 0) +
+                (contadoresData.elogio_individual || 0) +
+                (contadoresData.elogio_coletivo || 0)
+                : medidasData.length;
+                
+            document.getElementById('totalMedidas').textContent = totalMedidas;
 
             // Criar gráfico de evolução
             criarGraficoEvolucao();
@@ -1424,40 +1440,22 @@
                 behaviorChart.destroy();
             }
 
-            // Agrupar medidas por mês e calcular evolução
-            const mesesData = {};
+            // SIMPLIFICADO: Gráfico mostra nota atual constante
+            // A evolução histórica seria implementada com dados históricos das views
             const hoje = new Date();
-            
+            const labels = [];
+            const notas = [];
+            const notaAtual = notaDisciplinarData?.nota_atual || 8.0;
+
+            // Últimos 6 meses
             for (let i = 5; i >= 0; i--) {
                 const mes = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
                 const mesKey = mes.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
-                mesesData[mesKey] = 10; // Nota inicial
+                labels.push(mesKey);
+                
+                // Por ora, mostra nota constante (seria histórico real em produção)
+                notas.push(notaAtual);
             }
-
-            // Calcular nota acumulada por mês
-            let notaAcumulada = 10;
-            const labels = Object.keys(mesesData);
-            const notas = [];
-
-            labels.forEach(mesKey => {
-                // Filtrar medidas do mês
-                const [mesNome, ano] = mesKey.split(' ');
-                const medidasMes = medidasData.filter(medida => {
-                    const dataMedida = new Date(medida.data);
-                    const mesKeyMedida = dataMedida.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
-                    return mesKeyMedida === mesKey;
-                });
-
-                // Calcular pontos do mês
-                medidasMes.forEach(medida => {
-                    const pontos = calcularPontosMedida(medida.tipo_medida, medida.dias_suspensao);
-                    notaAcumulada += pontos;
-                });
-
-                // Limitar entre 0 e 10
-                notaAcumulada = Math.max(0, Math.min(10, notaAcumulada));
-                notas.push(notaAcumulada);
-            });
 
             behaviorChart = new Chart(ctx, {
                 type: 'line',

@@ -889,8 +889,8 @@
                         </div>
                         
                         <div class="form-group">
-                            <button type="button" class="btn btn-info" onclick="recalcularTodasNotas()">
-                                🔄 Recalcular Todas as Notas
+                            <button type="button" class="btn btn-info" onclick="window.debugNotas()">
+                                🔍 Debug Notas (Views)
                             </button>
                         </div>
                         
@@ -976,6 +976,15 @@
     
     <script src="../assets/js/main.js" defer></script>
     <script src="../assets/js/gestao.js" defer></script>
+    
+    <!-- Serviços de notas disciplinares -->
+    <script type="module">
+        import { getNotaDisciplinar, NotasUtils } from '../assets/js/notas-disciplinares.js';
+        
+        // Tornar funções disponíveis globalmente
+        window.getNotaDisciplinar = getNotaDisciplinar;
+        window.NotasUtils = NotasUtils;
+    </script>
     
     <script>
         // Inicialização da página
@@ -1265,36 +1274,36 @@
                 // Verificar alunos com muitas medidas
                 const limiteMedidas = parseInt(localStorage.getItem('limiteMedidas') || '5');
                 
-                if (window.processedDataRelatorios && window.processedDataRelatorios.length > 0) {
-                    const alunosProblematicos = window.processedDataRelatorios.filter(aluno => 
-                        aluno.totalMedidas >= limiteMedidas || 
-                        aluno.statusRisco === 'Alto' || 
-                        aluno.statusRisco === 'Crítico'
-                    );
+                // Buscar alunos com muitas medidas usando as views
+                try {
+                    const { data: alunosRisco, error } = await window.supabaseClient
+                        .from('v_nota_disciplinar_atual')
+                        .select('*')
+                        .lt('nota_atual', 7.0); // Alunos com nota baixa
                     
-                    alunosProblematicos.forEach(aluno => {
-                        let tipo = 'warning';
-                        let icone = '⚠️';
-                        let texto = '';
-                        
-                        if (aluno.statusRisco === 'Crítico') {
-                            tipo = 'danger';
-                            icone = '🚨';
-                            texto = `${aluno.nome} (${aluno.turma}) - Status CRÍTICO - ${aluno.totalMedidas} medida(s)`;
-                        } else if (aluno.statusRisco === 'Alto') {
-                            tipo = 'warning';
-                            icone = '⚠️';
-                            texto = `${aluno.nome} (${aluno.turma}) - Status ALTO - ${aluno.totalMedidas} medida(s)`;
-                        } else if (aluno.totalMedidas >= limiteMedidas) {
-                            tipo = 'warning';
-                            icone = '📢';
-                            texto = `${aluno.nome} (${aluno.turma}) - ${aluno.totalMedidas} medidas disciplinares`;
-                        }
-                        
-                        if (texto) {
-                            alertas.push({ tipo, icone, texto, alunoId: aluno.id });
-                        }
-                    });
+                    if (!error && alunosRisco) {
+                        alunosRisco.forEach(aluno => {
+                            let tipo = 'warning';
+                            let icone = '⚠️';
+                            let texto = '';
+                            
+                            if (aluno.nota_atual < 5.0) {
+                                tipo = 'danger';
+                                icone = '🚨';
+                                texto = `${aluno.nome_completo} (${aluno.turma}) - Nota CRÍTICA: ${aluno.nota_atual.toFixed(2)}`;
+                            } else if (aluno.nota_atual < 6.0) {
+                                tipo = 'warning';
+                                icone = '⚠️';
+                                texto = `${aluno.nome_completo} (${aluno.turma}) - Nota BAIXA: ${aluno.nota_atual.toFixed(2)}`;
+                            }
+                            
+                            if (texto) {
+                                alertas.push({ tipo, icone, texto, alunoId: aluno.codigo_aluno });
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.warn('Erro ao buscar alunos de risco:', error);
                 }
                 
                 // Verificar se há medidas registradas hoje
@@ -1358,77 +1367,44 @@
         }
 
         // Sistema de Nota Disciplinar
-        function calcularNotaDisciplinar(medidas) {
-            let nota = 8.0; // Todos começam com 8 pontos
-            let ultimaMedidaNegativa = null;
-            let diasSemMedidasNegativas = 0;
-            
-            const hoje = new Date();
-            
-            // Calcular pontuação baseada nas medidas
-            console.log(`🔍 DEBUG CÁLCULO NOTA - Total de medidas: ${medidas.length}`);
-            
-            medidas.forEach((medida, index) => {
-                const tipo = medida.tipo_medida;
-                let pontos = 0;
-                
-                // Medidas positivas
-                if (tipo === 'Elogio Individual') pontos = 0.5;
-                else if (tipo === 'Elogio Coletivo') pontos = 0.3;
-                else if (tipo === 'Fato Observado Positivo') pontos = 0.1;
-                
-                // Medidas negativas
-                else if (tipo === 'Fato Observado Negativo') pontos = -0.1;
-                else if (tipo === 'Advertência Verbal' || tipo === 'Advertência Escrita' || tipo === 'Advertência') pontos = -0.3;
-                else if (tipo === 'Suspensão') {
-                    // Suspensão: -0.5 por dia (assumindo 1 dia se não especificado)
-                    const dias = medida.dias_suspensao || 1;
-                    pontos = -0.5 * dias;
+        // REMOVIDO: Função calcularNotaDisciplinar
+        // Substituída pelas views v_nota_disciplinar_atual e v_nota_disciplinar_contadores
+        
+        async function obterNotaDisciplinar(codigoAluno) {
+            try {
+                // Usar o serviço importado se disponível
+                if (window.getNotaDisciplinar) {
+                    return await window.getNotaDisciplinar(codigoAluno);
                 }
-                else if (tipo === 'Ação Educativa') pontos = -1.0;
                 
-                console.log(`🔍 DEBUG MEDIDA ${index + 1}: "${tipo}" = ${pontos} pontos (nota atual: ${nota} → ${nota + pontos})`);
-                nota += pontos;
-                
-                // Registrar última medida negativa
-                if (pontos < 0) {
-                    const dataMedida = new Date(medida.data_registro || medida.criado_em);
-                    if (!ultimaMedidaNegativa || dataMedida > ultimaMedidaNegativa) {
-                        ultimaMedidaNegativa = dataMedida;
-                    }
+                // Fallback para implementação direta
+                if (!window.supabaseClient) {
+                    await new Promise(resolve => {
+                        const check = setInterval(() => {
+                            if (window.supabaseClient) {
+                                clearInterval(check);
+                                resolve();
+                            }
+                        }, 100);
+                    });
                 }
-            });
-            
-            // Recuperação automática após 60 dias sem medidas negativas
-            if (ultimaMedidaNegativa) {
-                const diasSemNegativas = Math.floor((hoje - ultimaMedidaNegativa) / (1000 * 60 * 60 * 24));
-                if (diasSemNegativas >= 60) {
-                    const diasRecuperacao = diasSemNegativas - 60;
-                    const pontosRecuperacao = diasRecuperacao * 0.2;
-                    nota += pontosRecuperacao;
-                    diasSemMedidasNegativas = diasSemNegativas;
+
+                const { data, error } = await window.supabaseClient
+                    .from('v_nota_disciplinar_atual')
+                    .select('*')
+                    .eq('codigo_aluno', codigoAluno)
+                    .limit(1);
+
+                if (error) {
+                    console.warn('Erro ao obter nota disciplinar:', error);
+                    return { data: null, error };
                 }
-            } else {
-                // Se nunca teve medidas negativas (ou só teve positivas), só começa a recuperar após 60 dias da data inicial
-                const dataInicial = new Date('2025-07-28'); // Data de início do sistema de notas (28 de julho de 2025)
-                diasSemMedidasNegativas = Math.floor((hoje - dataInicial) / (1000 * 60 * 60 * 24));
-                if (diasSemMedidasNegativas >= 60) {
-                    const pontosRecuperacao = (diasSemMedidasNegativas - 60) * 0.2;
-                    nota += pontosRecuperacao;
-                }
+
+                return { data: data?.[0] || null, error: null };
+            } catch (error) {
+                console.error('Erro ao consultar nota disciplinar:', error);
+                return { data: null, error };
             }
-            
-            // Limitar a nota entre 0 e 10
-            nota = Math.max(0, Math.min(10, nota));
-            
-            // Debug para verificar cálculos sempre (para detectar erro)
-            console.log(`🔍 DEBUG FINAL: base=8.0, medidas=${medidas.length}, nota_final=${nota.toFixed(2)}, dias_desde_28jul=${diasSemMedidasNegativas}, ultima_negativa=${ultimaMedidaNegativa ? 'sim' : 'não'}`);
-            
-            return {
-                nota: parseFloat(nota.toFixed(2)),
-                ultimaMedidaNegativa,
-                diasSemMedidasNegativas
-            };
         }
         
         function obterMencaoDisciplinar(nota) {
@@ -1516,8 +1492,9 @@
                         // Calcular nota para cada aluno considerando data inicial 28/07/2025
                         todosAlunos.forEach(aluno => {
                             const medidasDoAluno = medidasPorAluno[aluno.codigo] || [];
-                            const notaAluno = calcularNotaDisciplinar(medidasDoAluno, aluno.codigo);
-                            somaNotas += notaAluno.nota;
+                            const dadosNota = await obterNotaDisciplinar(aluno.codigo);
+                            const notaAluno = typeof dadosNota === 'object' ? dadosNota.nota_atual : dadosNota;
+                            somaNotas += parseFloat(notaAluno) || 8.0;
                         });
                         
                         mediaNotaEscola = (somaNotas / totalAlunos).toFixed(2);
@@ -2224,9 +2201,11 @@
                     posicaoRanking = `${alunosComMais + 1}º de ${medidasPorAluno.length}`;
                 }
                 
-                // Calcular nota disciplinar
-                const notaDisciplinar = calcularNotaDisciplinar(medidas);
-                const mencao = obterMencaoDisciplinar(notaDisciplinar.nota);
+                // Obter nota disciplinar das views
+                const resultadoNota = await obterNotaDisciplinar(aluno.codigo || aluno.id || selectAluno.value);
+                const dadosNota = resultadoNota.data || { nota_atual: 8.0 };
+                const notaDisciplinar = dadosNota.nota_atual || 8.0;
+                const mencao = obterMencaoDisciplinar(notaDisciplinar);
                 
                 container.innerHTML = `
                     <!-- Nota Disciplinar - Destaque Principal -->
@@ -2239,16 +2218,15 @@
                                     <div class="score-subtitle">${mencao.mencao}</div>
                                 </div>
                             </div>
-                            <div class="score-number" style="color: ${mencao.cor};">${notaDisciplinar.nota}</div>
+                            <div class="score-number" style="color: ${mencao.cor};">${notaDisciplinar.toFixed(2)}</div>
                         </div>
                         
-                        ${notaDisciplinar.ultimaMedidaNegativa ? `
+                        ${dadosNota.data_ultima_negativa ? `
                             <div class="score-details">
-                                <span>Última ocorrência negativa: ${Math.floor((new Date() - notaDisciplinar.ultimaMedidaNegativa) / (1000 * 60 * 60 * 24))} dias atrás</span>
-                                ${notaDisciplinar.diasSemMedidasNegativas >= 60 ? 
-                                    `<span style="color: #28a745;">🎉 Recuperando pontos há ${notaDisciplinar.diasSemMedidasNegativas - 60} dias!</span>` : 
-                                    notaDisciplinar.diasSemMedidasNegativas > 0 ? 
-                                        `<span>Faltam ${60 - notaDisciplinar.diasSemMedidasNegativas} dias para começar a recuperar pontos</span>` : ''
+                                <span>Última ocorrência negativa: ${dadosNota.dias_desde_ultima_negativa || 0} dias atrás</span>
+                                ${dadosNota.bonus_ativo ? 
+                                    `<span style="color: #28a745;">🎉 Bônus de recuperação ativo!</span>` : 
+                                    `<span>Aguardando período de recuperação</span>`
                                 }
                             </div>
                         ` : `
