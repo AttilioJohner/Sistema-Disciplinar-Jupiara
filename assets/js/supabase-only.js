@@ -329,12 +329,34 @@ const alunosDB = {
                         return { id, exists: false, data: () => ({}) };
                     }
                     
-                    // Buscar pelo código usando o nome correto da coluna
-                    const { data, error } = await supabase
-                        .from('alunos')
-                        .select('*')
-                        .eq('código (matrícula)', parseInt(id))
-                        .single();
+                    // Buscar pelo código - tentar ambas as colunas possíveis
+                    let data = null;
+                    let error = null;
+                    
+                    // Primeiro tentar com a coluna simples
+                    try {
+                        const result = await supabase
+                            .from('alunos')
+                            .select('*')
+                            .eq('codigo', parseInt(id))
+                            .single();
+                        data = result.data;
+                        error = result.error;
+                    } catch (err) {
+                        // Se falhar, buscar todos e filtrar manualmente
+                        const { data: allData, error: allError } = await supabase
+                            .from('alunos')
+                            .select('*');
+                        
+                        if (allError) {
+                            error = allError;
+                        } else {
+                            data = allData?.find(item => 
+                                item['código (matrícula)'] === parseInt(id) ||
+                                item.codigo === parseInt(id)
+                            ) || null;
+                        }
+                    }
                     
                     if (error && error.code !== 'PGRST116') throw error;
                     
@@ -352,8 +374,8 @@ const alunosDB = {
                             
                             return {
                                 // Mapear para formato esperado pelo gestao.js
-                                id: data['código (matrícula)'],
-                                codigo: data['código (matrícula)'],
+                                id: data['código (matrícula)'] || data.codigo,
+                                codigo: data['código (matrícula)'] || data.codigo,
                                 nome: data['Nome completo'],
                                 turma: data.turma,
                                 responsavel: data.responsável,
@@ -399,7 +421,8 @@ const alunosDB = {
                 });
                 
                 const mappedData = {
-                    'código (matrícula)': codigo,  // Corrigido: usar o nome exato da coluna
+                    'código (matrícula)': codigo,  // Coluna com espaços e parênteses
+                    'codigo': codigo,              // Coluna simples (obrigatória também)
                     'Nome completo': data.nome_completo || data.nome || data['Nome completo'],
                     'turma': data.turma,
                     'responsável': data.responsavel || data.responsável,
@@ -424,7 +447,8 @@ const alunosDB = {
                     .select('*');
                 
                 const record = allData?.find(item => 
-                    item['código (matrícula)'] === parseInt(id)
+                    item['código (matrícula)'] === parseInt(id) ||
+                    item.codigo === parseInt(id)
                 );
                 
                 if (!record) {
@@ -433,7 +457,8 @@ const alunosDB = {
                 
                 // Mapear dados para update
                 const updateData = {
-                    'código (matrícula)': parseInt(id),  // Corrigido: usar nome exato da coluna
+                    'código (matrícula)': parseInt(id),  // Coluna com espaços e parênteses
+                    'codigo': parseInt(id),              // Coluna simples (obrigatória também)
                     'Nome completo': data.nome_completo || data.nome || data['Nome completo'],
                     'turma': data.turma,
                     'responsável': data.responsavel || data.responsável,
@@ -444,7 +469,7 @@ const alunosDB = {
                 const { error } = await supabase
                     .from('alunos')
                     .update(updateData)
-                    .eq('código (matrícula)', parseInt(id));  // Corrigido: usar nome exato da coluna
+                    .eq('codigo', parseInt(id));  // Usar coluna simples para evitar problemas com caracteres especiais
                 
                 if (error) throw error;
                 return true;
