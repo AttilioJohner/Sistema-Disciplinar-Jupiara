@@ -19,6 +19,7 @@
   <script src="../assets/js/env-config.js"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="../assets/js/unified-auth.js"></script>
+  <script src="../assets/js/supabase-only.js"></script>
   
   <!-- SISTEMA DE CACHE BUSTING (carrega após dependências) -->
   <script src="../assets/js/cache-buster.js"></script>
@@ -74,6 +75,20 @@
     // Função para login com username
     async function loginWithUsername(username, password) {
       try {
+        // Aguardar inicialização do Supabase se necessário
+        if (!window.supabaseClient) {
+          console.log('⏳ Aguardando inicialização do Supabase...');
+          // Aguardar até 5 segundos pela inicialização
+          for (let i = 0; i < 50; i++) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            if (window.supabaseClient) break;
+          }
+          
+          if (!window.supabaseClient) {
+            throw new Error('Sistema de autenticação não inicializado. Recarregue a página.');
+          }
+        }
+        
         // Buscar usuário pelo username na tabela personalizada
         const { data: usuarios, error } = await window.supabaseClient
           .from('usuarios_sistema')
