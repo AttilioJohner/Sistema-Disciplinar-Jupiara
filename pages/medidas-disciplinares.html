@@ -1489,13 +1489,17 @@
                             medidasPorAluno[medida.codigo_matricula].push(medida);
                         });
                         
-                        // Calcular nota para cada aluno considerando data inicial 28/07/2025
-                        todosAlunos.forEach(aluno => {
-                            const medidasDoAluno = medidasPorAluno[aluno.codigo] || [];
-                            const dadosNota = await obterNotaDisciplinar(aluno.codigo);
-                            const notaAluno = typeof dadosNota === 'object' ? dadosNota.nota_atual : dadosNota;
-                            somaNotas += parseFloat(notaAluno) || 8.0;
-                        });
+                        // Calcular nota para cada aluno (simplificado para evitar async em forEach)
+                        for (const aluno of todosAlunos) {
+                            try {
+                                const dadosNota = await obterNotaDisciplinar(aluno.codigo);
+                                const notaAluno = typeof dadosNota === 'object' ? dadosNota.nota_atual : dadosNota;
+                                somaNotas += parseFloat(notaAluno) || 8.0;
+                            } catch (error) {
+                                console.warn(`Erro ao obter nota do aluno ${aluno.codigo}:`, error);
+                                somaNotas += 8.0; // Fallback
+                            }
+                        }
                         
                         mediaNotaEscola = (somaNotas / totalAlunos).toFixed(2);
                     }
