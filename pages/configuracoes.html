@@ -10,6 +10,13 @@
     <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="../assets/css/dashboard.css">
     
+    <!-- Sistema de Autenticação Supabase -->
+    <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
+    <script src="../assets/js/env-config.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/unified-auth.js"></script>
+    <script src="../assets/js/supabase-only.js"></script>
+    
     <!-- GitHub Sync -->
     <script src="../assets/js/github-sync.js"></script>
 </head>
@@ -1032,7 +1039,8 @@
             const container = document.getElementById('usuariosList');
             
             try {
-                if (!window.localAuth) {
+                // Aguardar Supabase estar disponível
+                if (!window.supabaseClient) {
                     if (container) {
                         container.innerHTML = '<p class="no-users">⏳ Carregando sistema de autenticação...</p>';
                     }
@@ -1041,7 +1049,7 @@
                 }
                 
                 // Verificar se usuário está autenticado
-                if (!window.localAuth.getCurrentUser()) {
+                if (!window.unifiedAuth || !window.unifiedAuth.isAuthenticated()) {
                     if (container) {
                         container.innerHTML = '<p class="no-users">⏳ Aguardando autenticação...</p>';
                     }
@@ -1049,11 +1057,17 @@
                     return;
                 }
                 
-                const usuarios = await window.localAuth.listUsers();
+                // Buscar usuários no Supabase Auth
+                const { data: { users }, error } = await window.supabaseClient.auth.admin.listUsers();
                 
                 if (!container) return;
                 
-                if (usuarios.length === 0) {
+                if (error) {
+                    container.innerHTML = '<p class="no-users">❌ Erro ao carregar usuários: ' + error.message + '</p>';
+                    return;
+                }
+                
+                if (!users || users.length === 0) {
                     container.innerHTML = '<p class="no-users">Nenhum usuário cadastrado além do administrador padrão.</p>';
                     return;
                 }
@@ -1068,25 +1082,29 @@
                     </div>
                 `;
                 
-                usuarios.forEach(user => {
+                users.forEach(user => {
+                    // Extrair metadados do usuário (Supabase não tem roles built-in)
+                    const metadata = user.user_metadata || {};
+                    const role = metadata.role || 'user';
+                    
                     const roleIcon = {
                         'admin': '👑',
                         'teacher': '👨‍🏫',
                         'user': '👤'
-                    }[user.role] || '👤';
+                    }[role] || '👤';
                     
                     const roleName = {
                         'admin': 'Administrador',
                         'teacher': 'Professor',
                         'user': 'Usuário'
-                    }[user.role] || 'Usuário';
+                    }[role] || 'Usuário';
                     
                     html += `
                         <div class="user-row">
                             <span class="user-email">${user.email}</span>
-                            <span class="user-name">${user.displayName}</span>
+                            <span class="user-name">${metadata.full_name || user.email.split('@')[0]}</span>
                             <span class="user-role">${roleIcon} ${roleName}</span>
-                            <span class="user-created">${new Date(user.createdAt).toLocaleDateString('pt-BR')}</span>
+                            <span class="user-created">${new Date(user.created_at).toLocaleDateString('pt-BR')}</span>
                             <span class="user-actions">
                                 ${user.email !== 'admin@escola.com' ? `
                                     <button class="btn-small btn-warning" onclick="alterarPapelUsuario('${user.email}')">
@@ -1115,7 +1133,7 @@
         // Criar novo usuário
         async function criarNovoUsuario() {
             // Verificar se o sistema está carregado
-            if (!window.localAuth) {
+            if (!window.supabaseClient) {
                 showMessage('⚠️ Sistema de autenticação não carregado. Tente novamente em alguns segundos.', 'warning');
                 setTimeout(criarNovoUsuario, 2000);
                 return;
@@ -1131,10 +1149,25 @@
                 return;
             }
             
+            if (senha.length < 6) {
+                showMessage('A senha deve ter pelo menos 6 caracteres', 'error');
+                return;
+            }
+            
             try {
                 showMessage('👤 Criando usuário...', 'info');
                 
-                await window.localAuth.createUserWithEmailAndPassword(email, senha, nome, role);
+                // Criar usuário no Supabase Auth com metadados
+                const { data, error } = await window.supabaseClient.auth.admin.createUser({
+                    email: email,
+                    password: senha,
+                    user_metadata: {
+                        full_name: nome,
+                        role: role
+                    }
+                });
+                
+                if (error) throw error;
                 
                 showMessage('✅ Usuário criado com sucesso!', 'success');
                 
@@ -1250,20 +1283,21 @@
         window.alterarPapelUsuario = alterarPapelUsuario;
     </script>
     <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    // Verificação de autenticação - mais permissiva para configurações
-    setTimeout(() => {
-      if (window.localAuth && typeof window.localAuth.onAuthStateChanged === 'function') {
-        // Verifica usuário logado
-        window.localAuth.onAuthStateChanged(user => {
-          if (!user) {
-            // Permitir acesso à configurações mesmo sem login para primeiro acesso
-            console.log('⚠️ Acesso à configurações sem login - permitido para configuração inicial');
-          } else {
+  document.addEventListener('DOMContentLoaded', async () => {
+    // Aguardar sistema de autenticação unificado
+    if (window.unifiedAuth) {
+        await window.unifiedAuth.waitForReady();
+        
+        if (window.unifiedAuth.isAuthenticated()) {
+            const user = window.unifiedAuth.getCurrentUser();
             console.log("✅ Usuário logado:", user.email);
-          }
-        });
-      } else {
+            
+            // Carregar lista de usuários após autenticação
+            setTimeout(carregarListaUsuarios, 1000);
+        } else {
+            console.log('⚠️ Acesso à configurações sem login - algumas funcionalidades podem estar limitadas');
+        }
+    } else {
         console.log('⚠️ Sistema de autenticação carregando...');
       }
     }, 500);
