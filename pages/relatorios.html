@@ -490,7 +490,7 @@
         <span>☰</span>
     </button>
     
-    <div class="main-wrapper">
+    <div class="app-shell">
         <!-- Sidebar -->
         <nav class="sidebar" id="sidebar">
             <div class="sidebar-header">
@@ -523,7 +523,7 @@
         </nav>
         
         <!-- Content Area -->
-        <div class="content-area">
+        <main class="content-area">
             <div class="container">
         <!-- Header -->
         <div class="header">
@@ -775,7 +775,7 @@
                 </div>
             </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <!-- JavaScript dos Relatórios -->
@@ -813,8 +813,13 @@
     </script>
 
     <script>
-        // Variáveis globais
-        let currentChart = null;
+        // Variáveis globais para gerenciamento de charts
+        let charts = {
+            distribuicao: null,
+            frequenciaTurma: null,
+            comparativo: null,
+            evolucaoMensal: null
+        };
         let currentData = null;
         
         // Sistema de Tabs
@@ -892,19 +897,35 @@
         // Carregar dados de frequência  
         async function carregarDadosFrequencia() {
             try {
+                console.log('📊 Carregando dados de frequência...');
                 const turmaFiltro = document.getElementById('filtroTurma').value;
                 
-                const estatisticas = await window.getEstatisticasFrequencia(turmaFiltro);
+                // Aguardar funções estarem disponíveis
+                if (!window.getEstatisticasFrequencia || !window.listFrequenciaAcumulada) {
+                    console.warn('⏳ Aguardando carregamento dos adaptadores...');
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                
+                const estatisticas = await window.getEstatisticasFrequencia(turmaFiltro || null);
                 const dados = estatisticas.data;
                 
+                console.log('📊 Dados de frequência recebidos:', dados);
+                
                 if (!dados) {
-                    console.warn('Sem dados de frequência');
+                    console.warn('⚠️ Sem dados de frequência disponíveis');
+                    document.getElementById('tabelaFrequencia').innerHTML = `
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">
+                                Nenhum dado de frequência disponível no momento
+                            </td>
+                        </tr>
+                    `;
                     return;
                 }
                 
-                // Atualizar cards
+                // Atualizar cards com valores seguros
                 document.getElementById('mediaPresenca').textContent = 
-                    dados.mediaGeral ? dados.mediaGeral.toFixed(2) + '%' : 'N/A';
+                    dados.mediaGeral ? dados.mediaGeral.toFixed(2) + '%' : '0%';
                 document.getElementById('totalPresencas').textContent = dados.totaisGerais?.totalPresencas || 0;
                 document.getElementById('totalFaltas').textContent = dados.totaisGerais?.totalFaltas || 0;
                 document.getElementById('alunosBaixaFreq').textContent = dados.distribuicao?.critica || 0;
@@ -914,6 +935,8 @@
                 
                 // Preencher tabela de frequência
                 await preencherTabelaFrequencia(dados);
+                
+                console.log('✅ Dados de frequência carregados com sucesso');
                 
             } catch (error) {
                 console.error('❌ Erro ao carregar dados de frequência:', error);
@@ -963,7 +986,21 @@
                 console.log('📅 Carregando dados mensais...');
                 
                 // Obter mês selecionado
-                const mesSelecionado = document.getElementById('filtroMes').value + '-01';
+                const mesInput = document.getElementById('filtroMes').value;
+                if (!mesInput) {
+                    console.warn('⚠️ Mês não selecionado');
+                    return;
+                }
+                
+                // Garantir formato 'YYYY-MM-01' 
+                const mesSelecionado = mesInput.includes('-01') ? mesInput : mesInput + '-01';
+                console.log('📅 Buscando dados para o mês:', mesSelecionado);
+                
+                // Aguardar Supabase estar disponível
+                if (!window.supabaseClient) {
+                    console.warn('⏳ Aguardando Supabase...');
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
                 
                 // Buscar dados mensais
                 const resultado = await window.supabaseClient
@@ -978,9 +1015,12 @@
                 
                 const dados = resultado.data || [];
                 
-                // Criar gráfico de evolução (placeholder por enquanto)
+                // Criar gráfico de evolução
                 const ctx = document.getElementById('chartEvolucaoMensal').getContext('2d');
-                if (currentChart) currentChart.destroy();
+                if (charts.evolucaoMensal) {
+                    charts.evolucaoMensal.destroy();
+                    charts.evolucaoMensal = null;
+                }
                 
                 // Agrupar por turma
                 const turmas = [...new Set(dados.map(d => d.turma))];
@@ -990,7 +1030,7 @@
                     return alunosTurma.length > 0 ? soma / alunosTurma.length : 0;
                 });
                 
-                currentChart = new Chart(ctx, {
+                charts.evolucaoMensal = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: turmas,
@@ -1070,13 +1110,14 @@
         function criarGraficoDistribuicao(estatisticas) {
             const ctx = document.getElementById('chartDistribuicaoNotas').getContext('2d');
             
-            if (currentChart) {
-                currentChart.destroy();
+            if (charts.distribuicao) {
+                charts.distribuicao.destroy();
+                charts.distribuicao = null;
             }
             
             if (!estatisticas?.distribuicao) return;
             
-            currentChart = new Chart(ctx, {
+            charts.distribuicao = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: ['Excelentes (9+)', 'Bons (7-9)', 'Regulares (5-7)', 'Críticos (<5)'],
@@ -1160,8 +1201,9 @@
         async function criarGraficoFrequenciaTurma(dados) {
             const ctx = document.getElementById('chartFrequenciaTurma').getContext('2d');
             
-            if (currentChart) {
-                currentChart.destroy();
+            if (charts.frequenciaTurma) {
+                charts.frequenciaTurma.destroy();
+                charts.frequenciaTurma = null;
             }
             
             if (!dados?.porTurma || dados.porTurma.length === 0) return;
@@ -1169,7 +1211,7 @@
             const turmas = dados.porTurma.map(t => t.turma);
             const medias = dados.porTurma.map(t => t.mediaPresenca || 0);
             
-            currentChart = new Chart(ctx, {
+            charts.frequenciaTurma = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: turmas,
@@ -1238,8 +1280,9 @@
         function criarGraficoComparativo(notas, frequencia) {
             const ctx = document.getElementById('chartComparativo').getContext('2d');
             
-            if (currentChart) {
-                currentChart.destroy();
+            if (charts.comparativo) {
+                charts.comparativo.destroy();
+                charts.comparativo = null;
             }
             
             if (!notas?.porTurma) return;
@@ -1253,7 +1296,7 @@
                 return turmaFreq?.mediaPresenca || 85;
             });
             
-            currentChart = new Chart(ctx, {
+            charts.comparativo = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: turmas,
