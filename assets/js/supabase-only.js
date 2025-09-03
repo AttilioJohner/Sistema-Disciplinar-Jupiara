@@ -7,8 +7,12 @@ let currentUser = null;
 
 // Inicializar Supabase
 async function initSupabase() {
-    // Evitar múltiplas inicializações
-    if (supabase) {
+    // Evitar múltiplas inicializações (singleton global)
+    if (supabase || window.supabaseClient) {
+        console.log('🔄 Supabase já inicializado, reutilizando instância');
+        if (!supabase && window.supabaseClient) {
+            supabase = window.supabaseClient;
+        }
         return true;
     }
     
