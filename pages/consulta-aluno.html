@@ -14,8 +14,23 @@
     <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- Serviços de notas disciplinares -->
+    <!-- Serviços de notas disciplinares e frequência -->
     <script type="module" src="../assets/js/notas-disciplinares.js"></script>
+    <script type="module">
+        // Importar e disponibilizar funções de frequência
+        import { 
+            getResumoAcumuladoAluno, 
+            getFaltasAluno, 
+            getResumoMensalAtualAluno,
+            FrequenciaUtils 
+        } from '../data/frequencia.js';
+        
+        // Tornar funções disponíveis globalmente
+        window.getResumoAcumuladoAluno = getResumoAcumuladoAluno;
+        window.getFaltasAluno = getFaltasAluno;
+        window.getResumoMensalAtualAluno = getResumoMensalAtualAluno;
+        window.FrequenciaUtils = FrequenciaUtils;
+    </script>
     
     <style>
         * {
@@ -1158,8 +1173,8 @@
                 // Preencher ficha disciplinar
                 preencherFichaDisciplinar();
 
-                // Preencher dados de frequência
-                preencherDadosFrequencia();
+                // Preencher dados de frequência (nova implementação)
+                await preencherDadosFrequenciaNovo(codigoAluno);
 
                 // Preencher resumo geral
                 preencherResumoGeral();
@@ -1248,6 +1263,189 @@
         }
 
         // Função para preencher dados de frequência
+        // Nova função para preencher dados de frequência usando views
+        async function preencherDadosFrequenciaNovo(codigoAluno) {
+            try {
+                // Obter dados de frequência das views em paralelo
+                const [resumoResult, faltasResult] = await Promise.all([
+                    window.getResumoAcumuladoAluno(codigoAluno),
+                    window.getFaltasAluno(codigoAluno, 20) // Últimas 20 faltas
+                ]);
+                
+                const resumoAcumulado = resumoResult.data;
+                const faltas = faltasResult.data || [];
+                
+                console.log('📊 Dados de frequência obtidos:', { resumoAcumulado, faltas: faltas.length });
+                
+                // Preencher tabela de faltas
+                preencherTabelaFaltas(faltas);
+                
+                // Atualizar estatísticas do resumo
+                atualizarEstatisticasFrequencia(resumoAcumulado);
+                
+                // Criar gráfico de frequência simplificado
+                criarGraficoFrequenciaNovo(resumoAcumulado);
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar dados de frequência:', error);
+                
+                // Fallback para método antigo
+                preencherDadosFrequencia();
+            }
+        }
+        
+        // Função para preencher tabela de faltas
+        function preencherTabelaFaltas(faltas) {
+            const tbody = document.getElementById('frequencyTableBody');
+            
+            if (!faltas || faltas.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px; color: #27ae60;">
+                            ✅ Nenhuma falta registrada!
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let tableHTML = '';
+            
+            faltas.forEach(falta => {
+                const dataFormatada = window.FrequenciaUtils.formatarData(falta.data);
+                
+                tableHTML += `
+                    <tr>
+                        <td>${dataFormatada}</td>
+                        <td>
+                            <span class="badge badge-danger">Falta</span>
+                        </td>
+                        <td>Integral</td>
+                        <td>-</td>
+                        <td>
+                            <span class="badge badge-danger">Não Justificada</span>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = tableHTML;
+        }
+        
+        // Função para atualizar estatísticas de frequência
+        function atualizarEstatisticasFrequencia(resumoAcumulado) {
+            if (!resumoAcumulado) {
+                // Valores padrão se não houver dados
+                document.getElementById('percentualFrequencia').textContent = 'N/A';
+                document.getElementById('totalPresencas').textContent = '0';
+                document.getElementById('totalFaltas').textContent = '0';
+                return;
+            }
+            
+            // Atualizar cards de estatísticas
+            const percentual = resumoAcumulado.pct_presenca_operacional || 0;
+            const presencas = (resumoAcumulado.presencas || 0) + (resumoAcumulado.atestados || 0);
+            const faltas = resumoAcumulado.faltas || 0;
+            
+            document.getElementById('percentualFrequencia').textContent = 
+                window.FrequenciaUtils.formatarPercentual(percentual);
+            document.getElementById('totalPresencas').textContent = presencas.toString();
+            document.getElementById('totalFaltas').textContent = faltas.toString();
+            
+            // Atualizar cor do card baseado no percentual
+            const frequenciaCard = document.querySelector('#percentualFrequencia').closest('.stat-card');
+            
+            // Remover classes de cor existentes
+            frequenciaCard.classList.remove('green', 'blue', 'orange', 'purple');
+            
+            // Adicionar cor baseada no percentual
+            if (percentual >= 95) {
+                frequenciaCard.classList.add('green');
+            } else if (percentual >= 85) {
+                frequenciaCard.classList.add('blue');
+            } else if (percentual >= 75) {
+                frequenciaCard.classList.add('orange');
+            } else {
+                frequenciaCard.classList.add('purple'); // Vermelho para crítico
+            }
+        }
+        
+        // Função para criar gráfico simplificado
+        function criarGraficoFrequenciaNovo(resumoAcumulado) {
+            const ctx = document.getElementById('frequencyChart').getContext('2d');
+            
+            // Destruir gráfico anterior se existir
+            if (frequencyChart) {
+                frequencyChart.destroy();
+            }
+            
+            if (!resumoAcumulado) {
+                // Gráfico vazio se não houver dados
+                frequencyChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Sem Dados'],
+                        datasets: [{
+                            data: [1],
+                            backgroundColor: ['#bdc3c7']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Dados não disponíveis'
+                            }
+                        }
+                    }
+                });
+                return;
+            }
+            
+            // Criar gráfico de pizza com os dados
+            const presencas = resumoAcumulado.presencas || 0;
+            const atestados = resumoAcumulado.atestados || 0;
+            const faltas = resumoAcumulado.faltas || 0;
+            
+            frequencyChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Presenças', 'Atestados', 'Faltas'],
+                    datasets: [{
+                        data: [presencas, atestados, faltas],
+                        backgroundColor: [
+                            '#2ecc71', // Verde para presenças
+                            '#3498db', // Azul para atestados
+                            '#e74c3c'  // Vermelho para faltas
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: `Frequência Total - ${resumoAcumulado.total_aulas || 0} aulas`
+                        }
+                    }
+                }
+            });
+        }
+
+        // Função antiga mantida como fallback
         function preencherDadosFrequencia() {
             // Preencher tabela de frequência
             const tbody = document.getElementById('frequencyTableBody');
