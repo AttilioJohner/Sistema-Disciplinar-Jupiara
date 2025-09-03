@@ -27,14 +27,132 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
             min-height: 100vh;
             color: #2c3e50;
+            overflow-x: hidden;
+        }
+        
+        /* Layout Principal com Sidebar */
+        .main-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+        }
+        
+        .sidebar-header {
+            padding: 25px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .sidebar-header h2 {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .sidebar-header p {
+            font-size: 0.85em;
+            margin-top: 5px;
+            opacity: 0.9;
+        }
+        
+        .sidebar-menu {
+            padding: 20px 0;
+        }
+        
+        .sidebar-item {
+            display: block;
+            padding: 12px 20px;
+            color: #495057;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+        }
+        
+        .sidebar-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            padding-left: 25px;
+        }
+        
+        .sidebar-item.active {
+            background: rgba(102, 126, 234, 0.15);
+            color: #667eea;
+            border-left: 4px solid #667eea;
+        }
+        
+        .sidebar-item i {
+            margin-right: 10px;
+            width: 20px;
+            display: inline-block;
+        }
+        
+        /* Content Area */
+        .content-area {
+            flex: 1;
+            margin-left: 250px;
+            padding: 20px;
+            min-height: 100vh;
+            overflow-y: auto;
+        }
+        
+        /* Mobile Toggle */
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 200;
+            background: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .content-area {
+                margin-left: 0;
+            }
+            
+            .sidebar-toggle {
+                display: block;
+            }
         }
         
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 0;
         }
         
         /* Header */
@@ -367,7 +485,46 @@
 </head>
 
 <body>
-    <div class="container">
+    <!-- Botão Mobile Menu -->
+    <button class="sidebar-toggle" onclick="toggleSidebar()">
+        <span>☰</span>
+    </button>
+    
+    <div class="main-wrapper">
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>E.E.C.M. Jupiara</h2>
+                <p>Sistema Disciplinar</p>
+            </div>
+            <div class="sidebar-menu">
+                <a href="../index.html" class="sidebar-item">
+                    <i>🏠</i> Dashboard
+                </a>
+                <a href="gestao-alunos.html" class="sidebar-item">
+                    <i>👥</i> Gestão de Alunos
+                </a>
+                <a href="medidas-disciplinares.html" class="sidebar-item">
+                    <i>📋</i> Medidas Disciplinares
+                </a>
+                <a href="frequencia.html" class="sidebar-item">
+                    <i>📅</i> Frequência
+                </a>
+                <a href="relatorios.html" class="sidebar-item active">
+                    <i>📊</i> Relatórios
+                </a>
+                <a href="analises.html" class="sidebar-item">
+                    <i>📈</i> Análises
+                </a>
+                <a href="consulta-aluno.html" class="sidebar-item">
+                    <i>🔍</i> Portal dos Pais
+                </a>
+            </div>
+        </nav>
+        
+        <!-- Content Area -->
+        <div class="content-area">
+            <div class="container">
         <!-- Header -->
         <div class="header">
             <h1>📊 Relatórios Disciplinares e de Frequência</h1>
@@ -617,6 +774,7 @@
                     </table>
                 </div>
             </div>
+            </div>
         </div>
     </div>
 
@@ -632,8 +790,8 @@
         
         import { 
             getEstatisticasFrequencia, 
-            getComparativoTurmas,
-            getTurmasDisponiveisFrequencia,
+            getResumoMensalAluno,
+            listFrequenciaAcumulada,
             FrequenciaUtils 
         } from '../data/frequencia.js';
         
@@ -644,8 +802,8 @@
         window.NotasUtils = NotasUtils;
         
         window.getEstatisticasFrequencia = getEstatisticasFrequencia;
-        window.getComparativoTurmas = getComparativoTurmas;
-        window.getTurmasDisponiveisFrequencia = getTurmasDisponiveisFrequencia;
+        window.getResumoMensalAluno = getResumoMensalAluno;
+        window.listFrequenciaAcumulada = listFrequenciaAcumulada;
         window.FrequenciaUtils = FrequenciaUtils;
     </script>
 
@@ -734,39 +892,47 @@
                 const estatisticas = await window.getEstatisticasFrequencia(turmaFiltro);
                 const dados = estatisticas.data;
                 
-                if (!dados) return;
+                if (!dados) {
+                    console.warn('Sem dados de frequência');
+                    return;
+                }
                 
                 // Atualizar cards
                 document.getElementById('mediaPresenca').textContent = 
-                    window.FrequenciaUtils.formatarPercentual(dados.mediaPresenca);
+                    dados.mediaGeral ? dados.mediaGeral.toFixed(2) + '%' : 'N/A';
                 document.getElementById('totalPresencas').textContent = dados.totaisGerais?.totalPresencas || 0;
                 document.getElementById('totalFaltas').textContent = dados.totaisGerais?.totalFaltas || 0;
-                document.getElementById('alunosBaixaFreq').textContent = dados.distribuicao?.criticos || 0;
+                document.getElementById('alunosBaixaFreq').textContent = dados.distribuicao?.critica || 0;
                 
                 // Criar gráfico de frequência por turma
-                await criarGraficoFrequenciaTurma();
+                await criarGraficoFrequenciaTurma(dados);
                 
                 // Preencher tabela de frequência
-                await preencherTabelaFrequencia();
+                await preencherTabelaFrequencia(dados);
                 
             } catch (error) {
                 console.error('❌ Erro ao carregar dados de frequência:', error);
+                document.getElementById('tabelaFrequencia').innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">
+                            Erro ao carregar dados de frequência: ${error.message}
+                        </td>
+                    </tr>
+                `;
             }
         }
         
         // Carregar dados comparativos
         async function carregarDadosComparativos() {
             try {
-                const mesAtual = new Date().toISOString().slice(0, 7) + '-01';
-                
                 // Obter dados comparativos
                 const [notasResult, frequenciaResult] = await Promise.all([
                     window.getEstatisticasNotas(),
-                    window.getComparativoTurmas(mesAtual)
+                    window.getEstatisticasFrequencia()
                 ]);
                 
                 const estatisticasNotas = notasResult.data;
-                const estatisticasFreq = frequenciaResult.data || [];
+                const estatisticasFreq = frequenciaResult.data;
                 
                 // Criar gráfico comparativo
                 criarGraficoComparativo(estatisticasNotas, estatisticasFreq);
@@ -776,26 +942,122 @@
                 
             } catch (error) {
                 console.error('❌ Erro ao carregar dados comparativos:', error);
+                document.getElementById('tabelaComparativo').innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">
+                            Erro ao carregar dados comparativos
+                        </td>
+                    </tr>
+                `;
             }
         }
         
         // Carregar dados mensais
         async function carregarDadosMensais() {
             try {
-                // Implementação para dados mensais
                 console.log('📅 Carregando dados mensais...');
                 
-                // Por enquanto, mostrar mensagem
-                document.getElementById('tabelaMensal').innerHTML = `
-                    <tr>
-                        <td colspan="6" class="text-center text-muted">
-                            Funcionalidade em desenvolvimento - dados mensais históricos
-                        </td>
-                    </tr>
-                `;
+                // Obter mês selecionado
+                const mesSelecionado = document.getElementById('filtroMes').value + '-01';
+                
+                // Buscar dados mensais
+                const resultado = await window.supabaseClient
+                    .from('mv_frequencia_mensal_aluno')
+                    .select('*')
+                    .eq('mes', mesSelecionado)
+                    .order('turma', { ascending: true });
+                
+                if (resultado.error) {
+                    throw resultado.error;
+                }
+                
+                const dados = resultado.data || [];
+                
+                // Criar gráfico de evolução (placeholder por enquanto)
+                const ctx = document.getElementById('chartEvolucaoMensal').getContext('2d');
+                if (currentChart) currentChart.destroy();
+                
+                // Agrupar por turma
+                const turmas = [...new Set(dados.map(d => d.turma))];
+                const mediasPorTurma = turmas.map(turma => {
+                    const alunosTurma = dados.filter(d => d.turma === turma);
+                    const soma = alunosTurma.reduce((acc, a) => acc + (a.pct_presenca || 0), 0);
+                    return alunosTurma.length > 0 ? soma / alunosTurma.length : 0;
+                });
+                
+                currentChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: turmas,
+                        datasets: [{
+                            label: 'Média de Presença no Mês (%)',
+                            data: mediasPorTurma,
+                            borderColor: 'rgba(102, 126, 234, 1)',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100
+                            }
+                        }
+                    }
+                });
+                
+                // Preencher tabela mensal
+                const tbody = document.getElementById('tabelaMensal');
+                if (dados.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">
+                                Nenhum dado encontrado para o mês selecionado
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    let html = '';
+                    turmas.forEach((turma, index) => {
+                        const alunosTurma = dados.filter(d => d.turma === turma);
+                        const totalPresencas = alunosTurma.reduce((acc, a) => acc + (a.total_presencas || 0), 0);
+                        const totalFaltas = alunosTurma.reduce((acc, a) => acc + (a.total_faltas || 0), 0);
+                        const totalAtestados = alunosTurma.reduce((acc, a) => acc + (a.total_atestados || 0), 0);
+                        
+                        html += `
+                            <tr>
+                                <td><strong>${turma}</strong></td>
+                                <td>${mesSelecionado.slice(0, 7)}</td>
+                                <td>${alunosTurma.length}</td>
+                                <td><strong>${mediasPorTurma[index].toFixed(2)}%</strong></td>
+                                <td>${totalPresencas + totalAtestados + totalFaltas}</td>
+                                <td>
+                                    <span class="badge badge-${
+                                        mediasPorTurma[index] >= 85 ? 'success' : 
+                                        mediasPorTurma[index] >= 75 ? 'warning' : 'danger'
+                                    }">
+                                        ${mediasPorTurma[index] >= 85 ? 'Boa' : 
+                                          mediasPorTurma[index] >= 75 ? 'Regular' : 'Crítica'}
+                                    </span>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    tbody.innerHTML = html;
+                }
                 
             } catch (error) {
                 console.error('❌ Erro ao carregar dados mensais:', error);
+                document.getElementById('tabelaMensal').innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">
+                            Erro ao carregar dados: ${error.message}
+                        </td>
+                    </tr>
+                `;
             }
         }
         
@@ -889,25 +1151,196 @@
             tbody.innerHTML = html;
         }
         
-        // Outras funções de gráfico e tabela...
-        async function criarGraficoFrequenciaTurma() {
-            // Implementação do gráfico de frequência por turma
-            console.log('📊 Criando gráfico de frequência por turma...');
+        // Criar gráfico de frequência por turma
+        async function criarGraficoFrequenciaTurma(dados) {
+            const ctx = document.getElementById('chartFrequenciaTurma').getContext('2d');
+            
+            if (currentChart) {
+                currentChart.destroy();
+            }
+            
+            if (!dados?.porTurma || dados.porTurma.length === 0) return;
+            
+            const turmas = dados.porTurma.map(t => t.turma);
+            const medias = dados.porTurma.map(t => t.mediaPresenca || 0);
+            
+            currentChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: turmas,
+                    datasets: [{
+                        label: 'Média de Presença (%)',
+                        data: medias,
+                        backgroundColor: medias.map(m => 
+                            m >= 95 ? '#28a745' :
+                            m >= 85 ? '#17a2b8' :
+                            m >= 75 ? '#ffc107' : '#dc3545'
+                        ),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
         }
         
-        async function preencherTabelaFrequencia() {
-            // Implementação da tabela de frequência
-            console.log('📋 Preenchendo tabela de frequência...');
+        // Preencher tabela de frequência
+        async function preencherTabelaFrequencia(dados) {
+            const tbody = document.getElementById('tabelaFrequencia');
+            
+            if (!dados?.alunos || dados.alunos.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">
+                            Nenhum dado de frequência encontrado
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            dados.alunos.forEach(aluno => {
+                const pctPresenca = aluno.pct_presenca_operacional || 0;
+                const statusCor = window.FrequenciaUtils.getCorPresenca(pctPresenca);
+                const statusTexto = window.FrequenciaUtils.getDescricaoPresenca(pctPresenca);
+                
+                html += `
+                    <tr>
+                        <td>${aluno.nome_completo || 'N/A'}</td>
+                        <td>${aluno.turma || 'N/A'}</td>
+                        <td><strong>${pctPresenca.toFixed(2)}%</strong></td>
+                        <td>${aluno.total_presencas || 0}</td>
+                        <td>${aluno.total_atestados || 0}</td>
+                        <td>${aluno.total_faltas || 0}</td>
+                        <td><span class="badge badge-${statusCor}">${statusTexto}</span></td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
         }
         
+        // Criar gráfico comparativo
         function criarGraficoComparativo(notas, frequencia) {
-            // Implementação do gráfico comparativo
-            console.log('📈 Criando gráfico comparativo...');
+            const ctx = document.getElementById('chartComparativo').getContext('2d');
+            
+            if (currentChart) {
+                currentChart.destroy();
+            }
+            
+            if (!notas?.porTurma) return;
+            
+            const turmas = notas.porTurma.map(t => t.turma);
+            const mediasNotas = notas.porTurma.map(t => t.mediaNota || 0);
+            
+            // Mapear frequências por turma
+            const mediasFreq = turmas.map(turma => {
+                const turmaFreq = frequencia?.porTurma?.find(f => f.turma === turma);
+                return turmaFreq?.mediaPresenca || 85;
+            });
+            
+            currentChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: turmas,
+                    datasets: [
+                        {
+                            label: 'Nota Disciplinar Média',
+                            data: mediasNotas,
+                            backgroundColor: 'rgba(102, 126, 234, 0.7)',
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Frequência Média (%)',
+                            data: mediasFreq,
+                            backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            max: 10,
+                            title: {
+                                display: true,
+                                text: 'Nota Disciplinar'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            max: 100,
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            title: {
+                                display: true,
+                                text: 'Frequência (%)'
+                            }
+                        }
+                    }
+                }
+            });
         }
         
+        // Preencher tabela comparativa
         function preencherTabelaComparativa(notas, frequencia) {
-            // Implementação da tabela comparativa
-            console.log('📊 Preenchendo tabela comparativa...');
+            const tbody = document.getElementById('tabelaComparativo');
+            
+            if (!notas?.porTurma) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">
+                            Nenhum dado comparativo disponível
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            notas.porTurma.forEach(turma => {
+                // Encontrar dados de frequência da turma
+                const freqTurma = frequencia?.porTurma?.find(f => f.turma === turma.turma) || {};
+                const mediaFreq = freqTurma.mediaPresenca || 85;
+                
+                const desempenho = turma.mediaNota >= 7 && mediaFreq >= 85 ? 
+                    '<span class="badge badge-success">Excelente</span>' :
+                    turma.mediaNota >= 5 && mediaFreq >= 75 ?
+                    '<span class="badge badge-warning">Regular</span>' :
+                    '<span class="badge badge-danger">Crítico</span>';
+                
+                const casosCriticos = (turma.alunosCriticos || 0) + (freqTurma.alunosCriticos || 0);
+                
+                html += `
+                    <tr>
+                        <td><strong>${turma.turma}</strong></td>
+                        <td>${turma.totalAlunos}</td>
+                        <td>${turma.mediaNota.toFixed(2)}</td>
+                        <td>${mediaFreq.toFixed(2)}%</td>
+                        <td>${casosCriticos}</td>
+                        <td>${desempenho}</td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
         }
         
         // Função para atualizar relatório
@@ -960,6 +1393,18 @@
             
             console.log('✅ Página de relatórios inicializada');
         });
+        
+        // Função para toggle da sidebar em mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('active');
+        }
+        
+        // Tornar função global
+        window.switchTab = switchTab;
+        window.atualizarRelatorio = atualizarRelatorio;
+        window.exportarCSV = exportarCSV;
+        window.toggleSidebar = toggleSidebar;
     </script>
 </body>
 </html>
