@@ -984,7 +984,7 @@
             
             let totalPontos = 0;
             medidas.forEach(medida => {
-                const pontos = calcularPontosMedida(medida.tipo || medida.tipo_medida, medida.dias_suspensao);
+                const pontos = calcularPontosMedida(medida.tipo_medida, medida.dias_suspensao);
                 totalPontos += pontos;
             });
             
@@ -1054,10 +1054,10 @@
                     // Agrupar medidas por aluno
                     const medidasPorAluno = {};
                     medidas.forEach(medida => {
-                        if (!medidasPorAluno[medida.aluno_codigo]) {
-                            medidasPorAluno[medida.aluno_codigo] = [];
+                        if (!medidasPorAluno[medida.codigo_matricula]) {
+                            medidasPorAluno[medida.codigo_matricula] = [];
                         }
-                        medidasPorAluno[medida.aluno_codigo].push(medida);
+                        medidasPorAluno[medida.codigo_matricula].push(medida);
                     });
 
                     // Calcular média das notas
@@ -1127,8 +1127,8 @@
                 const { data: medidas, error: medidasError } = await window.supabaseClient
                     .from('medidas')
                     .select('*')
-                    .eq('aluno_codigo', codigoAluno)
-                    .order('data_ocorrencia', { ascending: false });
+                    .eq('codigo_matricula', codigoAluno)
+                    .order('data', { ascending: false });
 
                 if (medidasError) {
                     console.warn('Erro ao buscar medidas:', medidasError);
@@ -1177,7 +1177,7 @@
             if (!studentData) return;
 
             // Avatar com iniciais - tratamento de erros
-            const nomeCompleto = studentData.nome_completo || studentData.nome || 'Aluno';
+            const nomeCompleto = studentData['Nome completo'] || studentData.nome_completo || studentData.nome || 'Aluno';
             const nomes = nomeCompleto.split(' ');
             const iniciais = nomes[0][0] + (nomes[nomes.length - 1][0] || '');
             document.getElementById('studentAvatar').textContent = iniciais.toUpperCase();
@@ -1219,9 +1219,9 @@
 
             let timelineHTML = '';
             medidasData.forEach(medida => {
-                const data = new Date(medida.data_ocorrencia || medida.data_registro).toLocaleDateString('pt-BR');
-                const pontos = calcularPontosMedida(medida.tipo || medida.tipo_medida, medida.dias_suspensao);
-                const isPositiva = isMedidaPositiva(medida.tipo || medida.tipo_medida);
+                const data = new Date(medida.data).toLocaleDateString('pt-BR');
+                const pontos = calcularPontosMedida(medida.tipo_medida, medida.dias_suspensao);
+                const isPositiva = isMedidaPositiva(medida.tipo_medida);
                 
                 timelineHTML += `
                     <div class="timeline-item">
@@ -1229,9 +1229,9 @@
                             ${isPositiva ? '✓' : '!'}
                         </div>
                         <div class="timeline-date">${data}</div>
-                        <div class="timeline-title">${medida.tipo || medida.tipo_medida}</div>
+                        <div class="timeline-title">${medida.tipo_medida}</div>
                         <div class="timeline-description">
-                            ${medida.descricao || 'Sem descrição detalhada'}
+                            ${medida.especificacao || medida.observacao || 'Sem descrição detalhada'}
                         </div>
                         <span class="timeline-points ${isPositiva ? 'positive' : 'negative'}">
                             ${pontos > 0 ? '+' : ''}${pontos} pontos
@@ -1443,14 +1443,14 @@
                 // Filtrar medidas do mês
                 const [mesNome, ano] = mesKey.split(' ');
                 const medidasMes = medidasData.filter(medida => {
-                    const dataMedida = new Date(medida.data_ocorrencia || medida.data_registro);
+                    const dataMedida = new Date(medida.data);
                     const mesKeyMedida = dataMedida.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
                     return mesKeyMedida === mesKey;
                 });
 
                 // Calcular pontos do mês
                 medidasMes.forEach(medida => {
-                    const pontos = calcularPontosMedida(medida.tipo || medida.tipo_medida, medida.dias_suspensao);
+                    const pontos = calcularPontosMedida(medida.tipo_medida, medida.dias_suspensao);
                     notaAcumulada += pontos;
                 });
 
