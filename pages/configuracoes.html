@@ -271,6 +271,30 @@
                         <p class="card-subtitle">Adicione e gerencie usuários do sistema</p>
                     </div>
                     <div class="card-content">
+                        <!-- Instruções da Tabela (se necessário) -->
+                        <div class="alert alert-info" id="tabelaInstructions" style="display: none; margin-bottom: 20px;">
+                            <span class="alert-icon">ℹ️</span>
+                            <div class="alert-content">
+                                <strong>Configuração Necessária:</strong> Para usar a gestão completa de usuários, execute este SQL no Supabase:
+                                <pre style="background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 4px; font-size: 12px; overflow-x: auto;">
+CREATE TABLE usuarios_sistema (
+  id SERIAL PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id),
+  email VARCHAR(255) UNIQUE NOT NULL,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  nome_completo VARCHAR(255) NOT NULL,
+  role VARCHAR(20) DEFAULT 'user',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Permitir acesso à tabela
+ALTER TABLE usuarios_sistema ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Usuários podem ver todos" ON usuarios_sistema FOR SELECT USING (true);
+CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHECK (true);
+                                </pre>
+                            </div>
+                        </div>
+
                         <!-- Adicionar Novo Usuário -->
                         <div class="form-section">
                             <h4>➕ Adicionar Novo Usuário</h4>
@@ -1062,17 +1086,32 @@
                     return;
                 }
                 
-                // Buscar usuários no Supabase Auth
-                const { data: { users }, error } = await window.supabaseClient.auth.admin.listUsers();
+                // Buscar usuários na tabela personalizada (sem usar admin functions)
+                const { data: usuarios, error } = await window.supabaseClient
+                    .from('usuarios_sistema')
+                    .select('*')
+                    .order('created_at', { ascending: false });
                 
                 if (!container) return;
                 
                 if (error) {
-                    container.innerHTML = '<p class="no-users">❌ Erro ao carregar usuários: ' + error.message + '</p>';
+                    // Se a tabela não existe, mostrar mensagem explicativa
+                    if (error.code === '42P01') {
+                        // Mostrar instruções de configuração
+                        document.getElementById('tabelaInstructions').style.display = 'block';
+                        container.innerHTML = `
+                            <p class="no-users">
+                                ℹ️ Tabela de usuários não encontrada.<br>
+                                <small>Veja as instruções acima para configurar a gestão de usuários.</small>
+                            </p>
+                        `;
+                    } else {
+                        container.innerHTML = '<p class="no-users">❌ Erro ao carregar usuários: ' + error.message + '</p>';
+                    }
                     return;
                 }
                 
-                if (!users || users.length === 0) {
+                if (!usuarios || usuarios.length === 0) {
                     container.innerHTML = '<p class="no-users">Nenhum usuário cadastrado além do administrador padrão.</p>';
                     return;
                 }
@@ -1088,36 +1127,32 @@
                     </div>
                 `;
                 
-                users.forEach(user => {
-                    // Extrair metadados do usuário (Supabase não tem roles built-in)
-                    const metadata = user.user_metadata || {};
-                    const role = metadata.role || 'user';
-                    
+                usuarios.forEach(usuario => {
                     const roleIcon = {
                         'admin': '👑',
                         'teacher': '👨‍🏫',
                         'user': '👤'
-                    }[role] || '👤';
+                    }[usuario.role] || '👤';
                     
                     const roleName = {
                         'admin': 'Administrador',
                         'teacher': 'Professor',
                         'user': 'Usuário'
-                    }[role] || 'Usuário';
+                    }[usuario.role] || 'Usuário';
                     
                     html += `
                         <div class="user-row">
-                            <span class="user-email">${user.email}</span>
-                            <span class="user-username">${metadata.username || '—'}</span>
-                            <span class="user-name">${metadata.full_name || user.email.split('@')[0]}</span>
+                            <span class="user-email">${usuario.email}</span>
+                            <span class="user-username">${usuario.username || '—'}</span>
+                            <span class="user-name">${usuario.nome_completo}</span>
                             <span class="user-role">${roleIcon} ${roleName}</span>
-                            <span class="user-created">${new Date(user.created_at).toLocaleDateString('pt-BR')}</span>
+                            <span class="user-created">${new Date(usuario.created_at).toLocaleDateString('pt-BR')}</span>
                             <span class="user-actions">
-                                ${user.email !== 'admin@escola.com' ? `
-                                    <button class="btn-small btn-warning" onclick="alterarPapelUsuario('${user.email}')">
+                                ${usuario.email !== 'admin@escola.com' ? `
+                                    <button class="btn-small btn-warning" onclick="alterarPapelUsuario('${usuario.email}')">
                                         🔄 Alterar Papel
                                     </button>
-                                    <button class="btn-small btn-danger" onclick="excluirUsuario('${user.email}')">
+                                    <button class="btn-small btn-danger" onclick="excluirUsuario('${usuario.email}')">
                                         🗑️ Excluir
                                     </button>
                                 ` : '<span class="protected-user">👑 Protegido</span>'}
@@ -1171,33 +1206,67 @@
             try {
                 showMessage('👤 Criando usuário...', 'info');
                 
-                // Verificar se username já existe
-                const { data: { users }, error: listError } = await window.supabaseClient.auth.admin.listUsers();
-                if (listError) throw listError;
+                // Verificar se username já existe na tabela personalizada
+                const { data: existingUsers, error: checkError } = await window.supabaseClient
+                    .from('usuarios_sistema')
+                    .select('username, email')
+                    .or(`username.ilike.${username},email.ilike.${email}`);
                 
-                const usernameExists = users.some(u => 
-                    u.user_metadata?.username?.toLowerCase() === username.toLowerCase()
-                );
-                
-                if (usernameExists) {
-                    showMessage('Nome de usuário já existe. Escolha outro.', 'error');
-                    return;
+                if (checkError && checkError.code !== '42P01') {
+                    throw checkError;
                 }
                 
-                // Criar usuário no Supabase Auth com metadados
-                const { data, error } = await window.supabaseClient.auth.admin.createUser({
-                    email: email,
-                    password: senha,
-                    user_metadata: {
-                        full_name: nome,
-                        username: username,
-                        role: role
+                if (existingUsers && existingUsers.length > 0) {
+                    const duplicateUsername = existingUsers.find(u => 
+                        u.username?.toLowerCase() === username.toLowerCase()
+                    );
+                    const duplicateEmail = existingUsers.find(u => 
+                        u.email?.toLowerCase() === email.toLowerCase()
+                    );
+                    
+                    if (duplicateUsername) {
+                        showMessage('Nome de usuário já existe. Escolha outro.', 'error');
+                        return;
                     }
+                    if (duplicateEmail) {
+                        showMessage('Email já está cadastrado.', 'error');
+                        return;
+                    }
+                }
+                
+                // Criar usuário no Supabase Auth (signup normal)
+                const { data: authData, error: authError } = await window.supabaseClient.auth.signUp({
+                    email: email,
+                    password: senha
                 });
                 
-                if (error) throw error;
+                if (authError) throw authError;
                 
-                showMessage('✅ Usuário criado com sucesso!', 'success');
+                // Salvar dados do usuário na tabela personalizada
+                if (authData.user) {
+                    const { error: insertError } = await window.supabaseClient
+                        .from('usuarios_sistema')
+                        .insert({
+                            user_id: authData.user.id,
+                            email: email,
+                            username: username,
+                            nome_completo: nome,
+                            role: role,
+                            created_at: new Date().toISOString()
+                        });
+                    
+                    // Se der erro por tabela não existir, mostrar instruções
+                    if (insertError && insertError.code === '42P01') {
+                        showMessage('⚠️ Usuário criado no auth, mas tabela personalizada não encontrada. Funcionalidade limitada.', 'warning');
+                    } else if (insertError) {
+                        console.error('Erro ao salvar metadados:', insertError);
+                        showMessage('⚠️ Usuário criado, mas erro ao salvar metadados.', 'warning');
+                    } else {
+                        showMessage('✅ Usuário criado com sucesso!', 'success');
+                    }
+                } else {
+                    showMessage('✅ Usuário criado, mas pode precisar confirmar email.', 'success');
+                }
                 
                 // Limpar formulário
                 document.getElementById('novoUsuarioEmail').value = '';
