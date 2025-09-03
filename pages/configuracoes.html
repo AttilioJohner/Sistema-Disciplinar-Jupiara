@@ -1237,10 +1237,13 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
                     }
                 }
                 
-                // Criar usuário no Supabase Auth (signup normal)
+                // Criar usuário no Supabase Auth (desabilitar confirmação de email)
                 const { data: authData, error: authError } = await window.supabaseClient.auth.signUp({
                     email: email,
-                    password: senha
+                    password: senha,
+                    options: {
+                        emailRedirectTo: undefined // Desabilita redirect de confirmação
+                    }
                 });
                 
                 if (authError) {
@@ -1256,6 +1259,8 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
                         errorMessage += 'A senha deve ter pelo menos 6 caracteres.';
                     } else if (errorMsg.includes('User already registered') || errorMsg.includes('already been taken')) {
                         errorMessage += 'Este email já está cadastrado.';
+                    } else if (errorMsg.includes('Email not confirmed')) {
+                        errorMessage += 'Verifique seu email e confirme o cadastro antes de fazer login.';
                     } else if (errorMsg.includes('rate limit')) {
                         errorMessage += 'Muitas tentativas. Tente novamente em alguns minutos.';
                     } else {
@@ -1284,10 +1289,10 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
                         console.error('Erro ao salvar metadados:', insertError);
                         showMessage('⚠️ Usuário criado, mas erro ao salvar metadados.', 'warning');
                     } else {
-                        showMessage('✅ Usuário criado com sucesso!', 'success');
+                        showMessage('✅ Usuário criado! Verifique o email para confirmação antes de fazer login.', 'success');
                     }
                 } else {
-                    showMessage('✅ Usuário criado, mas pode precisar confirmar email.', 'success');
+                    showMessage('✅ Usuário criado! Confirme o email recebido para ativar a conta.', 'success');
                 }
                 
                 // Limpar formulário

@@ -178,7 +178,18 @@
         
       } catch (error) {
         console.error('❌ Erro de login:', error);
-        showMessage('❌ ' + error.message, 'error');
+        
+        // Tratar erros específicos de login
+        let errorMessage = error.message;
+        if (errorMessage.includes('Email not confirmed')) {
+          errorMessage = '📧 Email não confirmado. Verifique sua caixa de entrada e confirme o cadastro.';
+        } else if (errorMessage.includes('Invalid login credentials') || errorMessage.includes('Credenciais inválidas')) {
+          errorMessage = '❌ Email ou senha incorretos. Verifique suas credenciais.';
+        } else if (errorMessage.includes('Too many requests')) {
+          errorMessage = '⏰ Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.';
+        }
+        
+        showMessage(errorMessage, 'error');
       } finally {
         button.disabled = false;
         button.textContent = '🔐 Entrar no Sistema';

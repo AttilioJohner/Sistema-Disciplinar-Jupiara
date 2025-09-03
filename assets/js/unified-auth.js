@@ -27,10 +27,16 @@ class UnifiedAuth {
         // Verificar se temos credenciais Supabase
         if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
             try {
-                this.supabase = window.supabase.createClient(
-                    window.SUPABASE_URL,
-                    window.SUPABASE_ANON_KEY
-                );
+                // Reutilizar cliente existente se disponível
+                if (window.supabaseClient) {
+                    this.supabase = window.supabaseClient;
+                    console.log('🔄 Reutilizando cliente Supabase existente');
+                } else {
+                    this.supabase = window.supabase.createClient(
+                        window.SUPABASE_URL,
+                        window.SUPABASE_ANON_KEY
+                    );
+                }
                 this.useSupabase = true;
                 console.log('✅ Usando Supabase para autenticação');
             } catch (error) {
