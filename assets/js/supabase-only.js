@@ -7,6 +7,11 @@ let currentUser = null;
 
 // Inicializar Supabase
 async function initSupabase() {
+    // Evitar múltiplas inicializações
+    if (supabase) {
+        return true;
+    }
+    
     if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
         console.error('❌ Credenciais Supabase não configuradas');
         return false;
@@ -329,33 +334,17 @@ const alunosDB = {
                         return { id, exists: false, data: () => ({}) };
                     }
                     
-                    // Buscar pelo código - tentar ambas as colunas possíveis
-                    let data = null;
-                    let error = null;
+                    // Buscar pelo código usando estratégia segura (busca geral + filtro)
+                    const { data: allData, error } = await supabase
+                        .from('alunos')
+                        .select('*');
                     
-                    // Primeiro tentar com a coluna simples
-                    try {
-                        const result = await supabase
-                            .from('alunos')
-                            .select('*')
-                            .eq('codigo', parseInt(id))
-                            .single();
-                        data = result.data;
-                        error = result.error;
-                    } catch (err) {
-                        // Se falhar, buscar todos e filtrar manualmente
-                        const { data: allData, error: allError } = await supabase
-                            .from('alunos')
-                            .select('*');
-                        
-                        if (allError) {
-                            error = allError;
-                        } else {
-                            data = allData?.find(item => 
-                                item['código (matrícula)'] === parseInt(id) ||
-                                item.codigo === parseInt(id)
-                            ) || null;
-                        }
+                    let data = null;
+                    if (!error && allData) {
+                        data = allData.find(item => 
+                            item['código (matrícula)'] === parseInt(id) ||
+                            item.codigo === parseInt(id)
+                        ) || null;
                     }
                     
                     if (error && error.code !== 'PGRST116') throw error;
