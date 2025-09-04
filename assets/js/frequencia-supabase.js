@@ -1765,10 +1765,10 @@ function voltarResumoAlunos() {
 }
 
 // FUNÇÕES GLOBAIS PARA LANÇAMENTO DE FREQUÊNCIA
-async function carregarAlunosLancamento() {
+function carregarAlunosLancamento() {
   const turma = document.getElementById('turmaLancamento').value;
   if (window.frequenciaManager && turma) {
-    await window.frequenciaManager.carregarAlunosLancamento(turma);
+    window.frequenciaManager.carregarAlunosLancamento(turma).catch(console.error);
   }
 }
 
