@@ -83,31 +83,60 @@ class AuthPortalPais {
     }
 
     /**
-     * Cria conta completa com código do aluno (novo fluxo)
+     * Cria conta completa com código do aluno (novo fluxo sem RLS)
      */
     async criarContaComCodigoAluno(cpf, nome, codigoAluno, parentesco, senha) {
         try {
             const cpfLimpo = cpf.replace(/\D/g, '');
             
-            // Validar CPF único
-            const { data: cpfExistente, error: cpfError } = await this.supabase
-                .from('responsaveis')
-                .select('id')
-                .eq('cpf', cpfLimpo)
-                .single();
+            // Criar conta no Supabase Auth primeiro (sem consultas RLS)
+            const email = `${cpfLimpo}@portal.pais.local`;
+            
+            const { data: authData, error: authError } = await this.supabase.auth.signUp({
+                email: email,
+                password: senha,
+                options: {
+                    data: {
+                        nome: nome,
+                        cpf: cpfLimpo,
+                        codigo_aluno: codigoAluno,
+                        parentesco: parentesco
+                    }
+                }
+            });
 
-            if (cpfExistente) {
-                throw new Error('CPF já cadastrado. Use a opção de login normal.');
+            if (authError) {
+                // Tratar erros específicos
+                if (authError.message.includes('User already registered')) {
+                    throw new Error('CPF já cadastrado. Use a opção de login normal.');
+                }
+                if (authError.message.includes('Email address') && authError.message.includes('invalid')) {
+                    throw new Error('Erro interno. Tente novamente ou entre em contato com a escola.');
+                }
+                throw new Error('Erro na autenticação: ' + authError.message);
             }
 
-            // Verificar se o aluno existe (usando view pública)
+            // Agora que temos um usuário autenticado, fazer o resto
+            // Fazer login temporário para ter permissões
+            const { error: loginError } = await this.supabase.auth.signInWithPassword({
+                email: email,
+                password: senha
+            });
+
+            if (loginError) {
+                console.warn('Erro no login temporário:', loginError);
+            }
+
+            // Verificar se o aluno existe (agora com usuário autenticado)
             const { data: aluno, error: alunoError } = await this.supabase
-                .from('v_alunos_validacao')
-                .select('codigo, nome_completo, turma')
+                .from('alunos')
+                .select('codigo, "Nome completo", turma')
                 .eq('codigo', parseInt(codigoAluno))
                 .single();
 
             if (alunoError || !aluno) {
+                // Se aluno não existe, fazer logout e informar erro
+                await this.supabase.auth.signOut();
                 throw new Error('Código do aluno não encontrado. Verifique o código informado.');
             }
 
@@ -115,9 +144,10 @@ class AuthPortalPais {
             const { data: novoResponsavel, error: responsavelError } = await this.supabase
                 .from('responsaveis')
                 .insert({
+                    id: authData.user.id, // Usar o mesmo ID do auth
                     cpf: cpfLimpo,
                     nome: nome,
-                    email: `${cpfLimpo}@portal.pais.local`,
+                    email: email,
                     telefone: '',
                     ativo: true
                 })
@@ -125,39 +155,16 @@ class AuthPortalPais {
                 .single();
 
             if (responsavelError) {
+                // Se falhou, fazer logout
+                await this.supabase.auth.signOut();
                 throw new Error('Erro ao criar responsável: ' + responsavelError.message);
-            }
-
-            // Criar conta no Supabase Auth
-            const email = `${novoResponsavel.id}@portal.pais.local`;
-            
-            const { data: authData, error: authError } = await this.supabase.auth.signUp({
-                email: email,
-                password: senha,
-                options: {
-                    data: {
-                        responsavel_id: novoResponsavel.id,
-                        nome: nome,
-                        cpf: cpfLimpo
-                    }
-                }
-            });
-
-            if (authError) {
-                // Se falhou no Auth, tentar remover responsável criado
-                await this.supabase
-                    .from('responsaveis')
-                    .delete()
-                    .eq('id', novoResponsavel.id);
-                    
-                throw new Error('Erro na autenticação: ' + authError.message);
             }
 
             // Associar responsável ao aluno
             const { error: associacaoError } = await this.supabase
                 .from('responsavel_aluno')
                 .insert({
-                    responsavel_id: novoResponsavel.id,
+                    responsavel_id: authData.user.id,
                     aluno_codigo: parseInt(codigoAluno),
                     parentesco: parentesco,
                     autorizado_retirar: true,
@@ -170,9 +177,12 @@ class AuthPortalPais {
                 console.warn('Erro na associação responsável-aluno:', associacaoError);
             }
 
+            // Logout após cadastro (usuário precisa fazer login normal)
+            await this.supabase.auth.signOut();
+
             return {
                 success: true,
-                message: `Conta criada com sucesso! Você foi associado ao aluno: ${aluno.nome_completo} (${aluno.turma})`
+                message: `Conta criada com sucesso! Você foi associado ao aluno: ${aluno['Nome completo']} (${aluno.turma})`
             };
 
         } catch (error) {
