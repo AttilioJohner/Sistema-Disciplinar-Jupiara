@@ -321,6 +321,7 @@
     <script src="../supabase-config.js"></script>
     <script src="../assets/js/supabase-only.js"></script>
     <script src="../assets/js/auth-portal-pais.js"></script>
+    <script src="../assets/js/auth-portal-pais-v2.js"></script>
     
     <script>
         // Instância de autenticação
@@ -347,7 +348,8 @@
             // Aguardar carregamento do Supabase com retry
             await aguardarSupabase();
 
-            auth = new AuthPortalPais(window.supabaseClient);
+            auth = new AuthPortalPaisV2(window.supabaseClient);
+            console.log('✅ Usando sistema V2 (sem Supabase Auth)');
 
             // Verificar se já está logado
             if (await auth.isAuthenticated()) {
@@ -400,11 +402,11 @@
                 const senha = document.getElementById('senha').value;
 
                 // Validar CPF
-                if (!AuthPortalPais.validarCPF(cpf)) {
+                if (!AuthPortalPaisV2.validarCPF(cpf)) {
                     throw new Error('CPF inválido');
                 }
 
-                const resultado = await auth.login(cpf, senha);
+                const resultado = await auth.loginSimplificado(cpf, senha);
 
                 if (resultado.success) {
                     mostrarMensagem('Login realizado com sucesso! Redirecionando...', 'success');
@@ -442,7 +444,7 @@
                 const confirmarSenha = document.getElementById('confirmarSenha').value;
 
                 // Validações
-                if (!AuthPortalPais.validarCPF(cpf)) {
+                if (!AuthPortalPaisV2.validarCPF(cpf)) {
                     throw new Error('CPF inválido');
                 }
 
@@ -466,7 +468,7 @@
                     throw new Error('Senhas não conferem');
                 }
 
-                const resultado = await auth.criarContaComCodigoAluno(cpf, nome, codigoAluno, parentesco, senha);
+                const resultado = await auth.criarContaSimplificada(cpf, nome, codigoAluno, parentesco, senha);
 
                 if (resultado.success) {
                     mostrarMensagem(resultado.message, 'success');

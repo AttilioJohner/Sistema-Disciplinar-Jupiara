@@ -92,6 +92,8 @@ class AuthPortalPais {
             // Criar conta no Supabase Auth primeiro (sem consultas RLS)
             const email = `${cpfLimpo}@portal.pais.local`;
             
+            console.log('🔐 Tentando criar conta:', { email, nome, codigoAluno });
+
             const { data: authData, error: authError } = await this.supabase.auth.signUp({
                 email: email,
                 password: senha,
@@ -106,15 +108,27 @@ class AuthPortalPais {
             });
 
             if (authError) {
+                console.error('❌ Erro detalhado do Supabase Auth:', authError);
+                
                 // Tratar erros específicos
-                if (authError.message.includes('User already registered')) {
+                if (authError.message.includes('User already registered') || authError.message.includes('already been registered')) {
                     throw new Error('CPF já cadastrado. Use a opção de login normal.');
                 }
-                if (authError.message.includes('Email address') && authError.message.includes('invalid')) {
-                    throw new Error('Erro interno. Tente novamente ou entre em contato com a escola.');
+                if (authError.message.includes('Password should be at least')) {
+                    throw new Error('Senha deve ter pelo menos 6 caracteres.');
                 }
-                throw new Error('Erro na autenticação: ' + authError.message);
+                if (authError.message.includes('Unable to validate email address') || authError.message.includes('invalid')) {
+                    throw new Error('Erro no formato do email. Contate o suporte.');
+                }
+                if (authError.message.includes('signup is disabled')) {
+                    throw new Error('Cadastro desabilitado. Entre em contato com a escola.');
+                }
+                
+                // Erro genérico com detalhes para debug
+                throw new Error(`Erro no cadastro: ${authError.message}`);
             }
+
+            console.log('✅ Usuário criado:', authData.user?.id);
 
             // Agora que temos um usuário autenticado, fazer o resto
             // Fazer login temporário para ter permissões
