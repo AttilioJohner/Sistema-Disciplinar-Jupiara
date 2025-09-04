@@ -11,6 +11,7 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase-only.js"></script>
     <script src="../assets/js/auth-portal-pais.js"></script>
+    <script src="../assets/js/auth-portal-pais-v2.js"></script>
     
     <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -1745,8 +1746,9 @@
                     });
                 }
 
-                // Inicializar autenticação
-                auth = new AuthPortalPais(window.supabaseClient);
+                // Inicializar autenticação (V2 - sem Supabase Auth)
+                auth = new AuthPortalPaisV2(window.supabaseClient);
+                console.log('✅ Portal usando sistema V2');
 
                 // Verificar autenticação
                 const isAuthenticated = await auth.isAuthenticated();

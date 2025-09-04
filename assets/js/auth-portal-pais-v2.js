@@ -202,7 +202,7 @@ class AuthPortalPaisV2 {
     }
 
     /**
-     * Buscar alunos do responsável (usando session storage)
+     * Buscar alunos do responsável (compatível com formato esperado)
      */
     async getAlunos() {
         if (!await this.isAuthenticated()) {
@@ -210,36 +210,106 @@ class AuthPortalPaisV2 {
         }
 
         try {
-            // Usar RLS se funcionar, senão buscar por responsavel_aluno
-            const { data, error } = await this.supabase
+            // Buscar associações do responsável
+            const { data: associacoes, error: assocError } = await this.supabase
                 .from('responsavel_aluno')
-                .select(`
-                    aluno_codigo,
-                    parentesco,
-                    alunos (
-                        codigo,
-                        "Nome completo",
-                        turma
-                    )
-                `)
+                .select('aluno_codigo, parentesco')
                 .eq('responsavel_id', this.currentResponsavel.id);
 
-            if (error) {
-                console.error('Erro ao buscar alunos:', error);
+            if (assocError) {
+                console.error('Erro ao buscar associações:', assocError);
                 return [];
             }
 
-            // Transformar dados para formato esperado
-            return data.map(item => ({
-                codigo: item.aluno_codigo,
-                nome_completo: item.alunos['Nome completo'],
-                turma: item.alunos.turma,
-                parentesco: item.parentesco
-            }));
+            if (!associacoes || associacoes.length === 0) {
+                return [];
+            }
+
+            // Buscar dados dos alunos
+            const codigosAlunos = associacoes.map(a => a.aluno_codigo);
+            const { data: alunos, error: alunosError } = await this.supabase
+                .from('alunos')
+                .select('codigo, "Nome completo", turma')
+                .in('codigo', codigosAlunos);
+
+            if (alunosError) {
+                console.error('Erro ao buscar alunos:', alunosError);
+                return [];
+            }
+
+            // Combinar dados
+            return alunos.map(aluno => {
+                const associacao = associacoes.find(a => a.aluno_codigo === aluno.codigo);
+                return {
+                    codigo: aluno.codigo,
+                    nome_completo: aluno['Nome completo'],
+                    turma: aluno.turma,
+                    parentesco: associacao?.parentesco || 'responsável',
+                    percentual_frequencia: 100, // Placeholder
+                    nota_disciplinar: '8.0',    // Placeholder
+                    total_medidas: 0            // Placeholder
+                };
+            });
 
         } catch (error) {
             console.error('Erro ao buscar alunos:', error);
             return [];
+        }
+    }
+
+    /**
+     * Buscar dados completos de um aluno (compatível com sistema antigo)
+     */
+    async getDadosAluno(codigoAluno) {
+        if (!await this.isAuthenticated()) {
+            throw new Error('Não autenticado');
+        }
+
+        try {
+            // Verificar se tem acesso ao aluno
+            const alunos = await this.getAlunos();
+            const alunoAutorizado = alunos.find(a => a.codigo == codigoAluno);
+            
+            if (!alunoAutorizado) {
+                throw new Error('Acesso negado a este aluno');
+            }
+
+            // Buscar dados detalhados
+            const [alunoData, medidasData, frequenciaData] = await Promise.all([
+                this.supabase
+                    .from('alunos')
+                    .select('*')
+                    .eq('codigo', codigoAluno)
+                    .single(),
+                
+                this.supabase
+                    .from('medidas')
+                    .select('*')
+                    .eq('codigo_aluno', codigoAluno)
+                    .order('data', { ascending: false })
+                    .limit(50),
+                
+                this.supabase
+                    .from('frequencia')
+                    .select('*')
+                    .eq('codigo_aluno', codigoAluno)
+                    .gte('data', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+                    .order('data', { ascending: false })
+            ]);
+
+            if (alunoData.error) throw alunoData.error;
+            if (medidasData.error) throw medidasData.error;
+            if (frequenciaData.error) throw frequenciaData.error;
+
+            return {
+                aluno: alunoData.data,
+                medidas: medidasData.data || [],
+                frequencia: frequenciaData.data || []
+            };
+
+        } catch (error) {
+            console.error('Erro ao buscar dados do aluno:', error);
+            throw error;
         }
     }
 
