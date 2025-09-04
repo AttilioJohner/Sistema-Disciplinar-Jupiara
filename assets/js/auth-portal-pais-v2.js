@@ -338,6 +338,66 @@ class AuthPortalPaisV2 {
     }
 
     /**
+     * Associar responsável atual a um aluno (correção manual)
+     */
+    async associarAoAluno(codigoAluno, parentesco = 'responsável') {
+        if (!await this.isAuthenticated()) {
+            throw new Error('Não autenticado');
+        }
+
+        try {
+            console.log('🔗 Associando responsável ao aluno:', {
+                responsavel_id: this.currentResponsavel.id,
+                aluno_codigo: parseInt(codigoAluno),
+                parentesco: parentesco
+            });
+
+            // Verificar se aluno existe
+            const { data: aluno, error: alunoError } = await this.supabase
+                .from('alunos')
+                .select('codigo, "Nome completo", turma')
+                .eq('codigo', parseInt(codigoAluno))
+                .single();
+
+            if (alunoError || !aluno) {
+                throw new Error('Código do aluno não encontrado: ' + codigoAluno);
+            }
+
+            // Criar associação
+            const { data: associacaoData, error: associacaoError } = await this.supabase
+                .from('responsavel_aluno')
+                .insert({
+                    responsavel_id: this.currentResponsavel.id,
+                    aluno_codigo: parseInt(codigoAluno),
+                    parentesco: parentesco,
+                    autorizado_retirar: true,
+                    autorizado_ver_notas: true,
+                    autorizado_ver_frequencia: true,
+                    autorizado_ver_disciplinar: true
+                })
+                .select();
+
+            if (associacaoError) {
+                if (associacaoError.message.includes('duplicate') || associacaoError.message.includes('unique')) {
+                    return { success: true, message: 'Associação já existe!' };
+                }
+                throw new Error('Erro na associação: ' + associacaoError.message);
+            }
+
+            console.log('✅ Associação criada:', associacaoData);
+
+            return {
+                success: true,
+                message: `Associado com sucesso ao aluno: ${aluno['Nome completo']} (${aluno.turma})`
+            };
+
+        } catch (error) {
+            console.error('❌ Erro ao associar:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Logout
      */
     async logout() {
