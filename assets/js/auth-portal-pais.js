@@ -83,53 +83,112 @@ class AuthPortalPais {
     }
 
     /**
-     * Cria primeira conta para responsável
+     * Cria conta completa com código do aluno (novo fluxo)
      */
-    async criarPrimeiroAcesso(cpf, senha) {
+    async criarContaComCodigoAluno(cpf, nome, codigoAluno, parentesco, senha) {
         try {
             const cpfLimpo = cpf.replace(/\D/g, '');
             
-            // Verificar se responsável existe
-            const { data: responsavel, error: responsavelError } = await this.supabase
+            // Validar CPF único
+            const { data: cpfExistente, error: cpfError } = await this.supabase
                 .from('responsaveis')
-                .select('id, nome, email')
+                .select('id')
                 .eq('cpf', cpfLimpo)
                 .single();
 
-            if (responsavelError || !responsavel) {
-                throw new Error('CPF não encontrado. Entre em contato com a escola.');
+            if (cpfExistente) {
+                throw new Error('CPF já cadastrado. Use a opção de login normal.');
+            }
+
+            // Verificar se o aluno existe
+            const { data: aluno, error: alunoError } = await this.supabase
+                .from('alunos')
+                .select('codigo, "Nome completo", turma')
+                .eq('codigo', parseInt(codigoAluno))
+                .single();
+
+            if (alunoError || !aluno) {
+                throw new Error('Código do aluno não encontrado. Verifique o código informado.');
+            }
+
+            // Criar responsável no banco
+            const { data: novoResponsavel, error: responsavelError } = await this.supabase
+                .from('responsaveis')
+                .insert({
+                    cpf: cpfLimpo,
+                    nome: nome,
+                    email: `${cpfLimpo}@portal.pais.local`,
+                    telefone: '',
+                    ativo: true
+                })
+                .select('id')
+                .single();
+
+            if (responsavelError) {
+                throw new Error('Erro ao criar responsável: ' + responsavelError.message);
             }
 
             // Criar conta no Supabase Auth
-            const email = `${responsavel.id}@portal.pais.local`;
+            const email = `${novoResponsavel.id}@portal.pais.local`;
             
             const { data: authData, error: authError } = await this.supabase.auth.signUp({
                 email: email,
                 password: senha,
                 options: {
                     data: {
-                        responsavel_id: responsavel.id,
-                        nome: responsavel.nome,
+                        responsavel_id: novoResponsavel.id,
+                        nome: nome,
                         cpf: cpfLimpo
                     }
                 }
             });
 
             if (authError) {
-                throw authError;
+                // Se falhou no Auth, tentar remover responsável criado
+                await this.supabase
+                    .from('responsaveis')
+                    .delete()
+                    .eq('id', novoResponsavel.id);
+                    
+                throw new Error('Erro na autenticação: ' + authError.message);
+            }
+
+            // Associar responsável ao aluno
+            const { error: associacaoError } = await this.supabase
+                .from('responsavel_aluno')
+                .insert({
+                    responsavel_id: novoResponsavel.id,
+                    aluno_codigo: parseInt(codigoAluno),
+                    parentesco: parentesco,
+                    autorizado_retirar: true,
+                    autorizado_ver_notas: true,
+                    autorizado_ver_frequencia: true,
+                    autorizado_ver_disciplinar: true
+                });
+
+            if (associacaoError) {
+                console.warn('Erro na associação responsável-aluno:', associacaoError);
             }
 
             return {
                 success: true,
-                message: 'Conta criada com sucesso. Faça login novamente.'
+                message: `Conta criada com sucesso! Você foi associado ao aluno: ${aluno['Nome completo']} (${aluno.turma})`
             };
 
         } catch (error) {
+            console.error('Erro no cadastro:', error);
             return {
                 success: false,
                 error: error.message
             };
         }
+    }
+
+    /**
+     * Cria primeira conta para responsável (método antigo - mantido para compatibilidade)
+     */
+    async criarPrimeiroAcesso(cpf, senha) {
+        return this.criarContaComCodigoAluno(cpf, 'Nome Responsável', '', 'responsável', senha);
     }
 
     /**

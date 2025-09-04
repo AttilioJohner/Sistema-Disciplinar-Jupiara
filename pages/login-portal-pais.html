@@ -59,7 +59,7 @@
             font-size: 14px;
         }
 
-        .form-group input {
+        .form-group input, .form-group select {
             width: 100%;
             padding: 12px 16px;
             border: 2px solid #e1e8ed;
@@ -67,9 +67,10 @@
             font-size: 16px;
             transition: all 0.3s ease;
             box-sizing: border-box;
+            background: white;
         }
 
-        .form-group input:focus {
+        .form-group input:focus, .form-group select:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -259,14 +260,41 @@
             
             <h3 style="color: #2c3e50; margin-bottom: 15px;">Primeiro Acesso</h3>
             <p style="color: #7f8c8d; font-size: 14px; margin-bottom: 20px; text-align: left;">
-                Para criar sua senha, digite seu CPF e escolha uma senha segura. 
-                Seu CPF deve estar cadastrado na escola.
+                Para criar sua conta, informe seus dados e o <strong>código do seu filho</strong>. 
+                Não é necessário cadastro prévio na escola.
             </p>
 
             <form id="primeiroAcessoFormElement">
                 <div class="form-group">
-                    <label for="cpfPrimeiro">CPF do Responsável</label>
+                    <label for="cpfPrimeiro">Seu CPF</label>
                     <input type="text" id="cpfPrimeiro" name="cpfPrimeiro" placeholder="000.000.000-00" maxlength="14" required>
+                    <div class="cpf-hint">Será usado como login</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="nomePrimeiro">Seu Nome Completo</label>
+                    <input type="text" id="nomePrimeiro" name="nomePrimeiro" placeholder="Ex: João da Silva" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="codigoAluno">Código do Seu Filho</label>
+                    <input type="number" id="codigoAluno" name="codigoAluno" placeholder="Ex: 123" required>
+                    <div class="cpf-hint">Código que aparece no boletim ou carteirinha</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="parentesco">Parentesco</label>
+                    <select id="parentesco" name="parentesco" required>
+                        <option value="">Selecione...</option>
+                        <option value="pai">Pai</option>
+                        <option value="mãe">Mãe</option>
+                        <option value="avô">Avô</option>
+                        <option value="avó">Avó</option>
+                        <option value="tio">Tio</option>
+                        <option value="tia">Tia</option>
+                        <option value="responsável legal">Responsável Legal</option>
+                        <option value="outro">Outro</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
@@ -407,12 +435,27 @@
                 btn.disabled = true;
                 
                 const cpf = document.getElementById('cpfPrimeiro').value;
+                const nome = document.getElementById('nomePrimeiro').value.trim();
+                const codigoAluno = document.getElementById('codigoAluno').value.trim();
+                const parentesco = document.getElementById('parentesco').value;
                 const senha = document.getElementById('senhaPrimeiro').value;
                 const confirmarSenha = document.getElementById('confirmarSenha').value;
 
                 // Validações
                 if (!AuthPortalPais.validarCPF(cpf)) {
                     throw new Error('CPF inválido');
+                }
+
+                if (!nome || nome.length < 3) {
+                    throw new Error('Nome deve ter pelo menos 3 caracteres');
+                }
+
+                if (!codigoAluno || codigoAluno.length < 1) {
+                    throw new Error('Código do aluno é obrigatório');
+                }
+
+                if (!parentesco) {
+                    throw new Error('Selecione o parentesco');
                 }
 
                 if (senha.length < 6) {
@@ -423,7 +466,7 @@
                     throw new Error('Senhas não conferem');
                 }
 
-                const resultado = await auth.criarPrimeiroAcesso(cpf, senha);
+                const resultado = await auth.criarContaComCodigoAluno(cpf, nome, codigoAluno, parentesco, senha);
 
                 if (resultado.success) {
                     mostrarMensagem(resultado.message, 'success');
@@ -433,6 +476,8 @@
                         voltarLogin();
                         // Preencher CPF no login
                         document.getElementById('cpf').value = cpf;
+                        // Limpar form
+                        document.getElementById('primeiroAcessoFormElement').reset();
                     }, 2000);
                 } else {
                     throw new Error(resultado.error);
