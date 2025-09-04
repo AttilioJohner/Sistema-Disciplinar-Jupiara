@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal dos Pais - Login</title>
-    <link rel="stylesheet" href="../assets/css/global.css">
+    <!-- CSS inline - não precisa de arquivo externo -->
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -288,6 +288,9 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../netlify-env.js" onerror="console.log('Netlify env não encontrado')"></script>
+    <script src="../assets/js/env-config.js"></script>
+    <script src="../supabase-config.js"></script>
     <script src="../assets/js/supabase-only.js"></script>
     <script src="../assets/js/auth-portal-pais.js"></script>
     
