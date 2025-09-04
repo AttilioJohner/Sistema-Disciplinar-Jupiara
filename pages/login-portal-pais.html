@@ -298,14 +298,26 @@
         // Instância de autenticação
         let auth;
 
+        // Função para aguardar o Supabase carregar completamente
+        async function aguardarSupabase(maxTentativas = 20) {
+            for (let i = 0; i < maxTentativas; i++) {
+                if (window.supabaseClient && window.supabaseClient.auth) {
+                    console.log('✅ Supabase client carregado com sucesso');
+                    return true;
+                }
+                console.log(`⏳ Aguardando Supabase... tentativa ${i + 1}/${maxTentativas}`);
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+            
+            console.error('❌ Timeout: Supabase não carregou após', maxTentativas * 200, 'ms');
+            mostrarMensagem('Erro ao conectar com servidor. Recarregue a página.', 'error');
+            throw new Error('Supabase não carregou');
+        }
+
         // Inicializar quando página carregar
         document.addEventListener('DOMContentLoaded', async function() {
-            // Aguardar carregamento do Supabase
-            if (!window.supabaseClient) {
-                console.error('Supabase client não carregado');
-                mostrarMensagem('Erro ao conectar com servidor', 'error');
-                return;
-            }
+            // Aguardar carregamento do Supabase com retry
+            await aguardarSupabase();
 
             auth = new AuthPortalPais(window.supabaseClient);
 
