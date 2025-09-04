@@ -100,10 +100,10 @@ class AuthPortalPais {
                 throw new Error('CPF já cadastrado. Use a opção de login normal.');
             }
 
-            // Verificar se o aluno existe
+            // Verificar se o aluno existe (usando view pública)
             const { data: aluno, error: alunoError } = await this.supabase
-                .from('alunos')
-                .select('codigo, "Nome completo", turma')
+                .from('v_alunos_validacao')
+                .select('codigo, nome_completo, turma')
                 .eq('codigo', parseInt(codigoAluno))
                 .single();
 
@@ -172,7 +172,7 @@ class AuthPortalPais {
 
             return {
                 success: true,
-                message: `Conta criada com sucesso! Você foi associado ao aluno: ${aluno['Nome completo']} (${aluno.turma})`
+                message: `Conta criada com sucesso! Você foi associado ao aluno: ${aluno.nome_completo} (${aluno.turma})`
             };
 
         } catch (error) {
