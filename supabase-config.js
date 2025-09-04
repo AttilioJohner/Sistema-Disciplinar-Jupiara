@@ -2,11 +2,11 @@
 // IMPORTANTE: Substitua pelas suas credenciais reais do Supabase
 
 window.SUPABASE_CONFIG_TEMP = {
-    // Substitua pela URL do seu projeto Supabase
-    url: 'https://xyzabc123.supabase.co', 
+    // URL do seu projeto Supabase
+    url: 'https://rvppxdhrahcwiwrrwwaz.supabase.co', 
     
-    // Substitua pela sua chave anônima (public key) do Supabase
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' 
+    // Chave anônima (public key) do Supabase
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2cHB4ZGhyYWhjd2l3cnJ3d2F6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0MDUyMzAsImV4cCI6MjA3MTk4MTIzMH0.JhNGeLdbaRiL_CHCLiVcExc62Hd7MYhLeycJSQyr9nM'
 };
 
 // Aplicar configuração se as variáveis não estiverem definidas
