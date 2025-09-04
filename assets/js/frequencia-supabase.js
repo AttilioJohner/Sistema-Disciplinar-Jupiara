@@ -649,7 +649,6 @@ class FrequenciaSupabaseManager {
       const { data: alunos, error } = await this.supabase
         .from('alunos')
         .select('turma')
-        .eq('status', 'ativo')
         .not('turma', 'is', null);
 
       if (error) throw error;
@@ -697,15 +696,14 @@ class FrequenciaSupabaseManager {
       // BUSCAR DIRETAMENTE DA TABELA ALUNOS (incluindo alunos recém-cadastrados)
       const { data: alunos, error } = await this.supabase
         .from('alunos')
-        .select('codigo, "Nome completo", turma, status')
+        .select('codigo, "Nome completo", turma')
         .eq('turma', turma)
-        .eq('status', 'ativo')
         .order('"Nome completo"');
 
       if (error) throw error;
 
       if (!alunos || alunos.length === 0) {
-        alert(`Nenhum aluno ativo encontrado para a turma ${turma}`);
+        alert(`Nenhum aluno encontrado para a turma ${turma}`);
         return;
       }
 
