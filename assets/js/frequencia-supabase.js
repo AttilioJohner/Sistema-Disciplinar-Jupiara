@@ -425,7 +425,7 @@ class FrequenciaSupabaseManager {
     this.atualizarFiltroTurmas(Array.from(relatoriosPorTurma.keys()));
     
     // Atualizar turmas para lançamento
-    this.carregarTurmasLancamento();
+    this.carregarTurmasLancamento().catch(console.error);
   }
 
   setupFiltrosAvancados() {
@@ -639,30 +639,42 @@ class FrequenciaSupabaseManager {
   }
 
   // SISTEMA DE LANÇAMENTO DE FREQUÊNCIA
-  carregarTurmasLancamento() {
+  async carregarTurmasLancamento() {
     console.log('🔍 Carregando turmas para lançamento...');
     const selectTurma = document.getElementById('turmaLancamento');
     if (!selectTurma) return;
 
-    // Coletar todas as turmas disponíveis
-    const turmasDisponiveis = new Set();
-    this.dadosFrequencia.forEach((periodo, chave) => {
-      turmasDisponiveis.add(periodo.turma);
-    });
+    try {
+      // BUSCAR TURMAS DIRETAMENTE DA TABELA ALUNOS
+      const { data: alunos, error } = await this.supabase
+        .from('alunos')
+        .select('turma')
+        .eq('status', 'ativo')
+        .not('turma', 'is', null);
 
-    // Limpar e popular select
-    selectTurma.innerHTML = '<option value="">Selecione uma turma...</option>';
-    Array.from(turmasDisponiveis).sort().forEach(turma => {
-      const option = document.createElement('option');
-      option.value = turma;
-      option.textContent = `Turma ${turma}`;
-      selectTurma.appendChild(option);
-    });
+      if (error) throw error;
 
-    console.log(`✅ ${turmasDisponiveis.size} turmas carregadas para lançamento`);
+      // Obter turmas únicas
+      const turmasDisponiveis = [...new Set(alunos.map(a => a.turma))].sort();
+
+      // Limpar e popular select
+      selectTurma.innerHTML = '<option value="">Selecione uma turma...</option>';
+      turmasDisponiveis.forEach(turma => {
+        const option = document.createElement('option');
+        option.value = turma;
+        option.textContent = `Turma ${turma}`;
+        selectTurma.appendChild(option);
+      });
+
+      console.log(`✅ ${turmasDisponiveis.length} turmas carregadas para lançamento:`, turmasDisponiveis);
+
+    } catch (error) {
+      console.error('Erro ao carregar turmas para lançamento:', error);
+      selectTurma.innerHTML = '<option value="">Erro ao carregar turmas</option>';
+    }
   }
 
-  carregarAlunosLancamento(turma) {
+  async carregarAlunosLancamento(turma) {
     console.log(`🔍 Carregando alunos da turma ${turma} para lançamento...`);
     
     const containerLista = document.getElementById('containerListaAlunos');
@@ -681,68 +693,71 @@ class FrequenciaSupabaseManager {
       return;
     }
 
-    // Coletar alunos únicos da turma
-    const alunosUnicos = new Map();
-    this.dadosFrequencia.forEach((periodo, chave) => {
-      if (periodo.turma === turma) {
-        periodo.alunos.forEach(aluno => {
-          if (!alunosUnicos.has(aluno.codigo)) {
-            alunosUnicos.set(aluno.codigo, {
-              codigo: aluno.codigo,
-              nome: aluno.nome,
-              turma: turma
-            });
-          }
-        });
+    try {
+      // BUSCAR DIRETAMENTE DA TABELA ALUNOS (incluindo alunos recém-cadastrados)
+      const { data: alunos, error } = await this.supabase
+        .from('alunos')
+        .select('codigo, "Nome completo", turma, status')
+        .eq('turma', turma)
+        .eq('status', 'ativo')
+        .order('"Nome completo"');
+
+      if (error) throw error;
+
+      if (!alunos || alunos.length === 0) {
+        alert(`Nenhum aluno ativo encontrado para a turma ${turma}`);
+        return;
       }
-    });
 
-    if (alunosUnicos.size === 0) {
-      alert(`Nenhum aluno encontrado para a turma ${turma}`);
-      return;
+      console.log(`✅ ${alunos.length} alunos encontrados na turma ${turma}:`, alunos.map(a => `${a.codigo} - ${a['Nome completo']}`));
+
+      // Ordenar alunos por nome (já ordenado pela query, mas garantindo)
+      const alunosOrdenados = alunos.map(aluno => ({
+        codigo: aluno.codigo,
+        nome: aluno['Nome completo'],
+        turma: aluno.turma
+      }));
+
+      // Atualizar título
+      const dataFormatada = new Date(dataLancamento + 'T00:00:00').toLocaleDateString('pt-BR');
+      tituloTurmaData.textContent = `Turma ${turma} - ${dataFormatada}`;
+
+      // Gerar lista de alunos
+      listaAlunos.innerHTML = alunosOrdenados.map(aluno => `
+        <div class="aluno-frequencia-item" data-codigo="${aluno.codigo}">
+          <div class="aluno-info">
+            <span class="aluno-codigo">${aluno.codigo}</span>
+            <span class="aluno-nome">${aluno.nome}</span>
+          </div>
+          <div class="frequencia-controles">
+            <label class="frequencia-radio">
+              <input type="radio" name="freq_${aluno.codigo}" value="P" checked>
+              <span class="radio-label freq-P">P</span>
+            </label>
+            <label class="frequencia-radio">
+              <input type="radio" name="freq_${aluno.codigo}" value="F">
+              <span class="radio-label freq-F">F</span>
+            </label>
+            <label class="frequencia-radio">
+              <input type="radio" name="freq_${aluno.codigo}" value="A">
+              <span class="radio-label freq-A">A</span>
+            </label>
+            <label class="frequencia-radio">
+              <input type="radio" name="freq_${aluno.codigo}" value="FC">
+              <span class="radio-label freq-FC">FC</span>
+            </label>
+          </div>
+        </div>
+      `).join('');
+
+      // Mostrar container e habilitar botão de salvar
+      containerLista.style.display = 'block';
+      document.getElementById('btnSalvarFrequencia').disabled = false;
+
+    } catch (error) {
+      console.error('Erro ao carregar alunos para lançamento:', error);
+      alert('Erro ao carregar alunos da turma. Tente novamente.');
     }
-
-    // Ordenar alunos por nome
-    const alunosOrdenados = Array.from(alunosUnicos.values())
-      .sort((a, b) => a.nome.localeCompare(b.nome));
-
-    // Atualizar título
-    const dataFormatada = new Date(dataLancamento + 'T00:00:00').toLocaleDateString('pt-BR');
-    tituloTurmaData.textContent = `Turma ${turma} - ${dataFormatada}`;
-
-    // Gerar lista de alunos
-    listaAlunos.innerHTML = alunosOrdenados.map(aluno => `
-      <div class="aluno-frequencia-item" data-codigo="${aluno.codigo}">
-        <div class="aluno-info">
-          <span class="aluno-codigo">${aluno.codigo}</span>
-          <span class="aluno-nome">${aluno.nome}</span>
-        </div>
-        <div class="frequencia-controles">
-          <label class="frequencia-radio">
-            <input type="radio" name="freq_${aluno.codigo}" value="P" checked>
-            <span class="radio-label freq-P">P</span>
-          </label>
-          <label class="frequencia-radio">
-            <input type="radio" name="freq_${aluno.codigo}" value="F">
-            <span class="radio-label freq-F">F</span>
-          </label>
-          <label class="frequencia-radio">
-            <input type="radio" name="freq_${aluno.codigo}" value="A">
-            <span class="radio-label freq-A">A</span>
-          </label>
-          <label class="frequencia-radio">
-            <input type="radio" name="freq_${aluno.codigo}" value="FC">
-            <span class="radio-label freq-FC">FC</span>
-          </label>
-        </div>
-      </div>
-    `).join('');
-
-    // Mostrar container e habilitar botão de salvar
-    containerLista.style.display = 'block';
-    document.getElementById('btnSalvarFrequencia').disabled = false;
-
-    console.log(`✅ ${alunosOrdenados.length} alunos carregados para lançamento`);
   }
 
   marcarTodosPresentes() {
@@ -1750,10 +1765,10 @@ function voltarResumoAlunos() {
 }
 
 // FUNÇÕES GLOBAIS PARA LANÇAMENTO DE FREQUÊNCIA
-function carregarAlunosLancamento() {
+async function carregarAlunosLancamento() {
   const turma = document.getElementById('turmaLancamento').value;
   if (window.frequenciaManager && turma) {
-    window.frequenciaManager.carregarAlunosLancamento(turma);
+    await window.frequenciaManager.carregarAlunosLancamento(turma);
   }
 }
 
