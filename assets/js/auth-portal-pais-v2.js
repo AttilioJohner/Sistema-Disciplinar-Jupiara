@@ -74,7 +74,13 @@ class AuthPortalPaisV2 {
             console.log('✅ Responsável criado:', novoResponsavel.id);
 
             // 5. Tentar associar ao aluno
-            const { error: associacaoError } = await this.supabase
+            console.log('🔗 Criando associação:', {
+                responsavel_id: novoResponsavel.id,
+                aluno_codigo: parseInt(codigoAluno),
+                parentesco: parentesco
+            });
+
+            const { data: associacaoData, error: associacaoError } = await this.supabase
                 .from('responsavel_aluno')
                 .insert({
                     responsavel_id: novoResponsavel.id,
@@ -84,7 +90,11 @@ class AuthPortalPaisV2 {
                     autorizado_ver_notas: true,
                     autorizado_ver_frequencia: true,
                     autorizado_ver_disciplinar: true
-                });
+                })
+                .select();
+
+            console.log('📋 Dados da associação criada:', associacaoData);
+            console.log('❌ Erro na associação:', associacaoError);
 
             if (associacaoError) {
                 console.error('❌ Erro na associação:', associacaoError);
@@ -102,7 +112,7 @@ class AuthPortalPaisV2 {
                 throw new Error('Erro na associação: ' + associacaoError.message);
             }
 
-            console.log('✅ Associação criada com sucesso');
+            console.log('✅ Associação criada com sucesso:', associacaoData);
 
             // 6. Retornar sucesso com nome do aluno (se conseguimos buscar)
             const nomeAluno = aluno ? aluno['Nome completo'] : `Aluno código ${codigoAluno}`;
@@ -210,11 +220,16 @@ class AuthPortalPaisV2 {
         }
 
         try {
+            console.log('🔍 Buscando alunos para responsável ID:', this.currentResponsavel.id);
+            
             // Buscar associações do responsável
             const { data: associacoes, error: assocError } = await this.supabase
                 .from('responsavel_aluno')
                 .select('aluno_codigo, parentesco')
                 .eq('responsavel_id', this.currentResponsavel.id);
+
+            console.log('📋 Associações encontradas:', associacoes);
+            console.log('❌ Erro nas associações:', assocError);
 
             if (assocError) {
                 console.error('Erro ao buscar associações:', assocError);
@@ -222,15 +237,21 @@ class AuthPortalPaisV2 {
             }
 
             if (!associacoes || associacoes.length === 0) {
+                console.warn('⚠️ Nenhuma associação encontrada para responsável:', this.currentResponsavel.id);
                 return [];
             }
 
             // Buscar dados dos alunos
             const codigosAlunos = associacoes.map(a => a.aluno_codigo);
+            console.log('🔍 Códigos de alunos a buscar:', codigosAlunos);
+            
             const { data: alunos, error: alunosError } = await this.supabase
                 .from('alunos')
                 .select('codigo, "Nome completo", turma')
                 .in('codigo', codigosAlunos);
+
+            console.log('👥 Dados de alunos encontrados:', alunos);
+            console.log('❌ Erro nos alunos:', alunosError);
 
             if (alunosError) {
                 console.error('Erro ao buscar alunos:', alunosError);
@@ -238,7 +259,7 @@ class AuthPortalPaisV2 {
             }
 
             // Combinar dados
-            return alunos.map(aluno => {
+            const resultado = alunos.map(aluno => {
                 const associacao = associacoes.find(a => a.aluno_codigo === aluno.codigo);
                 return {
                     codigo: aluno.codigo,
@@ -250,6 +271,9 @@ class AuthPortalPaisV2 {
                     total_medidas: 0            // Placeholder
                 };
             });
+            
+            console.log('✅ Resultado final dos alunos:', resultado);
+            return resultado;
 
         } catch (error) {
             console.error('Erro ao buscar alunos:', error);
