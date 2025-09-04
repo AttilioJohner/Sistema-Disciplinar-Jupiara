@@ -353,3 +353,4 @@ MIT License - você pode usar livremente para projetos educacionais.
 **Sistema Disciplinar Jupiara**  
 *Desenvolvido com ❤️ para educação*  
 *Migrado para sistema view-based em Janeiro 2025*
+# Deploy trigger - Thu Sep  4 15:29:30 HPBC 2025
