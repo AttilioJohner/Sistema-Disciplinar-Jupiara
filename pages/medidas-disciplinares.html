@@ -21,6 +21,9 @@
     <!-- jsPDF para exportação em PDF -->
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     
+    <!-- Scripts de categoria de medidas -->
+    <script src="../assets/js/medidas-categorias.js"></script>
+    
     <!-- Estilos específicos para ficha disciplinar -->
     <style>
         /* Dados pessoais */
@@ -1075,7 +1078,7 @@
                             
                             <div class="form-group">
                                 <label class="form-label">Tipo de Medida *</label>
-                                <select id="tipoMedida" class="form-select" required>
+                                <select id="tipoMedida" class="form-select" onchange="configurarCamposMedida()" required>
                                     <option value="">Selecione...</option>
                                     <optgroup label="📈 Medidas Positivas">
                                         <option value="Elogio Individual">Elogio Individual (+0,5)</option>
@@ -1099,14 +1102,21 @@
                                 </select>
                             </div>
                             
-                            <div class="form-group">
-                                <label class="form-label">Gravidade</label>
-                                <select id="gravidadeMedida" class="form-select">
-                                    <option value="">Selecione...</option>
-                                    <option value="Leve">Leve</option>
-                                    <option value="Moderada">Moderada</option>
-                                    <option value="Grave">Grave</option>
-                                    <option value="Gravíssima">Gravíssima</option>
+                            <!-- Campos de categoria de faltas - inicialmente ocultos -->
+                            <div class="form-group" id="campoCategoriaMedida" style="display: none;">
+                                <label class="form-label">Categoria da Falta *</label>
+                                <select id="categoriaMedida" class="form-select" onchange="carregarFaltasPorCategoria()" required>
+                                    <option value="">Selecione a categoria...</option>
+                                    <option value="leves">Faltas Leves (1-26)</option>
+                                    <option value="medias">Faltas Médias (27-62)</option>
+                                    <option value="graves">Faltas Graves (63-91)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group form-group-full" id="campoSelecaoFalta" style="display: none;">
+                                <label class="form-label">Selecionar Falta Específica *</label>
+                                <select id="faltaEspecifica" class="form-select" required>
+                                    <option value="">Primeiro selecione uma categoria...</option>
                                 </select>
                             </div>
                             
@@ -1122,7 +1132,7 @@
                                 >
                             </div>
                             
-                            <div class="form-group form-group-full">
+                            <div class="form-group form-group-full" id="campoMotivoOriginal">
                                 <label class="form-label">Motivo/Descrição *</label>
                                 <textarea 
                                     id="motivoMedida" 
@@ -1610,6 +1620,23 @@
                     throw new Error('Aluno não encontrado');
                 }
                 
+                // Preparar descrição da medida
+                let especificacao = motivo;
+                const faltaEspecifica = document.getElementById('faltaEspecifica')?.value;
+                const categoriaMedida = document.getElementById('categoriaMedida')?.value;
+                
+                // Se uma falta específica foi selecionada, usar ela como especificação
+                if (faltaEspecifica && faltaEspecifica !== '') {
+                    especificacao = faltaEspecifica;
+                    
+                    // Adicionar categoria nas observações se não estiver preenchida
+                    if (categoriaMedida && ['leves', 'medias', 'graves'].includes(categoriaMedida)) {
+                        const categoriaTexto = categoriaMedida === 'leves' ? 'LEVE' : 
+                                              categoriaMedida === 'medias' ? 'MÉDIA' : 'GRAVE';
+                        acoes = `[FALTA ${categoriaTexto}] ${acoes || ''}`;
+                    }
+                }
+                
                 // Salvar medida diretamente no Supabase
                 const { data: result, error: saveError } = await window.supabaseClient
                     .from('medidas')
@@ -1618,7 +1645,7 @@
                         nome_completo: dadosAluno['Nome completo'],
                         turma: dadosAluno.turma,
                         data: data,
-                        especificacao: motivo,
+                        especificacao: especificacao,
                         observacao: acoes,
                         tipo_medida: tipoMedida,
                         criado_em: new Date().toISOString()
@@ -1635,6 +1662,9 @@
                 form.reset();
                 document.getElementById('campoSuspensao').style.display = 'none';
                 document.getElementById('diasSuspensao').required = false;
+                document.getElementById('campoCategoriaMedida').style.display = 'none';
+                document.getElementById('campoSelecaoFalta').style.display = 'none';
+                document.getElementById('campoMotivoOriginal').style.display = 'block';
                 
                 // Mostrar mensagem de sucesso
                 showMessage('✅ Medida disciplinar salva com sucesso!', 'success');
@@ -1659,6 +1689,153 @@
             } finally {
                 btn.disabled = false;
                 btn.textContent = '⚠️ Salvar Medida';
+            }
+        }
+        
+        // Funções para gerenciar seleção de medidas categorizadas
+        function configurarCamposMedida() {
+            const tipoMedida = document.getElementById('tipoMedida').value;
+            const campoCategoria = document.getElementById('campoCategoriaMedida');
+            const campoSelecaoFalta = document.getElementById('campoSelecaoFalta');
+            const campoMotivoOriginal = document.getElementById('campoMotivoOriginal');
+            const selectCategoria = document.getElementById('categoriaMedida');
+            const selectFalta = document.getElementById('faltaEspecifica');
+            const textareaMotivo = document.getElementById('motivoMedida');
+            
+            // Medidas que requerem seleção de falta categorizada
+            const medidasComCategoria = [
+                'Fato Observado Negativo',
+                'Advertência Verbal', 
+                'Advertência Escrita',
+                'Suspensão',
+                'Ação Educativa'
+            ];
+            
+            // Medidas positivas que também usam seleção de categoria
+            const medidasPositivas = [
+                'Elogio Individual',
+                'Elogio Coletivo',
+                'Fato Observado Positivo'
+            ];
+            
+            if (medidasComCategoria.includes(tipoMedida)) {
+                // Mostrar campos de categoria para medidas disciplinares
+                campoCategoria.style.display = 'block';
+                campoSelecaoFalta.style.display = 'block';
+                campoMotivoOriginal.style.display = 'none';
+                selectCategoria.required = true;
+                selectFalta.required = true;
+                textareaMotivo.required = false;
+                
+                // Restaurar opções originais para medidas disciplinares
+                selectCategoria.innerHTML = `
+                    <option value="">Selecione a categoria...</option>
+                    <option value="leves">Faltas Leves (1-26)</option>
+                    <option value="medias">Faltas Médias (27-62)</option>
+                    <option value="graves">Faltas Graves (63-91)</option>
+                `;
+                
+                // Limpar seleções anteriores
+                selectCategoria.value = '';
+                selectFalta.innerHTML = '<option value="">Primeiro selecione uma categoria...</option>';
+                
+            } else if (medidasPositivas.includes(tipoMedida)) {
+                // Para medidas positivas, mostrar campo de categoria mas com opções diferentes
+                campoCategoria.style.display = 'block';
+                campoSelecaoFalta.style.display = 'block';
+                campoMotivoOriginal.style.display = 'none';
+                
+                // Modificar as opções para medidas positivas
+                selectCategoria.innerHTML = `
+                    <option value="">Selecione a categoria...</option>
+                    <option value="comportamento">Comportamento Exemplar</option>
+                    <option value="academico">Desempenho Acadêmico</option>
+                    <option value="cidadania">Cidadania e Respeito</option>
+                `;
+                
+                selectCategoria.required = false;
+                selectFalta.required = false;
+                textareaMotivo.required = true;
+                
+            } else {
+                // Para outras medidas, usar campo de texto tradicional
+                campoCategoria.style.display = 'none';
+                campoSelecaoFalta.style.display = 'none';
+                campoMotivoOriginal.style.display = 'block';
+                selectCategoria.required = false;
+                selectFalta.required = false;
+                textareaMotivo.required = true;
+            }
+            
+            // Gerenciar campo de suspensão
+            const campoSuspensao = document.getElementById('campoSuspensao');
+            const diasSuspensao = document.getElementById('diasSuspensao');
+            
+            if (tipoMedida === 'Suspensão') {
+                campoSuspensao.style.display = 'block';
+                diasSuspensao.required = true;
+            } else {
+                campoSuspensao.style.display = 'none';
+                diasSuspensao.required = false;
+            }
+        }
+        
+        function carregarFaltasPorCategoria() {
+            const categoria = document.getElementById('categoriaMedida').value;
+            const selectFalta = document.getElementById('faltaEspecifica');
+            const tipoMedida = document.getElementById('tipoMedida').value;
+            
+            if (!categoria) {
+                selectFalta.innerHTML = '<option value="">Primeiro selecione uma categoria...</option>';
+                return;
+            }
+            
+            // Para medidas positivas, criar opções específicas
+            if (['Elogio Individual', 'Elogio Coletivo', 'Fato Observado Positivo'].includes(tipoMedida)) {
+                let opcoes = '';
+                
+                if (categoria === 'comportamento') {
+                    opcoes = `
+                        <option value="Demonstrou excelência em disciplina e respeito">Demonstrou excelência em disciplina e respeito</option>
+                        <option value="Auxiliou colegas e demonstrou solidariedade">Auxiliou colegas e demonstrou solidariedade</option>
+                        <option value="Apresentou-se impecavelmente uniformizado">Apresentou-se impecavelmente uniformizado</option>
+                        <option value="Liderou atividades com responsabilidade">Liderou atividades com responsabilidade</option>
+                        <option value="Manteve postura exemplar em formação">Manteve postura exemplar em formação</option>
+                    `;
+                } else if (categoria === 'academico') {
+                    opcoes = `
+                        <option value="Excelente desempenho em avaliações">Excelente desempenho em avaliações</option>
+                        <option value="Participação ativa e construtiva em aula">Participação ativa e construtiva em aula</option>
+                        <option value="Entrega pontual de todas as atividades">Entrega pontual de todas as atividades</option>
+                        <option value="Demonstrou evolução significativa no aprendizado">Demonstrou evolução significativa no aprendizado</option>
+                    `;
+                } else if (categoria === 'cidadania') {
+                    opcoes = `
+                        <option value="Participou ativamente de ações cívicas">Participou ativamente de ações cívicas</option>
+                        <option value="Demonstrou respeito aos símbolos nacionais">Demonstrou respeito aos símbolos nacionais</option>
+                        <option value="Promoveu ações de cidadania na escola">Promoveu ações de cidadania na escola</option>
+                        <option value="Colaborou com a manutenção do patrimônio escolar">Colaborou com a manutenção do patrimônio escolar</option>
+                    `;
+                }
+                
+                selectFalta.innerHTML = `
+                    <option value="">Selecione o motivo do elogio...</option>
+                    ${opcoes}
+                    <option value="outro">Outro (especificar nas observações)</option>
+                `;
+                
+            } else {
+                // Para medidas disciplinares, usar as faltas categorizadas
+                if (window.MEDIDAS_DISCIPLINARES && window.MEDIDAS_DISCIPLINARES[categoria]) {
+                    const medidas = window.MEDIDAS_DISCIPLINARES[categoria];
+                    
+                    selectFalta.innerHTML = `
+                        <option value="">Selecione a falta específica...</option>
+                        ${medidas.map(medida => `<option value="${medida}">${medida}</option>`).join('')}
+                    `;
+                } else {
+                    selectFalta.innerHTML = '<option value="">Erro ao carregar faltas da categoria</option>';
+                }
             }
         }
 
