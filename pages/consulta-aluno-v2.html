@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal dos Pais - E.E.C.M. Jupiara</title>
+    
+    <!-- Segurança -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline';">
+    
+    <!-- Supabase e configurações -->
+    <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
+    <script src="../assets/js/env-config.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-only.js"></script>
+    
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- CSS do sistema -->
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
+    <link rel="stylesheet" href="../assets/css/dashboard.css">
+    
+    <style>
+        /* Estilos específicos do Portal dos Pais */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Sistema de Login */
+        .auth-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .auth-logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .auth-logo img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+        }
+
+        .auth-title {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 1.8em;
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-label {
+            color: #34495e;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .form-input {
+            padding: 12px 20px;
+            border: 2px solid #e0e6ed;
+            border-radius: 12px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-login {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-login:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Portal Principal (após login) */
+        .portal-header {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+
+        .user-role {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .btn-logout {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-logout:hover {
+            background: #c0392b;
+            transform: translateY(-1px);
+        }
+
+        /* Seletor de Alunos (para pais com múltiplos filhos) */
+        .student-selector {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        .student-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .student-card {
+            background: #f8f9fa;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .student-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .student-card.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .student-card-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .student-card-info {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        /* Conteúdo Principal */
+        .main-content {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .main-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Mensagens e Alertas */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: none;
+            animation: slideIn 0.5s ease;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-error {
+            background: rgba(231, 76, 60, 0.1);
+            color: #c0392b;
+            border: 2px solid rgba(231, 76, 60, 0.2);
+        }
+
+        .alert-success {
+            background: rgba(46, 204, 113, 0.1);
+            color: #27ae60;
+            border: 2px solid rgba(46, 204, 113, 0.2);
+        }
+
+        .alert-warning {
+            background: rgba(243, 156, 18, 0.1);
+            color: #e67e22;
+            border: 2px solid rgba(243, 156, 18, 0.2);
+        }
+
+        /* Loading State */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .portal-header {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+
+            .student-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="container">
+        <!-- Área de Login -->
+        <div id="authSection" class="auth-container">
+            <div class="auth-logo">
+                <img src="../assets/images/logo-escola.jpeg" alt="Logo EECM Jupiara">
+            </div>
+            <h1 class="auth-title">Portal dos Pais</h1>
+            
+            <div id="alertMessage" class="alert"></div>
+            
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label class="form-label">CPF</label>
+                    <input 
+                        type="text" 
+                        id="cpf" 
+                        class="form-input" 
+                        placeholder="Digite seu CPF (apenas números)"
+                        maxlength="11"
+                        pattern="\d{11}"
+                        required
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Senha</label>
+                    <input 
+                        type="password" 
+                        id="senha" 
+                        class="form-input" 
+                        placeholder="Digite sua senha"
+                        required
+                    >
+                </div>
+                
+                <button type="submit" class="btn-login" id="btnLogin">
+                    Entrar
+                </button>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="#" onclick="esqueceuSenha()" style="color: #667eea; text-decoration: none;">
+                        Esqueceu sua senha?
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Área do Portal (após login) -->
+        <div id="portalSection" style="display: none;">
+            <!-- Header do Portal -->
+            <div class="portal-header">
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">--</div>
+                    <div class="user-details">
+                        <div class="user-name" id="userName">--</div>
+                        <div class="user-role">Responsável</div>
+                    </div>
+                </div>
+                <button class="btn-logout" onclick="logout()">
+                    Sair
+                </button>
+            </div>
+
+            <!-- Seletor de Alunos -->
+            <div class="student-selector" id="studentSelector">
+                <h2 style="color: #2c3e50; margin-bottom: 15px;">Selecione o Aluno</h2>
+                <div class="student-cards" id="studentCards">
+                    <!-- Cards serão inseridos dinamicamente -->
+                </div>
+            </div>
+
+            <!-- Conteúdo Principal (dados do aluno selecionado) -->
+            <div class="main-content" id="mainContent">
+                <!-- O conteúdo original do aluno será carregado aqui -->
+                <!-- Incluindo estatísticas, tabs, gráficos, etc. -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Estado da aplicação
+        let authState = {
+            isAuthenticated: false,
+            user: null,
+            responsavel: null,
+            alunos: [],
+            alunoSelecionado: null
+        };
+
+        // Configuração de desenvolvimento (REMOVER EM PRODUÇÃO)
+        const DEV_MODE = window.location.hostname === 'localhost';
+        const DEBUG = DEV_MODE;
+
+        // Logger condicional
+        const log = (...args) => {
+            if (DEBUG) console.log('[Portal Pais]', ...args);
+        };
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', async () => {
+            log('Iniciando Portal dos Pais...');
+            
+            // Verificar sessão existente
+            await checkSession();
+            
+            // Setup event listeners
+            setupEventListeners();
+        });
+
+        // Verificar sessão
+        async function checkSession() {
+            try {
+                if (!window.supabaseClient) {
+                    await waitForSupabase();
+                }
+
+                const { data: { session }, error } = await window.supabaseClient.auth.getSession();
+                
+                if (session) {
+                    log('Sessão encontrada:', session.user.email);
+                    await handleAuthSuccess(session);
+                } else {
+                    log('Nenhuma sessão ativa');
+                    showAuthSection();
+                }
+            } catch (error) {
+                console.error('Erro ao verificar sessão:', error);
+                showAuthSection();
+            }
+        }
+
+        // Aguardar Supabase
+        async function waitForSupabase() {
+            return new Promise(resolve => {
+                const check = setInterval(() => {
+                    if (window.supabaseClient) {
+                        clearInterval(check);
+                        resolve();
+                    }
+                }, 100);
+            });
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Form de login
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            
+            // Máscara CPF
+            document.getElementById('cpf').addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/\D/g, '');
+            });
+        }
+
+        // Handler de login
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const cpf = document.getElementById('cpf').value;
+            const senha = document.getElementById('senha').value;
+            
+            if (cpf.length !== 11) {
+                showMessage('CPF deve ter 11 dígitos', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            document.getElementById('btnLogin').disabled = true;
+            
+            try {
+                // Em desenvolvimento, simular login
+                if (DEV_MODE) {
+                    log('Modo desenvolvimento - simulando login');
+                    await simulateDevLogin(cpf, senha);
+                    return;
+                }
+                
+                // Login real via Supabase Auth
+                const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+                    email: `${cpf}@parent.local`,
+                    password: senha
+                });
+                
+                if (error) throw error;
+                
+                await handleAuthSuccess(data.session);
+                
+            } catch (error) {
+                console.error('Erro no login:', error);
+                showMessage('CPF ou senha inválidos', 'error');
+            } finally {
+                showLoading(false);
+                document.getElementById('btnLogin').disabled = false;
+            }
+        }
+
+        // Simular login em desenvolvimento
+        async function simulateDevLogin(cpf, senha) {
+            // Simular delay de autenticação
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Dados fictícios para desenvolvimento
+            const mockData = {
+                user: {
+                    id: 'dev-user-123',
+                    email: `${cpf}@parent.local`
+                },
+                responsavel: {
+                    id: 'dev-resp-123',
+                    cpf: cpf,
+                    nome: 'João da Silva (Dev)',
+                    email: 'dev@example.com'
+                },
+                alunos: [
+                    {
+                        codigo: 1,
+                        'Nome completo': 'Pedro Silva',
+                        turma: '8º A',
+                        turno: 'Manhã'
+                    },
+                    {
+                        codigo: 2,
+                        'Nome completo': 'Maria Silva',
+                        turma: '6º B',
+                        turno: 'Tarde'
+                    }
+                ]
+            };
+            
+            authState = {
+                isAuthenticated: true,
+                user: mockData.user,
+                responsavel: mockData.responsavel,
+                alunos: mockData.alunos,
+                alunoSelecionado: null
+            };
+            
+            showPortalSection();
+        }
+
+        // Handler de sucesso na autenticação
+        async function handleAuthSuccess(session) {
+            try {
+                showLoading(true);
+                
+                // Buscar dados do responsável
+                const { data: responsavel, error: respError } = await window.supabaseClient
+                    .from('responsaveis')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single();
+                
+                if (respError) {
+                    console.error('Erro ao buscar responsável:', respError);
+                    // Em dev, continuar com dados mock
+                    if (!DEV_MODE) throw respError;
+                }
+                
+                // Buscar alunos autorizados (RLS aplicado automaticamente)
+                const { data: alunos, error: alunosError } = await window.supabaseClient
+                    .from('v_portal_pais_seguro')
+                    .select('*');
+                
+                if (alunosError) {
+                    console.error('Erro ao buscar alunos:', alunosError);
+                    // Em dev, usar mock
+                    if (!DEV_MODE) throw alunosError;
+                }
+                
+                authState = {
+                    isAuthenticated: true,
+                    user: session.user,
+                    responsavel: responsavel || authState.responsavel,
+                    alunos: alunos || authState.alunos,
+                    alunoSelecionado: null
+                };
+                
+                showPortalSection();
+                
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+                showMessage('Erro ao carregar seus dados', 'error');
+                await logout();
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Mostrar seção de autenticação
+        function showAuthSection() {
+            document.getElementById('authSection').style.display = 'block';
+            document.getElementById('portalSection').style.display = 'none';
+        }
+
+        // Mostrar seção do portal
+        function showPortalSection() {
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('portalSection').style.display = 'block';
+            
+            // Atualizar UI com dados do usuário
+            updateUserInfo();
+            renderStudentCards();
+        }
+
+        // Atualizar informações do usuário
+        function updateUserInfo() {
+            const { responsavel } = authState;
+            
+            if (responsavel) {
+                const initials = responsavel.nome.split(' ')
+                    .map(n => n[0])
+                    .slice(0, 2)
+                    .join('')
+                    .toUpperCase();
+                
+                document.getElementById('userAvatar').textContent = initials;
+                document.getElementById('userName').textContent = responsavel.nome;
+            }
+        }
+
+        // Renderizar cards de alunos
+        function renderStudentCards() {
+            const container = document.getElementById('studentCards');
+            const { alunos } = authState;
+            
+            if (!alunos || alunos.length === 0) {
+                container.innerHTML = '<p style="color: #7f8c8d;">Nenhum aluno vinculado</p>';
+                return;
+            }
+            
+            container.innerHTML = alunos.map(aluno => `
+                <div class="student-card" onclick="selectStudent(${aluno.codigo})">
+                    <div class="student-card-name">${aluno.nome_completo || aluno['Nome completo']}</div>
+                    <div class="student-card-info">${aluno.turma} - ${aluno.turno || 'Integral'}</div>
+                </div>
+            `).join('');
+            
+            // Se houver apenas um aluno, selecionar automaticamente
+            if (alunos.length === 1) {
+                selectStudent(alunos[0].codigo);
+            }
+        }
+
+        // Selecionar aluno
+        async function selectStudent(codigo) {
+            const { alunos } = authState;
+            const aluno = alunos.find(a => a.codigo === codigo);
+            
+            if (!aluno) return;
+            
+            authState.alunoSelecionado = aluno;
+            
+            // Atualizar visual dos cards
+            document.querySelectorAll('.student-card').forEach((card, index) => {
+                if (alunos[index].codigo === codigo) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+            
+            // Carregar dados completos do aluno
+            await loadStudentData(aluno);
+        }
+
+        // Carregar dados do aluno
+        async function loadStudentData(aluno) {
+            showLoading(true);
+            
+            try {
+                // Aqui carregaria os dados completos do aluno
+                // Por ora, mostrar mensagem
+                document.getElementById('mainContent').innerHTML = `
+                    <div style="background: white; padding: 30px; border-radius: 20px; text-align: center;">
+                        <h2>Dados de ${aluno.nome_completo || aluno['Nome completo']}</h2>
+                        <p style="color: #7f8c8d; margin-top: 10px;">
+                            Turma: ${aluno.turma} | Turno: ${aluno.turno || 'Integral'}
+                        </p>
+                        <p style="color: #27ae60; margin-top: 20px;">
+                            ✅ Sistema de consulta seguro implementado!
+                        </p>
+                        <p style="color: #e67e22; margin-top: 10px;">
+                            📊 Integração com dados completos em desenvolvimento...
+                        </p>
+                    </div>
+                `;
+                
+                document.getElementById('mainContent').classList.add('active');
+                
+            } catch (error) {
+                console.error('Erro ao carregar dados do aluno:', error);
+                showMessage('Erro ao carregar dados do aluno', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Logout
+        async function logout() {
+            try {
+                if (!DEV_MODE && window.supabaseClient) {
+                    await window.supabaseClient.auth.signOut();
+                }
+                
+                authState = {
+                    isAuthenticated: false,
+                    user: null,
+                    responsavel: null,
+                    alunos: [],
+                    alunoSelecionado: null
+                };
+                
+                showAuthSection();
+                showMessage('Logout realizado com sucesso', 'success');
+                
+            } catch (error) {
+                console.error('Erro no logout:', error);
+            }
+        }
+
+        // Esqueceu senha
+        function esqueceuSenha() {
+            showMessage('Funcionalidade em desenvolvimento. Entre em contato com a secretaria.', 'warning');
+        }
+
+        // Mostrar/ocultar loading
+        function showLoading(show) {
+            document.getElementById('loadingOverlay').classList.toggle('active', show);
+        }
+
+        // Mostrar mensagem
+        function showMessage(message, type = 'info') {
+            const alert = document.getElementById('alertMessage');
+            alert.className = `alert alert-${type} show`;
+            alert.textContent = message;
+            
+            setTimeout(() => {
+                alert.classList.remove('show');
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

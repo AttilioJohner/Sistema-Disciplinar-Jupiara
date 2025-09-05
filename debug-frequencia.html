@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Frequência Integration</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .debug-section { border: 1px solid #ccc; margin: 10px 0; padding: 15px; border-radius: 5px; }
+        .debug-section h3 { margin-top: 0; color: #333; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        select, button { padding: 8px; margin: 5px; }
+        #log { background: #f5f5f5; padding: 10px; max-height: 300px; overflow-y: auto; font-family: monospace; }
+        .aluno-item { padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 3px; }
+    </style>
+    
+    <!-- Supabase setup -->
+    <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
+    <script src="../assets/js/env-config.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-only.js"></script>
+</head>
+
+<body>
+    <h1>🐛 Debug - Frequência Integration</h1>
+    <p>Esta página testa se os novos alunos aparecem corretamente no sistema de frequência.</p>
+
+    <div class="debug-section">
+        <h3>1. Status da Conexão</h3>
+        <div id="connectionStatus">Testando...</div>
+    </div>
+
+    <div class="debug-section">
+        <h3>2. Total de Alunos na Base</h3>
+        <button onclick="testAlunos()">🔄 Carregar Alunos</button>
+        <div id="alunosStatus">Clique no botão para carregar</div>
+        <div id="alunosList"></div>
+    </div>
+
+    <div class="debug-section">
+        <h3>3. Teste do Select de Turmas</h3>
+        <button onclick="carregarTurmasDebug()">🔄 Carregar Turmas</button>
+        <br>
+        <select id="turmaLancamento" onchange="carregarAlunosLancamento()">
+            <option value="">Selecione uma turma...</option>
+        </select>
+        <div id="turmasStatus"></div>
+    </div>
+
+    <div class="debug-section">
+        <h3>4. Teste de Carregamento de Alunos por Turma</h3>
+        <div id="containerListaAlunos" style="display: none;">
+            <div><strong>Turma: <span id="tituloTurmaData"></span></strong></div>
+            <div id="listaAlunosFrequencia"></div>
+        </div>
+        <div id="lancamentoStatus"></div>
+    </div>
+
+    <div class="debug-section">
+        <h3>5. Teste Realtime</h3>
+        <button onclick="testRealtime()">🔄 Iniciar Monitoramento</button>
+        <div id="realtimeStatus">Não iniciado</div>
+    </div>
+
+    <div class="debug-section">
+        <h3>6. Log de Debug</h3>
+        <button onclick="clearLog()">🗑️ Limpar Log</button>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        // Override console.log para capturar logs
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        function logToScreen(message, type = 'log') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.innerHTML = `[${timestamp}] <span class="${type}">${message}</span>`;
+            logDiv.appendChild(div);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            
+            // Também manter no console normal
+            if (type === 'error') {
+                originalError(message);
+            } else {
+                originalLog(message);
+            }
+        }
+        
+        console.log = (message) => logToScreen(message, 'log');
+        console.error = (message) => logToScreen(message, 'error');
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        // Teste 1: Conexão
+        async function testConnection() {
+            try {
+                if (typeof supabase === 'undefined') {
+                    throw new Error('Supabase não definido');
+                }
+                
+                const { data, error } = await supabase.from('alunos').select('count').limit(1);
+                
+                if (error) throw error;
+                
+                document.getElementById('connectionStatus').innerHTML = 
+                    '<span class="success">✅ Conexão com Supabase OK</span>';
+                logToScreen('Conexão com Supabase estabelecida');
+                
+            } catch (error) {
+                document.getElementById('connectionStatus').innerHTML = 
+                    `<span class="error">❌ Erro de conexão: ${error.message}</span>`;
+                logToScreen(`Erro de conexão: ${error.message}`, 'error');
+            }
+        }
+        
+        // Teste 2: Carregar todos os alunos
+        async function testAlunos() {
+            try {
+                logToScreen('Carregando todos os alunos...');
+                
+                const { data, error } = await supabase
+                    .from('alunos')
+                    .select('codigo, "Nome completo", turma, status')
+                    .order('"Nome completo"');
+                
+                if (error) throw error;
+                
+                document.getElementById('alunosStatus').innerHTML = 
+                    `<span class="success">✅ ${data.length} alunos encontrados</span>`;
+                
+                const alunosDiv = document.getElementById('alunosList');
+                alunosDiv.innerHTML = data.map(aluno => 
+                    `<div class="aluno-item">
+                        <strong>${aluno.codigo}</strong> - ${aluno["Nome completo"]} 
+                        (Turma: ${aluno.turma || 'N/A'}, Status: ${aluno.status || 'N/A'})
+                    </div>`
+                ).join('');
+                
+                logToScreen(`✅ ${data.length} alunos carregados com sucesso`);
+                
+            } catch (error) {
+                document.getElementById('alunosStatus').innerHTML = 
+                    `<span class="error">❌ Erro: ${error.message}</span>`;
+                logToScreen(`Erro ao carregar alunos: ${error.message}`, 'error');
+            }
+        }
+        
+        // Teste 3: Carregar turmas
+        async function carregarTurmasDebug() {
+            try {
+                logToScreen('Carregando turmas disponíveis...');
+                
+                const { data, error } = await supabase
+                    .from('alunos')
+                    .select('turma')
+                    .not('turma', 'is', null)
+                    .neq('status', 'inativo');
+                
+                if (error) throw error;
+                
+                const turmas = [...new Set(data.map(item => item.turma))].filter(t => t).sort();
+                
+                const select = document.getElementById('turmaLancamento');
+                select.innerHTML = '<option value="">Selecione uma turma...</option>';
+                
+                turmas.forEach(turma => {
+                    const option = document.createElement('option');
+                    option.value = turma;
+                    option.textContent = turma;
+                    select.appendChild(option);
+                });
+                
+                document.getElementById('turmasStatus').innerHTML = 
+                    `<span class="success">✅ ${turmas.length} turmas carregadas: ${turmas.join(', ')}</span>`;
+                
+                logToScreen(`✅ Turmas carregadas: ${turmas.join(', ')}`);
+                
+            } catch (error) {
+                document.getElementById('turmasStatus').innerHTML = 
+                    `<span class="error">❌ Erro: ${error.message}</span>`;
+                logToScreen(`Erro ao carregar turmas: ${error.message}`, 'error');
+            }
+        }
+        
+        // Teste 4: Função para carregar alunos por turma (copiada do frequencia-realtime.js)
+        window.carregarAlunosLancamento = async function() {
+            const turmaSelect = document.getElementById('turmaLancamento');
+            const turma = turmaSelect?.value;
+            
+            if (!turma) {
+                document.getElementById('containerListaAlunos').style.display = 'none';
+                document.getElementById('lancamentoStatus').innerHTML = '';
+                return;
+            }
+            
+            try {
+                logToScreen(`Carregando alunos da turma: ${turma}`);
+                
+                const { data, error } = await supabase
+                    .from('alunos')
+                    .select('codigo, "Nome completo", turma, status')
+                    .eq('turma', turma)
+                    .eq('status', 'ativo')
+                    .order('"Nome completo"');
+                
+                if (error) throw error;
+                
+                const container = document.getElementById('listaAlunosFrequencia');
+                const titulo = document.getElementById('tituloTurmaData');
+                
+                if (titulo) titulo.textContent = turma;
+                
+                if (container) {
+                    if (data.length === 0) {
+                        container.innerHTML = '<p class="warning">⚠️ Nenhum aluno ativo encontrado nesta turma.</p>';
+                        document.getElementById('lancamentoStatus').innerHTML = 
+                            `<span class="warning">⚠️ Turma ${turma} não tem alunos ativos</span>`;
+                    } else {
+                        container.innerHTML = data.map(aluno => `
+                            <div class="aluno-item">
+                                <strong>${aluno.codigo} - ${aluno["Nome completo"]}</strong>
+                                <span style="background: #e3f2fd; color: #1976d2; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-left: 10px;">${aluno.turma}</span>
+                                <div style="margin-top: 5px;">
+                                    <button onclick="marcarDebug(${aluno.codigo}, 'P')" style="background: green; color: white;">✓ P</button>
+                                    <button onclick="marcarDebug(${aluno.codigo}, 'A')" style="background: blue; color: white;">A</button>
+                                    <button onclick="marcarDebug(${aluno.codigo}, 'F')" style="background: red; color: white;">✗ F</button>
+                                </div>
+                            </div>
+                        `).join('');
+                        
+                        document.getElementById('lancamentoStatus').innerHTML = 
+                            `<span class="success">✅ ${data.length} alunos encontrados na turma ${turma}</span>`;
+                    }
+                }
+                
+                document.getElementById('containerListaAlunos').style.display = 'block';
+                logToScreen(`✅ ${data.length} alunos carregados para a turma ${turma}`);
+                
+            } catch (error) {
+                document.getElementById('lancamentoStatus').innerHTML = 
+                    `<span class="error">❌ Erro ao carregar alunos da turma: ${error.message}</span>`;
+                logToScreen(`Erro ao carregar alunos da turma ${turma}: ${error.message}`, 'error');
+            }
+        };
+        
+        // Função de debug para marcar frequência
+        window.marcarDebug = function(codigo, status) {
+            logToScreen(`DEBUG: Marcaria ${status} para aluno ${codigo}`);
+            alert(`DEBUG: Marcaria ${status} para aluno ${codigo}`);
+        };
+        
+        // Teste 5: Realtime
+        async function testRealtime() {
+            try {
+                logToScreen('Iniciando monitoramento realtime...');
+                
+                const subscription = supabase
+                    .channel('debug-alunos')
+                    .on('postgres_changes', 
+                        { event: '*', schema: 'public', table: 'alunos' },
+                        (payload) => {
+                            logToScreen(`🔔 REALTIME - ${payload.eventType}: ${JSON.stringify(payload.new || payload.old)}`);
+                        }
+                    )
+                    .subscribe();
+                
+                document.getElementById('realtimeStatus').innerHTML = 
+                    '<span class="success">✅ Monitoramento realtime ativo</span>';
+                logToScreen('✅ Monitoramento realtime iniciado');
+                
+            } catch (error) {
+                document.getElementById('realtimeStatus').innerHTML = 
+                    `<span class="error">❌ Erro realtime: ${error.message}</span>`;
+                logToScreen(`Erro ao iniciar realtime: ${error.message}`, 'error');
+            }
+        }
+        
+        // Inicializar testes ao carregar
+        document.addEventListener('DOMContentLoaded', async () => {
+            logToScreen('🚀 Iniciando testes de debug...');
+            await testConnection();
+            await carregarTurmasDebug();
+            logToScreen('✅ Testes iniciais concluídos');
+        });
+    </script>
+</body>
+</html>
