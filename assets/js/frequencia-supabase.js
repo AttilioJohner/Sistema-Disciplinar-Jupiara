@@ -709,19 +709,49 @@ class FrequenciaSupabaseManager {
 
       console.log(`✅ ${alunos.length} alunos encontrados na turma ${turma}:`, alunos.map(a => `${a.codigo} - ${a['Nome completo']}`));
 
+      // BUSCAR FREQUÊNCIA EXISTENTE PARA A DATA E TURMA
+      console.log(`🔍 Buscando frequência existente para ${turma} em ${dataLancamento}...`);
+      const { data: frequenciaExistente, error: errorFreq } = await this.supabase
+        .from('frequencia')
+        .select('codigo_matricula, status')
+        .eq('turma', turma)
+        .eq('data', dataLancamento);
+
+      if (errorFreq) {
+        console.error('Erro ao buscar frequência existente:', errorFreq);
+      }
+
+      // Criar mapa de frequência existente
+      const mapFrequencia = {};
+      if (frequenciaExistente && frequenciaExistente.length > 0) {
+        console.log(`📋 Encontrados ${frequenciaExistente.length} registros de frequência existentes`);
+        frequenciaExistente.forEach(freq => {
+          mapFrequencia[freq.codigo_matricula] = freq.status;
+        });
+      } else {
+        console.log('📋 Nenhuma frequência registrada anteriormente para esta turma e data');
+      }
+
       // Ordenar alunos por nome (já ordenado pela query, mas garantindo)
       const alunosOrdenados = alunos.map(aluno => ({
         codigo: aluno.codigo,
         nome: aluno['Nome completo'],
-        turma: aluno.turma
+        turma: aluno.turma,
+        statusAtual: mapFrequencia[aluno.codigo] || 'P' // Usa status existente ou P por padrão
       }));
 
       // Atualizar título
       const dataFormatada = new Date(dataLancamento + 'T00:00:00').toLocaleDateString('pt-BR');
-      tituloTurmaData.textContent = `Turma ${turma} - ${dataFormatada}`;
+      const temFrequenciaAnterior = Object.keys(mapFrequencia).length > 0;
+      tituloTurmaData.innerHTML = `
+        Turma ${turma} - ${dataFormatada}
+        ${temFrequenciaAnterior ? '<span style="color: #28a745; font-size: 0.9rem; margin-left: 1rem;">✅ Frequência já registrada - Modo de edição</span>' : ''}
+      `;
 
-      // Gerar lista de alunos
-      listaAlunos.innerHTML = alunosOrdenados.map(aluno => `
+      // Gerar lista de alunos com status pré-carregado
+      listaAlunos.innerHTML = alunosOrdenados.map(aluno => {
+        const statusPre = aluno.statusAtual;
+        return `
         <div class="aluno-frequencia-item" data-codigo="${aluno.codigo}">
           <div class="aluno-info">
             <span class="aluno-codigo">${aluno.codigo}</span>
@@ -729,28 +759,42 @@ class FrequenciaSupabaseManager {
           </div>
           <div class="frequencia-controles">
             <label class="frequencia-radio">
-              <input type="radio" name="freq_${aluno.codigo}" value="P" checked>
+              <input type="radio" name="freq_${aluno.codigo}" value="P" ${statusPre === 'P' ? 'checked' : ''}>
               <span class="radio-label freq-P">P</span>
             </label>
             <label class="frequencia-radio">
-              <input type="radio" name="freq_${aluno.codigo}" value="F">
+              <input type="radio" name="freq_${aluno.codigo}" value="F" ${statusPre === 'F' ? 'checked' : ''}>
               <span class="radio-label freq-F">F</span>
             </label>
             <label class="frequencia-radio">
-              <input type="radio" name="freq_${aluno.codigo}" value="A">
+              <input type="radio" name="freq_${aluno.codigo}" value="A" ${statusPre === 'A' ? 'checked' : ''}>
               <span class="radio-label freq-A">A</span>
             </label>
             <label class="frequencia-radio">
-              <input type="radio" name="freq_${aluno.codigo}" value="FC">
+              <input type="radio" name="freq_${aluno.codigo}" value="FC" ${statusPre === 'FC' ? 'checked' : ''}>
               <span class="radio-label freq-FC">FC</span>
             </label>
           </div>
         </div>
-      `).join('');
+      `}).join('');
 
       // Mostrar container e habilitar botão de salvar
       containerLista.style.display = 'block';
       document.getElementById('btnSalvarFrequencia').disabled = false;
+      
+      // Atualizar texto do botão se for edição
+      const btnSalvar = document.getElementById('btnSalvarFrequencia');
+      if (temFrequenciaAnterior) {
+        btnSalvar.innerHTML = '💾 Atualizar Frequência';
+        // Mostrar estatísticas da frequência carregada
+        const totais = { P: 0, F: 0, A: 0, FC: 0 };
+        alunosOrdenados.forEach(aluno => {
+          totais[aluno.statusAtual]++;
+        });
+        console.log(`📊 Frequência carregada: ${totais.P} Presentes, ${totais.F} Faltas, ${totais.A} Atestados, ${totais.FC} Faltas Controladas`);
+      } else {
+        btnSalvar.innerHTML = '💾 Salvar Frequência';
+      }
 
     } catch (error) {
       console.error('Erro ao carregar alunos para lançamento:', error);
@@ -835,9 +879,14 @@ class FrequenciaSupabaseManager {
       }
 
       console.log('✅ Frequência salva com sucesso!');
+      
+      // Verificar se foi uma atualização ou novo registro
+      const btnSalvar = document.getElementById('btnSalvarFrequencia');
+      const foiAtualizacao = btnSalvar.innerHTML.includes('Atualizar');
+      
       statusContainer.innerHTML = `
         <div class="success-message">
-          ✅ Frequência salva com sucesso! ${dadosFrequencia.length} registros processados.
+          ✅ Frequência ${foiAtualizacao ? 'atualizada' : 'salva'} com sucesso! ${dadosFrequencia.length} registros processados.
         </div>
       `;
 
@@ -866,6 +915,8 @@ class FrequenciaSupabaseManager {
     document.getElementById('containerListaAlunos').style.display = 'none';
     document.getElementById('btnSalvarFrequencia').disabled = true;
     document.getElementById('statusSalvamento').innerHTML = '';
+    // Resetar texto do botão
+    document.getElementById('btnSalvarFrequencia').innerHTML = '💾 Salvar Frequência';
   }
 
   // SISTEMA DE ALERTAS DE FREQUÊNCIA
