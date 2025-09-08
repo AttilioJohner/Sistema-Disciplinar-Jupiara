@@ -1220,12 +1220,15 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
                     }
                 }
                 
-                // Criar usuário no Supabase Auth (desabilitar confirmação de email)
+                // Criar usuário no Supabase Auth
                 const { data: authData, error: authError } = await window.supabaseClient.auth.signUp({
                     email: email,
                     password: senha,
                     options: {
-                        emailRedirectTo: undefined // Desabilita redirect de confirmação
+                        data: {
+                            full_name: nome,
+                            username: username
+                        }
                     }
                 });
                 
@@ -1272,10 +1275,10 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
                         console.error('Erro ao salvar metadados:', insertError);
                         showMessage('⚠️ Usuário criado, mas erro ao salvar metadados.', 'warning');
                     } else {
-                        showMessage('✅ Usuário criado! Verifique o email para confirmação antes de fazer login.', 'success');
+                        showMessage('✅ Usuário criado com sucesso! Login disponível imediatamente.', 'success');
                     }
                 } else {
-                    showMessage('✅ Usuário criado! Confirme o email recebido para ativar a conta.', 'success');
+                    showMessage('✅ Usuário criado com sucesso! Pode fazer login agora.', 'success');
                 }
                 
                 // Limpar formulário
