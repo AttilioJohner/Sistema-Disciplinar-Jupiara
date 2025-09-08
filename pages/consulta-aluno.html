@@ -1715,6 +1715,12 @@
             const nota = notaDisciplinarData?.nota_atual || 8.0; // Base padrão
             document.getElementById('notaDisciplinar').textContent = typeof nota === 'number' ? nota.toFixed(2) : nota;
             
+            // Também atualizar no resumo geral
+            if (document.getElementById('notaDisciplinarResumo')) {
+                document.getElementById('notaDisciplinarResumo').textContent = typeof nota === 'number' ? nota.toFixed(1) : nota;
+                updateDisciplineStatus(parseFloat(nota));
+            }
+            
             // Preencher barra de progresso
             const fillElement = document.getElementById('scoreFill');
             const percentual = (parseFloat(nota) / 10) * 100;
@@ -1867,10 +1873,34 @@
                 - Total Aulas: ${totalAulas}
                 - Percentual: ${percentualReal.toFixed(1)}%`);
             
-            // Atualizar elementos da aba de frequência
+            // Atualizar elementos da aba de frequência  
             document.getElementById('percentualFrequencia').textContent = `${percentualReal.toFixed(1)}%`;
             document.getElementById('totalPresencas').textContent = (presencas + atestados).toString();
             document.getElementById('totalFaltas').textContent = faltas.toString();
+            
+            // CONECTAR DADOS AOS NOVOS ELEMENTOS DO RESUMO GERAL
+            
+            // Atualizar status da frequência
+            updateFrequencyStatus(percentualReal);
+            
+            // Atualizar total dias letivos no resumo  
+            if (document.getElementById('totalDiasLetivos')) {
+                document.getElementById('totalDiasLetivos').textContent = totalAulas.toString();
+            }
+            
+            // Atualizar resumo do período na aba de frequência
+            if (document.getElementById('frequencySummaryText')) {
+                document.getElementById('frequencySummaryText').textContent = 
+                    `${presencas + atestados} presenças, ${faltas} faltas em ${totalAulas} dias letivos registrados`;
+            }
+            
+            // Atualizar subtítulos dos cards
+            if (document.getElementById('presencasSubtitle')) {
+                document.getElementById('presencasSubtitle').textContent = `de ${totalAulas} dias`;
+            }
+            if (document.getElementById('faltasSubtitle')) {
+                document.getElementById('faltasSubtitle').textContent = `de ${totalAulas} dias`;
+            }
             
             // Atualizar também o card PRINCIPAL de frequência (fora da aba)
             const frequencyPercentage = document.getElementById('frequencyPercentage');
@@ -2197,7 +2227,43 @@
                 totalMedidasEl.textContent = alunoAtual.total_medidas;
             }
             
-            // ESTATÍSTICAS ADICIONAIS (se existirem elementos)
+            // CONECTAR DADOS AOS NOVOS ELEMENTOS DO RESUMO GERAL
+            
+            // Nota disciplinar no resumo
+            if (document.getElementById('notaDisciplinarResumo')) {
+                document.getElementById('notaDisciplinarResumo').textContent = alunoAtual.nota_disciplinar;
+                updateDisciplineStatus(parseFloat(alunoAtual.nota_disciplinar));
+            }
+            
+            // Atualizar status da frequência 
+            updateFrequencyStatus(alunoAtual.percentual_frequencia);
+            
+            // Total de dias letivos (usar total_registros como aproximação)
+            if (document.getElementById('totalDiasLetivos')) {
+                document.getElementById('totalDiasLetivos').textContent = alunoAtual.total_registros || 0;
+            }
+            
+            // Resumo do período de frequência
+            if (document.getElementById('frequencySummaryText')) {
+                const presencas = alunoAtual.total_presencas || 0;
+                const faltas = alunoAtual.total_faltas || 0;
+                const total = alunoAtual.total_registros || 0;
+                document.getElementById('frequencySummaryText').textContent = 
+                    `${presencas} presenças, ${faltas} faltas em ${total} dias letivos registrados`;
+            }
+            
+            // Subtítulos dos cards
+            if (document.getElementById('presencasSubtitle')) {
+                document.getElementById('presencasSubtitle').textContent = `de ${alunoAtual.total_registros || 0} dias`;
+            }
+            if (document.getElementById('faltasSubtitle')) {
+                document.getElementById('faltasSubtitle').textContent = `de ${alunoAtual.total_registros || 0} dias`;
+            }
+            if (document.getElementById('medidasSubtitle')) {
+                document.getElementById('medidasSubtitle').textContent = 'no ano letivo';
+            }
+            
+            // ESTATÍSTICAS ADICIONAIS (elementos originais)
             if (document.getElementById('totalPresencas')) {
                 document.getElementById('totalPresencas').textContent = alunoAtual.total_presencas || 0;
             }
