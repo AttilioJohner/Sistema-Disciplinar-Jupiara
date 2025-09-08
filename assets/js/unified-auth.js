@@ -88,11 +88,34 @@ class UnifiedAuth {
         }
     }
 
-    async signIn(email, password) {
+    async signIn(loginInput, password) {
         console.log('🔓 Tentando fazer login...');
 
         if (this.useSupabase) {
             try {
+                let email = loginInput;
+                
+                // Se não contém @, é um username - buscar email correspondente
+                if (!loginInput.includes('@')) {
+                    try {
+                        const { data: usuario, error: userError } = await this.supabase
+                            .from('usuarios_sistema')
+                            .select('email')
+                            .eq('username', loginInput)
+                            .single();
+                        
+                        if (userError || !usuario) {
+                            throw new Error('Usuário não encontrado');
+                        }
+                        
+                        email = usuario.email;
+                        console.log('📧 Username encontrado, usando email:', email);
+                    } catch (usernameError) {
+                        console.log('⚠️ Username não encontrado, tentando login local');
+                        return this.localSignIn(loginInput, password);
+                    }
+                }
+
                 const { data, error } = await this.supabase.auth.signInWithPassword({
                     email,
                     password
@@ -113,7 +136,7 @@ class UnifiedAuth {
         }
 
         // Login local (fallback ou modo local)
-        return this.localSignIn(email, password);
+        return this.localSignIn(loginInput, password);
     }
 
 
