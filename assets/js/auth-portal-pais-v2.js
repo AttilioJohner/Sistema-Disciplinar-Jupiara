@@ -322,12 +322,12 @@ class AuthPortalPaisV2 {
 
             // Buscar estatísticas agregadas (frequência e medidas)
             const hoje = new Date();
-            const inicioAno = new Date(hoje.getFullYear(), 0, 1).toISOString().split('T')[0];
+            const inicioAno = new Date(hoje.getFullYear(), 1, 1).toISOString().split('T')[0]; // Fevereiro como início do ano letivo
             
-            // Buscar frequências
+            // Buscar TODAS as frequências do ano para calcular corretamente
             const { data: frequencias } = await this.supabase
                 .from('frequencia')
-                .select('codigo_aluno, status')
+                .select('codigo_aluno, status, data')
                 .in('codigo_aluno', codigosAlunos)
                 .gte('data', inicioAno);
 
@@ -340,14 +340,30 @@ class AuthPortalPaisV2 {
             // Calcular estatísticas por aluno
             const estatisticas = {};
             
-            // Calcular frequência
+            // Calcular frequência CORRETAMENTE
             if (frequencias) {
                 frequencias.forEach(f => {
                     if (!estatisticas[f.codigo_aluno]) {
-                        estatisticas[f.codigo_aluno] = { total: 0, presentes: 0, medidas: 0, pontos: 0 };
+                        estatisticas[f.codigo_aluno] = { 
+                            total: 0, 
+                            presentes: 0, 
+                            faltas: 0,
+                            atestados: 0,
+                            medidas: 0, 
+                            pontos: 0 
+                        };
                     }
                     estatisticas[f.codigo_aluno].total++;
-                    if (f.status === 'presente') estatisticas[f.codigo_aluno].presentes++;
+                    
+                    // Contar corretamente os status
+                    if (f.status === 'presente') {
+                        estatisticas[f.codigo_aluno].presentes++;
+                    } else if (f.status === 'ausente' || f.status === 'falta' || f.status === 'falta_controlada') {
+                        estatisticas[f.codigo_aluno].faltas++;
+                    } else if (f.status === 'atestado') {
+                        estatisticas[f.codigo_aluno].atestados++;
+                        estatisticas[f.codigo_aluno].presentes++; // Atestado conta como presença
+                    }
                 });
             }
 
@@ -383,15 +399,25 @@ class AuthPortalPaisV2 {
             // Combinar todos os dados
             const resultado = alunos.map(aluno => {
                 const associacao = associacoes.find(a => a.aluno_codigo === aluno.codigo);
-                const stats = estatisticas[aluno.codigo] || { total: 0, presentes: 0, medidas: 0, pontos: 0 };
+                const stats = estatisticas[aluno.codigo] || { 
+                    total: 0, 
+                    presentes: 0, 
+                    faltas: 0, 
+                    atestados: 0, 
+                    medidas: 0, 
+                    pontos: 0 
+                };
                 
-                // Calcular percentual de frequência
+                // Calcular percentual de frequência CORRETO
+                // Presentes + Atestados / Total de aulas * 100
                 const percentualFrequencia = stats.total > 0 
-                    ? Math.round((stats.presentes / stats.total) * 100)
-                    : 100;
+                    ? Math.round(((stats.presentes) / stats.total) * 100)
+                    : 100; // Se não tem registros, assume 100%
                 
                 // Calcular nota disciplinar (10 - pontos, mínimo 0)
                 const notaDisciplinar = Math.max(0, 10 - (stats.pontos * 0.5)).toFixed(1);
+                
+                console.log(`📊 Aluno ${aluno.codigo}: ${stats.presentes}/${stats.total} = ${percentualFrequencia}% (${stats.faltas} faltas, ${stats.atestados} atestados)`);
                 
                 return {
                     codigo: aluno.codigo,
