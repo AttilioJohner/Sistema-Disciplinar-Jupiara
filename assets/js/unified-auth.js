@@ -116,110 +116,13 @@ class UnifiedAuth {
         return this.localSignIn(email, password);
     }
 
-    // Nova função para criar usuário sem verificação de email
-    async createUserNoEmail(username, email, password, nomeCompleto = null) {
-        console.log('👤 Criando usuário sem verificação de email...');
-
-        if (!this.useSupabase) {
-            return { success: false, error: 'Supabase não disponível' };
-        }
-
-        try {
-            // Primeiro verificar se username já existe
-            const { data: existingUser } = await this.supabase
-                .from('usuarios_sistema')
-                .select('username')
-                .eq('username', username)
-                .single();
-
-            if (existingUser) {
-                return { success: false, error: 'Username já existe' };
-            }
-
-            // Criar usuário no Supabase Auth (com auto-confirmação habilitada)
-            const { data: authData, error: authError } = await this.supabase.auth.signUp({
-                email: email,
-                password: password,
-                options: {
-                    data: {
-                        username: username,
-                        nome_completo: nomeCompleto || username
-                    }
-                }
-            });
-
-            if (authError) {
-                console.error('❌ Erro ao criar usuário no Auth:', authError);
-                return { success: false, error: authError.message };
-            }
-
-            // Salvar mapeamento username → email na tabela
-            const { error: dbError } = await this.supabase
-                .from('usuarios_sistema')
-                .insert({
-                    username: username,
-                    email: email,
-                    nome_completo: nomeCompleto || username,
-                    role: 'user'
-                });
-
-            if (dbError) {
-                console.error('❌ Erro ao salvar username:', dbError);
-                // Usuário foi criado no auth mas não na tabela - avisar mas considerar sucesso parcial
-                return { 
-                    success: true, 
-                    warning: 'Usuário criado mas username não foi salvo. Use email para login.',
-                    user: authData.user 
-                };
-            }
-
-            console.log('✅ Usuário criado com sucesso:', authData.user);
-            return { success: true, user: authData.user };
-
-        } catch (error) {
-            console.error('❌ Erro ao criar usuário:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    // Função para login direto com username (sem email)
-    async signInWithUsername(username, password) {
-        console.log('🔓 Tentando login com username...');
-
-        if (!this.useSupabase) {
-            return this.localSignIn(username, password);
-        }
-
-        try {
-            // Buscar email pelo username
-            const { data: usuarios, error } = await this.supabase
-                .from('usuarios_sistema')
-                .select('email')
-                .eq('username', username)
-                .eq('ativo', true)
-                .single();
-
-            if (error || !usuarios) {
-                console.log('❌ Username não encontrado:', username);
-                return { success: false, error: 'Usuário não encontrado' };
-            }
-
-            // Fazer login com o email encontrado
-            return await this.signIn(usuarios.email, password);
-
-        } catch (error) {
-            console.error('❌ Erro no login com username:', error);
-            return { success: false, error: error.message };
-        }
-    }
 
     localSignIn(email, password) {
         // Usuários padrão do sistema
         const validCredentials = [
-            { email: 'admin@eecmjupiara.com.br', password: 'JupiaraAdmin2024!' },
-            { email: 'admin@escola.com', password: 'admin123' },
             { email: 'admin', password: 'admin123' },
-            { email: 'admin', password: 'admin' }
+            { email: 'admin@eecmjupiara.com.br', password: 'admin123' },
+            { email: 'admin@escola.com', password: 'admin123' }
         ];
 
         const credential = validCredentials.find(cred => 
@@ -345,8 +248,6 @@ window.supabaseSystem = window.supabaseSystem || {};
 window.supabaseSystem.auth = {
     requireAuth: (redirect = true) => requireAuth({ redirect }),
     login: (email, password) => unifiedAuth.signIn(email, password),
-    loginWithUsername: (username, password) => unifiedAuth.signInWithUsername(username, password),
-    createUserNoEmail: (username, email, password, nomeCompleto) => unifiedAuth.createUserNoEmail(username, email, password, nomeCompleto),
     logout: () => logout(),
     getCurrentUser: () => unifiedAuth.getCurrentUser(),
     isAuthenticated: () => unifiedAuth.isAuthenticated()

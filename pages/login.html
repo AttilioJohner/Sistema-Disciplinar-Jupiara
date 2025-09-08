@@ -53,8 +53,8 @@
       </div>
 
       <form class="login-form" id="loginForm">
-        <input type="text" id="loginInput" class="login-input" placeholder="Email ou Nome de Usuário" required>
-        <input type="password" id="password" class="login-input" placeholder="Senha" required>
+        <input type="text" id="loginInput" class="login-input" placeholder="Usuário (admin)" required value="admin">
+        <input type="password" id="password" class="login-input" placeholder="Senha (admin123)" required>
         <button type="submit" class="login-button" id="loginButton">
           🔐 Entrar no Sistema
         </button>
@@ -72,16 +72,6 @@
       messageEl.className = `message ${type}`;
     }
 
-    // Função para login com username (usando novo sistema)
-    async function loginWithUsername(username, password) {
-      try {
-        await window.unifiedAuth.waitForReady();
-        return await window.unifiedAuth.signInWithUsername(username, password);
-      } catch (error) {
-        console.error('Erro no login com username:', error);
-        return { success: false, error: error.message };
-      }
-    }
 
     // Verificar se já está logado
     async function checkAuth() {
@@ -116,16 +106,8 @@
       button.textContent = '⏳ Entrando...';
       
       try {
-        let result;
-        
-        // Verificar se é email ou username
-        if (loginInput.includes('@')) {
-          // Login com email
-          result = await window.unifiedAuth.signIn(loginInput, password);
-        } else {
-          // Login com username - buscar email correspondente
-          result = await loginWithUsername(loginInput, password);
-        }
+        // Login direto e simples
+        const result = await window.unifiedAuth.signIn(loginInput, password);
         
         if (result.success) {
           showMessage('✅ Login realizado com sucesso!', 'success');
