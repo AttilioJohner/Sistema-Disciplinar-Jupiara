@@ -30,8 +30,11 @@ class AuthPortalPaisV2 {
                 throw new Error('CPF já cadastrado. Use a opção de login normal.');
             }
 
-            // 2. Verificar se o aluno existe (tentar sem RLS primeiro)
+            // 2. Verificar se o aluno existe - tentativa com RPC ou query direta
             let aluno = null;
+            let alunoExiste = false;
+            
+            // Primeira tentativa: query normal
             try {
                 const { data: alunoData, error: alunoError } = await this.supabase
                     .from('alunos')
@@ -41,16 +44,39 @@ class AuthPortalPaisV2 {
 
                 if (!alunoError && alunoData) {
                     aluno = alunoData;
+                    alunoExiste = true;
+                    console.log('✅ Aluno encontrado:', aluno);
                 }
             } catch (err) {
-                console.log('❌ RLS bloqueou consulta de aluno, continuando...');
+                console.log('⚠️ Primeira tentativa falhou, tentando verificação alternativa...');
             }
 
-            // Se não conseguiu verificar o aluno (RLS), vamos assumir que existe e tentar
-            // O erro será capturado na FK se não existir
+            // Segunda tentativa: verificar apenas se o código existe (query simplificada)
+            if (!alunoExiste) {
+                try {
+                    const { count, error: countError } = await this.supabase
+                        .from('alunos')
+                        .select('codigo', { count: 'exact', head: true })
+                        .eq('codigo', parseInt(codigoAluno));
 
-            // 3. Criar hash simples da senha (não é super seguro, mas funcional)
-            const senhaHash = btoa(senha + cpfLimpo); // Base64 simples
+                    if (!countError && count > 0) {
+                        alunoExiste = true;
+                        console.log('✅ Aluno confirmado existir (verificação por contagem)');
+                    }
+                } catch (err) {
+                    console.log('⚠️ Verificação por contagem também falhou');
+                }
+            }
+
+            // Se ainda não confirmou, vamos tentar criar mesmo assim
+            // A FK vai validar se o aluno existe
+            if (!alunoExiste) {
+                console.log('⚠️ Não foi possível verificar o aluno devido às políticas RLS.');
+                console.log('📝 Tentaremos criar a associação - o banco validará se o aluno existe.');
+            }
+
+            // 3. Criar hash simples da senha
+            const senhaHash = btoa(senha + cpfLimpo);
 
             // 4. Criar responsável
             const { data: novoResponsavel, error: responsavelError } = await this.supabase
@@ -68,17 +94,19 @@ class AuthPortalPaisV2 {
 
             if (responsavelError) {
                 console.error('❌ Erro ao criar responsável:', responsavelError);
-                throw new Error('Erro ao criar responsável: ' + responsavelError.message);
+                
+                // Tratar erro de duplicação
+                if (responsavelError.code === '23505' || responsavelError.message.includes('duplicate')) {
+                    throw new Error('CPF já cadastrado no sistema.');
+                }
+                
+                throw new Error('Erro ao criar conta. Por favor, tente novamente.');
             }
 
-            console.log('✅ Responsável criado:', novoResponsavel.id);
+            console.log('✅ Responsável criado com ID:', novoResponsavel.id);
 
-            // 5. Tentar associar ao aluno
-            console.log('🔗 Criando associação:', {
-                responsavel_id: novoResponsavel.id,
-                aluno_codigo: parseInt(codigoAluno),
-                parentesco: parentesco
-            });
+            // 5. Criar associação com o aluno
+            console.log('🔗 Criando vínculo com aluno código:', codigoAluno);
 
             const { data: associacaoData, error: associacaoError } = await this.supabase
                 .from('responsavel_aluno')
@@ -91,43 +119,68 @@ class AuthPortalPaisV2 {
                     autorizado_ver_frequencia: true,
                     autorizado_ver_disciplinar: true
                 })
-                .select();
-
-            console.log('📋 Dados da associação criada:', associacaoData);
-            console.log('❌ Erro na associação:', associacaoError);
+                .select()
+                .single();
 
             if (associacaoError) {
-                console.error('❌ Erro na associação:', associacaoError);
+                console.error('❌ Erro ao criar vínculo:', associacaoError);
                 
-                // Se o erro é de FK (aluno não existe), remover responsável criado
-                if (associacaoError.message.includes('foreign key') || associacaoError.message.includes('violates')) {
+                // Se falhou por causa de FK (aluno não existe), limpar responsável criado
+                if (associacaoError.code === '23503' || 
+                    associacaoError.message.includes('foreign key') || 
+                    associacaoError.message.includes('violates') ||
+                    associacaoError.message.includes('aluno_codigo')) {
+                    
+                    // Remover responsável órfão
                     await this.supabase
                         .from('responsaveis')
                         .delete()
                         .eq('id', novoResponsavel.id);
                     
-                    throw new Error('Código do aluno não encontrado. Verifique o código informado.');
+                    throw new Error(`Código do aluno ${codigoAluno} não encontrado. Verifique se o código está correto.`);
                 }
                 
-                throw new Error('Erro na associação: ' + associacaoError.message);
+                // Se foi erro de duplicação (já existe vínculo)
+                if (associacaoError.code === '23505' || associacaoError.message.includes('duplicate')) {
+                    // Não é erro crítico, o responsável foi criado
+                    console.log('⚠️ Vínculo já existia, mas conta foi criada');
+                } else {
+                    // Outro erro - remover responsável
+                    await this.supabase
+                        .from('responsaveis')
+                        .delete()
+                        .eq('id', novoResponsavel.id);
+                    
+                    throw new Error('Erro ao vincular com aluno. Tente novamente.');
+                }
+            } else {
+                console.log('✅ Vínculo criado com sucesso:', associacaoData);
             }
 
-            console.log('✅ Associação criada com sucesso:', associacaoData);
-
-            // 6. Retornar sucesso com nome do aluno (se conseguimos buscar)
-            const nomeAluno = aluno ? aluno['Nome completo'] : `Aluno código ${codigoAluno}`;
-            const turmaAluno = aluno ? ` (${aluno.turma})` : '';
+            // 6. Mensagem de sucesso personalizada
+            let mensagemSucesso = 'Conta criada com sucesso! ';
+            
+            if (aluno) {
+                mensagemSucesso += `Você foi vinculado ao aluno ${aluno['Nome completo']}`;
+                if (aluno.turma) {
+                    mensagemSucesso += ` (Turma: ${aluno.turma})`;
+                }
+            } else {
+                mensagemSucesso += `Você foi vinculado ao aluno de código ${codigoAluno}`;
+            }
+            
+            mensagemSucesso += '. Agora você pode fazer login com seu CPF e senha.';
 
             return {
                 success: true,
-                message: `Conta criada com sucesso! Você foi associado ao ${nomeAluno}${turmaAluno}`
+                message: mensagemSucesso
             };
 
         } catch (error) {
-            console.error('❌ Erro no cadastro simplificado:', error);
+            console.error('❌ Erro no cadastro:', error);
             return {
                 success: false,
-                error: error.message
+                error: error.message || 'Erro ao criar conta. Tente novamente.'
             };
         }
     }
@@ -225,58 +278,127 @@ class AuthPortalPaisV2 {
             // Buscar associações do responsável
             const { data: associacoes, error: assocError } = await this.supabase
                 .from('responsavel_aluno')
-                .select('aluno_codigo, parentesco')
+                .select(`
+                    aluno_codigo,
+                    parentesco,
+                    autorizado_ver_notas,
+                    autorizado_ver_frequencia,
+                    autorizado_ver_disciplinar
+                `)
                 .eq('responsavel_id', this.currentResponsavel.id);
 
             console.log('📋 Associações encontradas:', associacoes);
-            console.log('❌ Erro nas associações:', assocError);
 
             if (assocError) {
-                console.error('Erro ao buscar associações:', assocError);
+                console.error('❌ Erro ao buscar associações:', assocError);
                 return [];
             }
 
             if (!associacoes || associacoes.length === 0) {
-                console.warn('⚠️ Nenhuma associação encontrada para responsável:', this.currentResponsavel.id);
+                console.warn('⚠️ Nenhuma associação encontrada para responsável ID:', this.currentResponsavel.id);
                 return [];
             }
 
             // Buscar dados dos alunos
             const codigosAlunos = associacoes.map(a => a.aluno_codigo);
-            console.log('🔍 Códigos de alunos a buscar:', codigosAlunos);
+            console.log('🔍 Buscando dados dos alunos com códigos:', codigosAlunos);
             
             const { data: alunos, error: alunosError } = await this.supabase
                 .from('alunos')
                 .select('codigo, "Nome completo", turma')
                 .in('codigo', codigosAlunos);
 
-            console.log('👥 Dados de alunos encontrados:', alunos);
-            console.log('❌ Erro nos alunos:', alunosError);
-
             if (alunosError) {
-                console.error('Erro ao buscar alunos:', alunosError);
+                console.error('❌ Erro ao buscar alunos:', alunosError);
                 return [];
             }
 
-            // Combinar dados
+            if (!alunos || alunos.length === 0) {
+                console.warn('⚠️ Nenhum aluno encontrado com os códigos:', codigosAlunos);
+                return [];
+            }
+
+            console.log('👥 Alunos encontrados:', alunos);
+
+            // Buscar estatísticas agregadas (frequência e medidas)
+            const hoje = new Date();
+            const inicioAno = new Date(hoje.getFullYear(), 0, 1).toISOString().split('T')[0];
+            
+            // Buscar frequências
+            const { data: frequencias } = await this.supabase
+                .from('frequencia')
+                .select('codigo_aluno, presente')
+                .in('codigo_aluno', codigosAlunos)
+                .gte('data', inicioAno);
+
+            // Buscar medidas disciplinares
+            const { data: medidas } = await this.supabase
+                .from('medidas')
+                .select('codigo_aluno, gravidade')
+                .in('codigo_aluno', codigosAlunos);
+
+            // Calcular estatísticas por aluno
+            const estatisticas = {};
+            
+            // Calcular frequência
+            if (frequencias) {
+                frequencias.forEach(f => {
+                    if (!estatisticas[f.codigo_aluno]) {
+                        estatisticas[f.codigo_aluno] = { total: 0, presentes: 0, medidas: 0, pontos: 0 };
+                    }
+                    estatisticas[f.codigo_aluno].total++;
+                    if (f.presente) estatisticas[f.codigo_aluno].presentes++;
+                });
+            }
+
+            // Calcular medidas e pontos
+            if (medidas) {
+                medidas.forEach(m => {
+                    if (!estatisticas[m.codigo_aluno]) {
+                        estatisticas[m.codigo_aluno] = { total: 0, presentes: 0, medidas: 0, pontos: 0 };
+                    }
+                    estatisticas[m.codigo_aluno].medidas++;
+                    
+                    // Calcular pontos baseado na gravidade
+                    const pontos = m.gravidade === 'leve' ? 1 : 
+                                  m.gravidade === 'moderada' ? 2 : 
+                                  m.gravidade === 'grave' ? 3 : 0;
+                    estatisticas[m.codigo_aluno].pontos += pontos;
+                });
+            }
+
+            // Combinar todos os dados
             const resultado = alunos.map(aluno => {
                 const associacao = associacoes.find(a => a.aluno_codigo === aluno.codigo);
+                const stats = estatisticas[aluno.codigo] || { total: 0, presentes: 0, medidas: 0, pontos: 0 };
+                
+                // Calcular percentual de frequência
+                const percentualFrequencia = stats.total > 0 
+                    ? Math.round((stats.presentes / stats.total) * 100)
+                    : 100;
+                
+                // Calcular nota disciplinar (10 - pontos, mínimo 0)
+                const notaDisciplinar = Math.max(0, 10 - (stats.pontos * 0.5)).toFixed(1);
+                
                 return {
                     codigo: aluno.codigo,
                     nome_completo: aluno['Nome completo'],
                     turma: aluno.turma,
                     parentesco: associacao?.parentesco || 'responsável',
-                    percentual_frequencia: 100, // Placeholder
-                    nota_disciplinar: '8.0',    // Placeholder
-                    total_medidas: 0            // Placeholder
+                    percentual_frequencia: percentualFrequencia,
+                    nota_disciplinar: notaDisciplinar,
+                    total_medidas: stats.medidas,
+                    autorizado_ver_notas: associacao?.autorizado_ver_notas || false,
+                    autorizado_ver_frequencia: associacao?.autorizado_ver_frequencia || false,
+                    autorizado_ver_disciplinar: associacao?.autorizado_ver_disciplinar || false
                 };
             });
             
-            console.log('✅ Resultado final dos alunos:', resultado);
+            console.log('✅ Dados completos dos alunos:', resultado);
             return resultado;
 
         } catch (error) {
-            console.error('Erro ao buscar alunos:', error);
+            console.error('❌ Erro ao buscar alunos:', error);
             return [];
         }
     }
