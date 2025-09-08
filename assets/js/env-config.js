@@ -7,7 +7,7 @@
   // Função para carregar variáveis do Netlify
   function loadNetlifyEnv() {
     // Método 1: Variáveis injetadas pelo build do Netlify
-    if (window.NETLIFY_ENV) {
+    if (window.NETLIFY_ENV && window.NETLIFY_ENV.SUPABASE_URL) {
       console.log('📦 Carregando variáveis do build do Netlify');
       return window.NETLIFY_ENV;
     }
@@ -17,7 +17,27 @@
       return window.env;
     }
     
-    // Método 3: Fallback para desenvolvimento local
+    // Método 3: Tentar carregar do arquivo netlify-env.js
+    try {
+      if (window.NETLIFY_ENV) {
+        console.log('📦 Tentando usar window.NETLIFY_ENV:', window.NETLIFY_ENV);
+        return window.NETLIFY_ENV;
+      }
+    } catch (e) {
+      console.warn('⚠️ Erro ao carregar window.NETLIFY_ENV:', e);
+    }
+    
+    // Método 4: Valores hardcoded para produção (TEMPORÁRIO para debug)
+    if (window.location.hostname === 'eecmjupiara.com.br') {
+      console.log('🔧 Usando configuração hardcoded para produção');
+      return {
+        SUPABASE_URL: 'https://rvppxdhrahcwiwrrwwaz.supabase.co',
+        SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2cHB4ZGhyYWhjd2l3cnJ3d2F6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyNjYyOTMsImV4cCI6MjA1MTg0MjI5M30.8EsOmyF0UMKfqXl6Q-_TfYJYKOMjZKejrGzb1pxqWPI',
+        NODE_ENV: 'production'
+      };
+    }
+    
+    // Método 5: Fallback para desenvolvimento local
     return {
       SUPABASE_URL: '',
       SUPABASE_ANON_KEY: '',

@@ -16,8 +16,24 @@ async function initSupabase() {
         return true;
     }
     
+    // Aguardar variáveis de ambiente estarem disponíveis
+    let tentativas = 0;
+    while ((!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) && tentativas < 50) {
+        console.log(`⏳ Aguardando variáveis Supabase... tentativa ${tentativas + 1}/50`);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        tentativas++;
+    }
+    
     if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
-        console.error('❌ Credenciais Supabase não configuradas');
+        console.error('❌ Timeout: Credenciais Supabase não configuradas após 5s');
+        
+        // Debug das variáveis disponíveis
+        console.log('🔍 Debug Variáveis:');
+        console.log('- window.SUPABASE_URL:', window.SUPABASE_URL);
+        console.log('- window.SUPABASE_ANON_KEY:', window.SUPABASE_ANON_KEY ? '✅ Existe' : '❌ Não existe');
+        console.log('- window.NETLIFY_ENV:', window.NETLIFY_ENV);
+        console.log('- window.env:', window.env);
+        
         return false;
     }
     

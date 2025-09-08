@@ -3,7 +3,7 @@
   publish = "."
   
   # Comando de build para injetar variáveis de ambiente
-  command = "echo 'Criando arquivo de variáveis...' && echo \"window.NETLIFY_ENV = { SUPABASE_URL: '$SUPABASE_URL', SUPABASE_ANON_KEY: '$SUPABASE_ANON_KEY' };\" > netlify-env.js && echo 'Build concluído'"
+  command = "echo 'Criando arquivo de variáveis...' && echo \"window.NETLIFY_ENV = { SUPABASE_URL: '${SUPABASE_URL}', SUPABASE_ANON_KEY: '${SUPABASE_ANON_KEY}' };\" > netlify-env.js && echo 'Build concluído'"
 
 # Cabeçalhos de segurança
 [[headers]]
