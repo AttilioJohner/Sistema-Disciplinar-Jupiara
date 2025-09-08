@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro de Usuário — Sistema Disciplinar</title>
+
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+
+  <!-- SISTEMA DE AUTENTICAÇÃO -->
+  <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
+  <script src="../assets/js/env-config.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="../assets/js/unified-auth.js"></script>
+  <script src="../assets/js/supabase-only.js"></script>
+
+  <style>
+    .cadastro-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      padding: 20px;
+    }
+    
+    .cadastro-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 20px 40px rgba(0,0,0,.15);
+      animation: slideUp .6s ease;
+    }
+    
+    .cadastro-header {
+      text-align: center;
+      margin-bottom: 35px;
+    }
+    
+    .cadastro-logo {
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 36px;
+    }
+    
+    .cadastro-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #2c3e50;
+      margin-bottom: 8px;
+    }
+    
+    .cadastro-subtitle {
+      color: #7f8c8d;
+      font-size: 16px;
+    }
+    
+    .cadastro-form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .form-row {
+      display: flex;
+      gap: 15px;
+    }
+    
+    .form-row .form-input {
+      flex: 1;
+    }
+    
+    .form-input {
+      padding: 16px 20px;
+      border: 2px solid #e1dfdd;
+      border-radius: 12px;
+      font-size: 16px;
+      transition: all .3s ease;
+      background: #fff;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .form-input::placeholder {
+      color: #bdc3c7;
+    }
+    
+    .cadastro-button {
+      padding: 18px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .3s ease;
+      margin-top: 15px;
+    }
+    
+    .cadastro-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+    }
+    
+    .cadastro-button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .message {
+      padding: 16px;
+      border-radius: 12px;
+      margin: 20px 0;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .message.error {
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+    }
+    
+    .message.success {
+      background: #f0fdf4;
+      color: #059669;
+      border: 1px solid #bbf7d0;
+    }
+    
+    .login-link {
+      text-align: center;
+      margin-top: 25px;
+      padding-top: 25px;
+      border-top: 1px solid #ecf0f1;
+    }
+    
+    .login-link a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    
+    .login-link a:hover {
+      text-decoration: underline;
+    }
+    
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="cadastro-container">
+    <div class="cadastro-card">
+      <div class="cadastro-header">
+        <div class="cadastro-logo">👤</div>
+        <h1 class="cadastro-title">Novo Usuário</h1>
+        <p class="cadastro-subtitle">Cadastro sem verificação de email</p>
+      </div>
+
+      <form class="cadastro-form" id="cadastroForm">
+        <input type="text" id="username" class="form-input" placeholder="Nome de usuário *" required>
+        
+        <div class="form-row">
+          <input type="email" id="email" class="form-input" placeholder="Email *" required>
+          <input type="text" id="nomeCompleto" class="form-input" placeholder="Nome completo">
+        </div>
+        
+        <input type="password" id="password" class="form-input" placeholder="Senha *" required minlength="6">
+        <input type="password" id="confirmPassword" class="form-input" placeholder="Confirmar senha *" required minlength="6">
+        
+        <button type="submit" class="cadastro-button" id="cadastroButton">
+          ✨ Criar Usuário
+        </button>
+      </form>
+
+      <div id="message"></div>
+      
+      <div class="login-link">
+        <p>Já tem uma conta? <a href="login.html">Fazer login</a></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Mostrar mensagem
+    function showMessage(text, type = 'success') {
+      const messageEl = document.getElementById('message');
+      messageEl.textContent = text;
+      messageEl.className = `message ${type}`;
+    }
+
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', async function() {
+      console.log('📝 Página de cadastro inicializada');
+      
+      // Aguardar sistema de auth
+      try {
+        await window.unifiedAuth.waitForReady();
+        console.log('✅ Sistema de auth pronto');
+      } catch (error) {
+        console.error('❌ Erro ao inicializar auth:', error);
+        showMessage('❌ Erro ao carregar sistema de autenticação', 'error');
+      }
+    });
+
+    document.getElementById('cadastroForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const username = document.getElementById('username').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      const nomeCompleto = document.getElementById('nomeCompleto').value.trim();
+      const button = document.getElementById('cadastroButton');
+
+      // Validações
+      if (!username || !email || !password || !confirmPassword) {
+        showMessage('❌ Preencha todos os campos obrigatórios', 'error');
+        return;
+      }
+      
+      if (password !== confirmPassword) {
+        showMessage('❌ As senhas não coincidem', 'error');
+        return;
+      }
+      
+      if (password.length < 6) {
+        showMessage('❌ A senha deve ter pelo menos 6 caracteres', 'error');
+        return;
+      }
+
+      // Validar username (apenas letras, números e underscore)
+      if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        showMessage('❌ Username deve conter apenas letras, números e underscore', 'error');
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = '⏳ Criando usuário...';
+
+      try {
+        console.log('👤 Criando usuário:', { username, email });
+        
+        const result = await window.unifiedAuth.createUserNoEmail(
+          username, 
+          email, 
+          password, 
+          nomeCompleto || username
+        );
+
+        if (result.success) {
+          showMessage('✅ Usuário criado com sucesso! Você pode fazer login agora.', 'success');
+          
+          // Limpar formulário
+          document.getElementById('cadastroForm').reset();
+          
+          // Redirecionar para login após 2 segundos
+          setTimeout(() => {
+            window.location.href = 'login.html';
+          }, 2000);
+          
+        } else {
+          showMessage(`❌ ${result.error || 'Erro ao criar usuário'}`, 'error');
+        }
+
+      } catch (error) {
+        console.error('❌ Erro no cadastro:', error);
+        showMessage(`❌ Erro: ${error.message}`, 'error');
+      } finally {
+        button.disabled = false;
+        button.textContent = '✨ Criar Usuário';
+      }
+    });
+  </script>
+</body>
+</html>

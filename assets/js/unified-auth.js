@@ -116,6 +116,68 @@ class UnifiedAuth {
         return this.localSignIn(email, password);
     }
 
+    // Nova função para criar usuário sem verificação de email
+    async createUserNoEmail(username, email, password, nomeCompleto = null) {
+        console.log('👤 Criando usuário sem verificação de email...');
+
+        if (!this.useSupabase) {
+            return { success: false, error: 'Supabase não disponível' };
+        }
+
+        try {
+            // Usar a função SQL personalizada para criar usuário
+            const { data, error } = await this.supabase.rpc('create_user_no_email_verification', {
+                p_username: username,
+                p_email: email, 
+                p_password: password,
+                p_nome_completo: nomeCompleto
+            });
+
+            if (error) {
+                console.error('❌ Erro na função SQL:', error);
+                return { success: false, error: error.message };
+            }
+
+            console.log('✅ Resposta da função:', data);
+            return data;
+
+        } catch (error) {
+            console.error('❌ Erro ao criar usuário:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Função para login direto com username (sem email)
+    async signInWithUsername(username, password) {
+        console.log('🔓 Tentando login com username...');
+
+        if (!this.useSupabase) {
+            return this.localSignIn(username, password);
+        }
+
+        try {
+            // Buscar email pelo username
+            const { data: usuarios, error } = await this.supabase
+                .from('usuarios_sistema')
+                .select('email')
+                .eq('username', username)
+                .eq('ativo', true)
+                .single();
+
+            if (error || !usuarios) {
+                console.log('❌ Username não encontrado:', username);
+                return { success: false, error: 'Usuário não encontrado' };
+            }
+
+            // Fazer login com o email encontrado
+            return await this.signIn(usuarios.email, password);
+
+        } catch (error) {
+            console.error('❌ Erro no login com username:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
     localSignIn(email, password) {
         // Usuários padrão do sistema
         const validCredentials = [
@@ -248,6 +310,8 @@ window.supabaseSystem = window.supabaseSystem || {};
 window.supabaseSystem.auth = {
     requireAuth: (redirect = true) => requireAuth({ redirect }),
     login: (email, password) => unifiedAuth.signIn(email, password),
+    loginWithUsername: (username, password) => unifiedAuth.signInWithUsername(username, password),
+    createUserNoEmail: (username, email, password, nomeCompleto) => unifiedAuth.createUserNoEmail(username, email, password, nomeCompleto),
     logout: () => logout(),
     getCurrentUser: () => unifiedAuth.getCurrentUser(),
     isAuthenticated: () => unifiedAuth.isAuthenticated()

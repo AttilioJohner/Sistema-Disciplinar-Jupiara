@@ -72,49 +72,11 @@
       messageEl.className = `message ${type}`;
     }
 
-    // Função para login com username
+    // Função para login com username (usando novo sistema)
     async function loginWithUsername(username, password) {
       try {
-        // Aguardar inicialização do Supabase se necessário
-        if (!window.supabaseClient) {
-          console.log('⏳ Aguardando inicialização do Supabase...');
-          // Aguardar até 5 segundos pela inicialização
-          for (let i = 0; i < 50; i++) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            if (window.supabaseClient) break;
-          }
-          
-          if (!window.supabaseClient) {
-            throw new Error('Sistema de autenticação não inicializado. Recarregue a página.');
-          }
-        }
-        
-        // Buscar usuário pelo username na tabela personalizada
-        const { data: usuarios, error } = await window.supabaseClient
-          .from('usuarios_sistema')
-          .select('email')
-          .ilike('username', username)
-          .limit(1);
-        
-        if (error) {
-          // Se a tabela não existir, tentar buscar nos metadados do auth (fallback)
-          if (error.code === '42P01') {
-            console.log('⚠️ Tabela personalizada não encontrada, usando fallback');
-            // Por enquanto, retornar erro já que não podemos usar auth.admin
-            throw new Error('Sistema de username requer configuração adicional');
-          }
-          throw error;
-        }
-        
-        if (!usuarios || usuarios.length === 0) {
-          throw new Error('Usuário não encontrado');
-        }
-        
-        const email = usuarios[0].email;
-        
-        // Fazer login com o email encontrado
-        return await window.unifiedAuth.signIn(email, password);
-        
+        await window.unifiedAuth.waitForReady();
+        return await window.unifiedAuth.signInWithUsername(username, password);
       } catch (error) {
         console.error('Erro no login com username:', error);
         return { success: false, error: error.message };
