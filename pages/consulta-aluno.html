@@ -994,11 +994,6 @@
 
                 <!-- Tab Frequência -->
                 <div id="frequencia" class="tab-pane">
-                    <div class="chart-container">
-                        <h3 class="chart-title">📊 Gráfico de Frequência Mensal</h3>
-                        <canvas id="frequencyChart"></canvas>
-                    </div>
-
                     <h3 style="color: #2c3e50; margin-bottom: 20px; font-size: 1.3em;">
                         📅 Detalhamento de Faltas
                     </h3>
@@ -1171,56 +1166,63 @@
                     });
                 }
 
-                // Buscar total de alunos
-                const { count: totalAlunos, error: alunosError } = await window.supabaseClient
-                    .from('alunos')
-                    .select('*', { count: 'exact', head: true });
-
-                if (alunosError) {
-                    console.warn('Erro ao buscar total de alunos:', alunosError);
-                }
-                document.getElementById('totalAlunos').textContent = totalAlunos || 0;
-
-                // Buscar frequências para calcular média
-                const hoje = new Date().toISOString().split('T')[0];
-                const { data: frequencias, error: freqError } = await window.supabaseClient
-                    .from('frequencia')
-                    .select('*')
-                    .eq('data', hoje);
-
-                if (freqError) {
-                    console.warn('Erro ao buscar frequências:', freqError);
-                }
-
-                if (frequencias && frequencias.length > 0) {
-                    const presencas = frequencias.filter(f => f.status === 'presente').length;
-                    const percentual = ((presencas / frequencias.length) * 100).toFixed(0);
-                    document.getElementById('mediaFrequencia').textContent = `${percentual}%`;
-                } else {
-                    document.getElementById('mediaFrequencia').textContent = '100%';
-                }
-
-                // Calcular média disciplinar via view
-                const { data: notasGerais, error: notasGeralError } = await window.supabaseClient
-                    .from('v_nota_disciplinar_atual')
-                    .select('nota_atual');
-
-                if (notasGeralError) {
-                    console.warn('Erro ao buscar notas gerais:', notasGeralError);
-                } else if (notasGerais && notasGerais.length > 0) {
-                    // Calcular média das notas atuais
-                    const somaNotas = notasGerais.reduce((sum, item) => sum + (item.nota_atual || 8.0), 0);
-                    const mediaDisciplinar = (somaNotas / notasGerais.length).toFixed(1);
+                // Se temos alunos autorizados, usar seus dados para as estatísticas
+                if (alunosAutorizados && alunosAutorizados.length > 0) {
+                    // Total de filhos do responsável
+                    document.getElementById('totalAlunos').textContent = alunosAutorizados.length;
+                    
+                    // Calcular média de frequência dos filhos
+                    let somaFrequencia = 0;
+                    let somaDisciplinar = 0;
+                    let contadorFreq = 0;
+                    
+                    alunosAutorizados.forEach(aluno => {
+                        if (aluno.percentual_frequencia !== undefined && aluno.percentual_frequencia !== null) {
+                            somaFrequencia += aluno.percentual_frequencia;
+                            contadorFreq++;
+                        }
+                        if (aluno.nota_disciplinar !== undefined && aluno.nota_disciplinar !== null) {
+                            somaDisciplinar += parseFloat(aluno.nota_disciplinar);
+                        }
+                    });
+                    
+                    // Média de frequência
+                    if (contadorFreq > 0) {
+                        const mediaFreq = Math.round(somaFrequencia / contadorFreq);
+                        document.getElementById('mediaFrequencia').textContent = `${mediaFreq}%`;
+                    } else {
+                        document.getElementById('mediaFrequencia').textContent = '100%';
+                    }
+                    
+                    // Média disciplinar
+                    const mediaDisciplinar = alunosAutorizados.length > 0 
+                        ? (somaDisciplinar / alunosAutorizados.length).toFixed(1)
+                        : '10.0';
                     document.getElementById('mediaDisciplinar').textContent = mediaDisciplinar;
+                    
                 } else {
-                    document.getElementById('mediaDisciplinar').textContent = '8.0';
+                    // Valores padrão se não houver alunos
+                    document.getElementById('totalAlunos').textContent = '0';
+                    document.getElementById('mediaFrequencia').textContent = '-';
+                    document.getElementById('mediaDisciplinar').textContent = '-';
                 }
 
-                // Dias letivos (exemplo fixo)
-                document.getElementById('diasLetivos').textContent = '200';
+                // Calcular dias letivos aproximados (desde início do ano)
+                const hoje = new Date();
+                const inicioAno = new Date(hoje.getFullYear(), 1, 1); // Fevereiro como início do ano letivo
+                const diasDecorridos = Math.floor((hoje - inicioAno) / (1000 * 60 * 60 * 24));
+                
+                // Considerar apenas dias úteis (aproximação: 5/7 dos dias)
+                const diasLetivos = Math.floor(diasDecorridos * 5 / 7);
+                document.getElementById('diasLetivos').textContent = diasLetivos > 0 ? diasLetivos : '0';
 
             } catch (error) {
-                console.error('Erro ao carregar estatísticas:', error);
+                console.warn('Erro ao carregar estatísticas gerais:', error);
+                // Valores padrão em caso de erro
+                document.getElementById('totalAlunos').textContent = '-';
+                document.getElementById('mediaFrequencia').textContent = '-';
+                document.getElementById('mediaDisciplinar').textContent = '-';
+                document.getElementById('diasLetivos').textContent = '-';
             }
         }
 
@@ -1318,7 +1320,7 @@
                 atualizarEstatisticasFrequencia(resumoAcumulado);
                 
                 // Criar gráfico de frequência simplificado
-                criarGraficoFrequenciaNovo(resumoAcumulado);
+                // Gráfico removido - interface simplificada
                 
             } catch (error) {
                 console.error('❌ Erro ao carregar dados de frequência:', error);
@@ -1547,8 +1549,7 @@
 
             tbody.innerHTML = tableHTML;
 
-            // Criar gráfico de frequência
-            criarGraficoFrequencia();
+            // Gráfico removido para simplificar interface
         }
 
         // Função para criar gráfico de frequência
@@ -1785,7 +1786,7 @@
             if (auth.currentResponsavel) {
                 userInfo.innerHTML = `
                     <strong>${auth.currentResponsavel.nome}</strong><br>
-                    <span>CPF: ${AuthPortalPais.formatarCPF(auth.currentResponsavel.cpf)}</span>
+                    <span>CPF: ${AuthPortalPaisV2.formatarCPF(auth.currentResponsavel.cpf)}</span>
                 `;
             } else {
                 userInfo.innerHTML = '<strong>Responsável</strong>';

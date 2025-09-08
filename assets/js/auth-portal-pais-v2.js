@@ -327,14 +327,14 @@ class AuthPortalPaisV2 {
             // Buscar frequências
             const { data: frequencias } = await this.supabase
                 .from('frequencia')
-                .select('codigo_aluno, presente')
+                .select('codigo_aluno, status')
                 .in('codigo_aluno', codigosAlunos)
                 .gte('data', inicioAno);
 
             // Buscar medidas disciplinares
             const { data: medidas } = await this.supabase
                 .from('medidas')
-                .select('codigo_aluno, gravidade')
+                .select('codigo_aluno, tipo_medida')
                 .in('codigo_aluno', codigosAlunos);
 
             // Calcular estatísticas por aluno
@@ -347,7 +347,7 @@ class AuthPortalPaisV2 {
                         estatisticas[f.codigo_aluno] = { total: 0, presentes: 0, medidas: 0, pontos: 0 };
                     }
                     estatisticas[f.codigo_aluno].total++;
-                    if (f.presente) estatisticas[f.codigo_aluno].presentes++;
+                    if (f.status === 'presente') estatisticas[f.codigo_aluno].presentes++;
                 });
             }
 
@@ -359,10 +359,23 @@ class AuthPortalPaisV2 {
                     }
                     estatisticas[m.codigo_aluno].medidas++;
                     
-                    // Calcular pontos baseado na gravidade
-                    const pontos = m.gravidade === 'leve' ? 1 : 
-                                  m.gravidade === 'moderada' ? 2 : 
-                                  m.gravidade === 'grave' ? 3 : 0;
+                    // Calcular pontos baseado no tipo de medida
+                    let pontos = 0;
+                    const tipoMedida = m.tipo_medida?.toLowerCase() || '';
+                    
+                    // Medidas positivas reduzem pontos
+                    if (tipoMedida.includes('elogio') || tipoMedida.includes('positivo')) {
+                        pontos = -1;
+                    } 
+                    // Medidas negativas aumentam pontos
+                    else if (tipoMedida.includes('advertência') || tipoMedida.includes('oral')) {
+                        pontos = 1;
+                    } else if (tipoMedida.includes('escrita')) {
+                        pontos = 2;
+                    } else if (tipoMedida.includes('suspensão')) {
+                        pontos = 3;
+                    }
+                    
                     estatisticas[m.codigo_aluno].pontos += pontos;
                 });
             }
