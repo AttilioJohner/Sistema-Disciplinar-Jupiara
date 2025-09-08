@@ -125,21 +125,56 @@ class UnifiedAuth {
         }
 
         try {
-            // Usar a função SQL personalizada para criar usuário
-            const { data, error } = await this.supabase.rpc('create_user_no_email_verification', {
-                p_username: username,
-                p_email: email, 
-                p_password: password,
-                p_nome_completo: nomeCompleto
-            });
+            // Primeiro verificar se username já existe
+            const { data: existingUser } = await this.supabase
+                .from('usuarios_sistema')
+                .select('username')
+                .eq('username', username)
+                .single();
 
-            if (error) {
-                console.error('❌ Erro na função SQL:', error);
-                return { success: false, error: error.message };
+            if (existingUser) {
+                return { success: false, error: 'Username já existe' };
             }
 
-            console.log('✅ Resposta da função:', data);
-            return data;
+            // Criar usuário no Supabase Auth (com auto-confirmação habilitada)
+            const { data: authData, error: authError } = await this.supabase.auth.signUp({
+                email: email,
+                password: password,
+                options: {
+                    data: {
+                        username: username,
+                        nome_completo: nomeCompleto || username
+                    }
+                }
+            });
+
+            if (authError) {
+                console.error('❌ Erro ao criar usuário no Auth:', authError);
+                return { success: false, error: authError.message };
+            }
+
+            // Salvar mapeamento username → email na tabela
+            const { error: dbError } = await this.supabase
+                .from('usuarios_sistema')
+                .insert({
+                    username: username,
+                    email: email,
+                    nome_completo: nomeCompleto || username,
+                    role: 'user'
+                });
+
+            if (dbError) {
+                console.error('❌ Erro ao salvar username:', dbError);
+                // Usuário foi criado no auth mas não na tabela - avisar mas considerar sucesso parcial
+                return { 
+                    success: true, 
+                    warning: 'Usuário criado mas username não foi salvo. Use email para login.',
+                    user: authData.user 
+                };
+            }
+
+            console.log('✅ Usuário criado com sucesso:', authData.user);
+            return { success: true, user: authData.user };
 
         } catch (error) {
             console.error('❌ Erro ao criar usuário:', error);
