@@ -1716,35 +1716,80 @@
 
         // Função para preencher resumo geral
         function preencherResumoGeral() {
-            // Calcular estatísticas de frequência
-            const totalDias = frequenciaData.length;
-            const presencas = frequenciaData.filter(f => f.status === 'presente').length;
-            const faltas = frequenciaData.filter(f => 
-                f.status === 'ausente' || 
-                f.status === 'falta_controlada'
-            ).length;
+            // USAR DADOS REAIS DO ALUNO SELECIONADO (do auth.getAlunos())
+            const alunoAtual = alunosAutorizados.find(a => a.codigo == alunoSelecionado);
             
-            const percentualFreq = totalDias > 0 ? ((presencas / totalDias) * 100).toFixed(1) : 100;
-
-            document.getElementById('percentualFrequencia').textContent = `${percentualFreq}%`;
-            document.getElementById('totalPresencas').textContent = presencas;
-            document.getElementById('totalFaltas').textContent = faltas;
+            if (!alunoAtual) {
+                console.warn('❌ Aluno selecionado não encontrado na lista!');
+                return;
+            }
             
-            // Total de medidas dos contadores ou fallback para array atual
-            const totalMedidas = contadoresData ? 
-                (contadoresData.fato_observado_negativo || 0) +
-                (contadoresData.fato_observado_positivo || 0) +
-                (contadoresData.advertencia || 0) +
-                (contadoresData.suspensoes_dias || 0) +
-                (contadoresData.acoes_educativas || 0) +
-                (contadoresData.elogio_individual || 0) +
-                (contadoresData.elogio_coletivo || 0)
-                : medidasData.length;
+            console.log('📊 Preenchendo resumo com dados REAIS:', alunoAtual);
+            
+            // FREQUÊNCIA REAL CALCULADA (usar percentualFrequencia da aba resumo)
+            const percentualFrequenciaEl = document.getElementById('percentualFrequencia');
+            if (percentualFrequenciaEl) {
+                percentualFrequenciaEl.textContent = `${alunoAtual.percentual_frequencia}%`;
                 
-            document.getElementById('totalMedidas').textContent = totalMedidas;
+                // Atualizar cor do card baseado no percentual real
+                const cardFreq = percentualFrequenciaEl.closest('.stat-card');
+                if (cardFreq) {
+                    cardFreq.classList.remove('green', 'orange', 'red');
+                    if (alunoAtual.percentual_frequencia >= 85) {
+                        cardFreq.classList.add('green');
+                    } else if (alunoAtual.percentual_frequencia >= 75) {
+                        cardFreq.classList.add('orange');
+                    } else {
+                        cardFreq.classList.add('red');
+                    }
+                }
+            }
+            
+            // NOTA DISCIPLINAR REAL (atualizar o elemento principal da aba disciplinar)
+            const notaDisciplinar = document.getElementById('notaDisciplinar');
+            if (notaDisciplinar) {
+                notaDisciplinar.textContent = alunoAtual.nota_disciplinar;
+                
+                // Atualizar barra de progresso
+                const scoreFill = document.getElementById('scoreFill');
+                if (scoreFill) {
+                    const nota = parseFloat(alunoAtual.nota_disciplinar);
+                    const percentual = (nota / 10) * 100;
+                    scoreFill.style.width = `${percentual}%`;
+                    
+                    // Cor da barra baseada na nota
+                    scoreFill.classList.remove('green', 'orange', 'red');
+                    if (nota >= 8.0) {
+                        scoreFill.classList.add('green');
+                    } else if (nota >= 6.0) {
+                        scoreFill.classList.add('orange');  
+                    } else {
+                        scoreFill.classList.add('red');
+                    }
+                }
+            }
+            
+            // TOTAL DE MEDIDAS REAL
+            const totalMedidasEl = document.getElementById('totalMedidas');
+            if (totalMedidasEl) {
+                totalMedidasEl.textContent = alunoAtual.total_medidas;
+            }
+            
+            // ESTATÍSTICAS ADICIONAIS (se existirem elementos)
+            if (document.getElementById('totalPresencas')) {
+                document.getElementById('totalPresencas').textContent = alunoAtual.total_presencas || 0;
+            }
+            if (document.getElementById('totalFaltas')) {
+                document.getElementById('totalFaltas').textContent = alunoAtual.total_faltas || 0;
+            }
+            if (document.getElementById('totalRegistros')) {
+                document.getElementById('totalRegistros').textContent = alunoAtual.total_registros || 0;
+            }
 
-            // Criar gráfico de evolução
-            criarGraficoEvolucao();
+            // Criar gráfico de evolução (se existir)
+            if (document.getElementById('behaviorChart')) {
+                criarGraficoEvolucao();
+            }
         }
 
         // Função para criar gráfico de evolução do comportamento
@@ -1920,16 +1965,20 @@
                             </div>
                             <div class="aluno-stats">
                                 <div class="aluno-stat">
-                                    <div class="aluno-stat-value">${aluno.percentual_frequencia || 100}%</div>
+                                    <div class="aluno-stat-value">${aluno.percentual_frequencia}%</div>
                                     <div class="aluno-stat-label">Frequência</div>
                                 </div>
                                 <div class="aluno-stat">
-                                    <div class="aluno-stat-value">${aluno.nota_disciplinar || '8.0'}</div>
+                                    <div class="aluno-stat-value">${aluno.nota_disciplinar}</div>
                                     <div class="aluno-stat-label">Disciplinar</div>
                                 </div>
                                 <div class="aluno-stat">
-                                    <div class="aluno-stat-value">${aluno.total_medidas || 0}</div>
+                                    <div class="aluno-stat-value">${aluno.total_medidas}</div>
                                     <div class="aluno-stat-label">Medidas</div>
+                                </div>
+                                <div class="aluno-stat" title="Total de registros de chamada">
+                                    <div class="aluno-stat-value">${aluno.total_registros || 0}</div>
+                                    <div class="aluno-stat-label">Aulas</div>
                                 </div>
                             </div>
                         </div>

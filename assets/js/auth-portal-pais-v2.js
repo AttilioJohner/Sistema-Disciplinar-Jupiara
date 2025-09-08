@@ -408,16 +408,29 @@ class AuthPortalPaisV2 {
                     pontos: 0 
                 };
                 
-                // Calcular percentual de frequência CORRETO
-                // Presentes + Atestados / Total de aulas * 100
+                // FREQUÊNCIA CORRETA: presentes / total_registros * 100
+                // Total = P + F + FC + A (todos os registros de chamada)
                 const percentualFrequencia = stats.total > 0 
-                    ? Math.round(((stats.presentes) / stats.total) * 100)
-                    : 100; // Se não tem registros, assume 100%
+                    ? Math.round((stats.presentes / stats.total) * 100)
+                    : 0; // Se não tem registros, assume 0% (não 100%)
+                
+                // PERCENTUAL DE FALTAS: faltas / total_registros * 100  
+                const percentualFaltas = stats.total > 0 
+                    ? Math.round((stats.faltas / stats.total) * 100)
+                    : 0;
                 
                 // Calcular nota disciplinar (10 - pontos, mínimo 0)
                 const notaDisciplinar = Math.max(0, 10 - (stats.pontos * 0.5)).toFixed(1);
                 
-                console.log(`📊 Aluno ${aluno.codigo}: ${stats.presentes}/${stats.total} = ${percentualFrequencia}% (${stats.faltas} faltas, ${stats.atestados} atestados)`);
+                console.log(`📊 FREQUÊNCIA CORRIGIDA - Aluno ${aluno.codigo}:
+                    - Presenças: ${stats.presentes}
+                    - Faltas: ${stats.faltas} 
+                    - Atestados: ${stats.atestados}
+                    - Total registros: ${stats.total}
+                    - % Presença: ${percentualFrequencia}%
+                    - % Faltas: ${percentualFaltas}%
+                    - Medidas: ${stats.medidas}
+                    - Nota Disciplinar: ${notaDisciplinar}`);
                 
                 return {
                     codigo: aluno.codigo,
@@ -425,8 +438,13 @@ class AuthPortalPaisV2 {
                     turma: aluno.turma,
                     parentesco: associacao?.parentesco || 'responsável',
                     percentual_frequencia: percentualFrequencia,
+                    percentual_faltas: percentualFaltas,
                     nota_disciplinar: notaDisciplinar,
                     total_medidas: stats.medidas,
+                    total_presencas: stats.presentes,
+                    total_faltas: stats.faltas,
+                    total_atestados: stats.atestados,
+                    total_registros: stats.total,
                     autorizado_ver_notas: associacao?.autorizado_ver_notas || false,
                     autorizado_ver_frequencia: associacao?.autorizado_ver_frequencia || false,
                     autorizado_ver_disciplinar: associacao?.autorizado_ver_disciplinar || false
