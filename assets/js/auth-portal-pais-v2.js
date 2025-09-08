@@ -265,7 +265,7 @@ class AuthPortalPaisV2 {
     }
 
     /**
-     * Buscar alunos do responsável (compatível com formato esperado)
+     * Buscar alunos do responsável com dados REAIS
      */
     async getAlunos() {
         if (!await this.isAuthenticated()) {
@@ -341,6 +341,8 @@ class AuthPortalPaisV2 {
             const estatisticas = {};
             
             // Calcular frequência CORRETAMENTE
+            console.log('🔍 DADOS BRUTOS de frequência:', frequencias);
+            
             if (frequencias) {
                 frequencias.forEach(f => {
                     if (!estatisticas[f.codigo_aluno]) {
@@ -355,17 +357,23 @@ class AuthPortalPaisV2 {
                     }
                     estatisticas[f.codigo_aluno].total++;
                     
-                    // Contar corretamente os status
-                    if (f.status === 'presente') {
+                    console.log(`🔍 Processando registro: Aluno ${f.codigo_aluno}, Status: '${f.status}', Data: ${f.data}`);
+                    
+                    // Contar corretamente os status - incluir TODOS os valores possíveis
+                    if (f.status === 'presente' || f.status === 'p' || f.status === 'P') {
                         estatisticas[f.codigo_aluno].presentes++;
-                    } else if (f.status === 'ausente' || f.status === 'falta' || f.status === 'falta_controlada') {
+                    } else if (f.status === 'ausente' || f.status === 'falta' || f.status === 'falta_controlada' || f.status === 'f' || f.status === 'F' || f.status === 'fc' || f.status === 'FC') {
                         estatisticas[f.codigo_aluno].faltas++;
-                    } else if (f.status === 'atestado') {
+                    } else if (f.status === 'atestado' || f.status === 'a' || f.status === 'A') {
                         estatisticas[f.codigo_aluno].atestados++;
-                        estatisticas[f.codigo_aluno].presentes++; // Atestado conta como presença
+                        // ATESTADO NÃO conta como presença para cálculo de frequência
+                    } else {
+                        console.warn(`⚠️ Status desconhecido encontrado: '${f.status}' para aluno ${f.codigo_aluno}`);
                     }
                 });
             }
+            
+            console.log('📊 Estatísticas processadas:', estatisticas);
 
             // Calcular medidas e pontos
             if (medidas) {
@@ -396,6 +404,14 @@ class AuthPortalPaisV2 {
                 });
             }
 
+            // Buscar notas disciplinares REAIS da view
+            const { data: notasDisciplinares } = await this.supabase
+                .from('v_nota_disciplinar_atual')
+                .select('codigo_aluno, nota_atual')
+                .in('codigo_aluno', codigosAlunos);
+
+            console.log('📊 Notas disciplinares do banco:', notasDisciplinares);
+
             // Combinar todos os dados
             const resultado = alunos.map(aluno => {
                 const associacao = associacoes.find(a => a.aluno_codigo === aluno.codigo);
@@ -409,28 +425,29 @@ class AuthPortalPaisV2 {
                 };
                 
                 // FREQUÊNCIA CORRETA: presentes / total_registros * 100
-                // Total = P + F + FC + A (todos os registros de chamada)
                 const percentualFrequencia = stats.total > 0 
                     ? Math.round((stats.presentes / stats.total) * 100)
-                    : 0; // Se não tem registros, assume 0% (não 100%)
+                    : 100; // Se não tem registros, assume 100%
                 
                 // PERCENTUAL DE FALTAS: faltas / total_registros * 100  
                 const percentualFaltas = stats.total > 0 
                     ? Math.round((stats.faltas / stats.total) * 100)
                     : 0;
                 
-                // Calcular nota disciplinar (10 - pontos, mínimo 0)
-                const notaDisciplinar = Math.max(0, 10 - (stats.pontos * 0.5)).toFixed(1);
+                // NOTA DISCIPLINAR REAL do banco (não calculada)
+                const notaBanco = notasDisciplinares?.find(n => n.codigo_aluno === aluno.codigo);
+                const notaDisciplinar = notaBanco ? 
+                    parseFloat(notaBanco.nota_atual).toFixed(1) : 
+                    Math.max(0, 10 - (stats.pontos * 0.5)).toFixed(1);
                 
-                console.log(`📊 FREQUÊNCIA CORRIGIDA - Aluno ${aluno.codigo}:
-                    - Presenças: ${stats.presentes}
-                    - Faltas: ${stats.faltas} 
-                    - Atestados: ${stats.atestados}
-                    - Total registros: ${stats.total}
-                    - % Presença: ${percentualFrequencia}%
-                    - % Faltas: ${percentualFaltas}%
-                    - Medidas: ${stats.medidas}
-                    - Nota Disciplinar: ${notaDisciplinar}`);
+                console.log(`📊 DADOS CORRIGIDOS - Aluno ${aluno.codigo}:
+                    ✅ Presenças: ${stats.presentes}
+                    ❌ Faltas: ${stats.faltas} 
+                    📋 Atestados: ${stats.atestados}
+                    📚 Total aulas: ${stats.total}
+                    📊 % Frequência: ${percentualFrequencia}% (${stats.presentes}/${stats.total})
+                    🎯 Nota Disciplinar: ${notaDisciplinar} ${notaBanco ? '(REAL do banco)' : '(calculada)'}
+                    📜 Medidas: ${stats.medidas}`);
                 
                 return {
                     codigo: aluno.codigo,
