@@ -41,11 +41,7 @@ WITH CHECK (true);
 -- 4. Inserir usuário administrador padrão (se não existir)
 INSERT INTO usuarios_sistema (username, email, nome_completo, role) 
 VALUES ('admin', 'admin@eecmjupiara.com.br', 'Administrador do Sistema', 'admin')
-ON CONFLICT (username) DO UPDATE SET
-    email = EXCLUDED.email,
-    nome_completo = EXCLUDED.nome_completo,
-    role = EXCLUDED.role,
-    updated_at = now();
+ON CONFLICT (username) DO NOTHING;
 
 -- 5. Criar índices para melhor performance
 CREATE INDEX IF NOT EXISTS idx_usuarios_sistema_username ON usuarios_sistema(username);
