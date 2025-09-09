@@ -2773,9 +2773,20 @@
         }
 
         async function exibirFichaDisciplinar(aluno, medidas) {
-            // Dados pessoais
+            // Dados pessoais com foto
+            const fotoHtml = aluno.foto_url ? 
+                `<div class="dado-item" style="grid-column: 1; grid-row: 1 / span 3; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px;">
+                    <span class="dado-label" style="margin-bottom: 10px;">Foto 3x4:</span>
+                    <img src="${aluno.foto_url}" alt="Foto do aluno" style="width: 120px; height: 160px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" />
+                </div>` : 
+                `<div class="dado-item" style="grid-column: 1; grid-row: 1 / span 3; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px; background: #f0f0f0; color: #999;">
+                    <span class="dado-label" style="margin-bottom: 10px;">Foto 3x4:</span>
+                    <div style="width: 120px; height: 160px; display: flex; align-items: center; justify-content: center; border: 2px dashed #ddd; border-radius: 8px; font-size: 14px; text-align: center;">Sem foto</div>
+                </div>`;
+            
             document.getElementById('dadosPessoais').innerHTML = `
-                <div class="dados-grid">
+                <div class="dados-grid" style="grid-template-columns: 200px 1fr 1fr; gap: 20px;">
+                    ${fotoHtml}
                     <div class="dado-item">
                         <span class="dado-label">Nome:</span>
                         <span class="dado-valor">${aluno.nome_completo || aluno.nome || 'N/A'}</span>
@@ -2787,6 +2798,14 @@
                     <div class="dado-item">
                         <span class="dado-label">Turma:</span>
                         <span class="dado-valor">${aluno.turma || aluno.Turma || 'N/A'}</span>
+                    </div>
+                    <div class="dado-item">
+                        <span class="dado-label">Responsável:</span>
+                        <span class="dado-valor">${aluno.responsavel || aluno['responsável'] || 'N/A'}</span>
+                    </div>
+                    <div class="dado-item">
+                        <span class="dado-label">Status:</span>
+                        <span class="dado-valor">${aluno.status || 'Ativo'}</span>
                     </div>
                 </div>
             `;
