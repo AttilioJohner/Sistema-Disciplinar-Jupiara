@@ -144,6 +144,19 @@
               <input class="form-input" id="fld-tel2" name="telefone2" placeholder="+5566888888888" />
             </div>
 
+            <div class="form-group" style="grid-column: span 2;">
+              <label class="form-label" for="fld-foto">Foto 3x4 do Aluno</label>
+              <div style="display: flex; gap: 20px; align-items: flex-start;">
+                <div>
+                  <input type="file" class="form-input" id="fld-foto" name="foto" accept="image/*" style="padding: 8px;" />
+                  <small style="color: #666; display: block; margin-top: 5px;">Formatos aceitos: JPG, PNG, WebP (máx. 5MB)</small>
+                </div>
+                <div id="foto-preview" style="width: 120px; height: 160px; border: 2px dashed #ddd; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; overflow: hidden;">
+                  <span style="color: #999; font-size: 12px; text-align: center;">Preview<br>3x4</span>
+                </div>
+              </div>
+            </div>
+
             <div class="form-actions">
               <button id="btnCancelar" type="button" class="btn btn-secondary">🔄 Limpar</button>
               <button id="btnExcluir" type="button" class="btn btn-danger" style="display: none;">🗑️ Excluir</button>
@@ -210,6 +223,7 @@
                   <th>Responsável</th>
                   <th>Telefone 1</th>
                   <th>Telefone 2</th>
+                  <th>Foto</th>
                   <th>Ações</th>
                 </tr>
               </thead>

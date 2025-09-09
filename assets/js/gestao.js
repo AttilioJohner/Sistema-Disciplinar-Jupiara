@@ -69,6 +69,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       await ensureLocalDb();
       mapElements();
       bindEvents();
+      initPhotoPreview();
       await startLiveList();
       
       // Única atualização de estatísticas
@@ -319,10 +320,17 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         toast('Registro não encontrado.', 'erro');
         return;
       }
-      fillForm({ id: id, ...snap.data() });
+      const alunoData = { id: id, ...snap.data() };
+      fillForm(alunoData);
       editingId = id;
       toggleFormMode('edit');
       scrollIntoViewSmooth(els.form);
+      
+      // Carregar foto preview se existir
+      if (alunoData.foto_url) {
+        loadPhotoPreview(alunoData.foto_url);
+      }
+      
       debugLog('EDIT load', { id: id });
     } catch (err) {
       console.error(err);
@@ -502,6 +510,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
               '<td>' + escapeHtml(a.responsavel || '') + '</td>' +
               '<td>' + escapeHtml(a.telefone1 || '') + '</td>' +
               '<td>' + escapeHtml(a.telefone2 || '') + '</td>' +
+              '<td>' + (a.foto_url ? '<img src="' + escapeHtml(a.foto_url) + '" alt="Foto" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px;">' : '<span style="color: #999;">-</span>') + '</td>' +
               '<td style="white-space:nowrap">' +
                 '<button type="button" class="btn btn-small" data-action="edit" data-id="' + encodeURIComponent(a.id) + '">Editar</button>' +
                 deleteButton +
@@ -567,6 +576,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     if (els.form) els.form.reset();
     editingId = null;
     toggleFormMode('create');
+    clearPhotoPreview();
   }
 
   function toggleFormMode(mode) {
@@ -615,6 +625,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     if (data.responsavel) out.responsavel = String(data.responsavel).trim();
     if (data.telefone) out.telefone = String(data.telefone).trim();
     if (data.telefone2) out.telefone2 = String(data.telefone2).trim();
+    if (data.foto_url) out.foto_url = String(data.foto_url).trim();
     
     // Campos para compatibilidade
     if (data.telefone) out.telefone_responsavel = String(data.telefone).trim();
@@ -875,6 +886,66 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     if (!el) return;
     try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     catch (_) { el.scrollIntoView(); }
+  }
+
+  // =====================
+  // SISTEMA DE FOTOS
+  // =====================
+  function initPhotoPreview() {
+    const fotoInput = document.getElementById('fld-foto');
+    if (!fotoInput) return;
+    
+    fotoInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      const preview = document.getElementById('foto-preview');
+      
+      if (!file) {
+        clearPhotoPreview();
+        return;
+      }
+      
+      // Validar tipo
+      if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type)) {
+        toast('Formato inválido. Use JPG, PNG ou WebP.', 'erro');
+        fotoInput.value = '';
+        return;
+      }
+      
+      // Validar tamanho (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast('Arquivo muito grande. Máximo: 5MB', 'erro');
+        fotoInput.value = '';
+        return;
+      }
+      
+      // Mostrar preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (preview) {
+          preview.innerHTML = `<img src="${e.target.result}" alt="Foto 3x4" style="width: 100%; height: 100%; object-fit: cover;">`;
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  
+  function clearPhotoPreview() {
+    const preview = document.getElementById('foto-preview');
+    const input = document.getElementById('fld-foto');
+    
+    if (preview) {
+      preview.innerHTML = '<span style="color: #999; font-size: 12px; text-align: center;">Preview<br>3x4</span>';
+    }
+    if (input) {
+      input.value = '';
+    }
+  }
+  
+  function loadPhotoPreview(url) {
+    const preview = document.getElementById('foto-preview');
+    if (preview && url) {
+      preview.innerHTML = `<img src="${url}" alt="Foto 3x4" style="width: 100%; height: 100%; object-fit: cover;">`;
+    }
   }
 
   // LIMPEZA
