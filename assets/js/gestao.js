@@ -264,28 +264,36 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   // =====================
   async function onSubmitForm(ev) {
     ev.preventDefault();
+    console.log('💾 INICIANDO onSubmitForm...');
+    
     const data = getFormData();
+    console.log('💾 getFormData concluído');
 
     try {
       if (editingId) {
+        console.log('💾 MODO: Edição - editingId:', editingId);
         validateRequired(data, REQUIRED_FIELDS_UPDATE);
         // Não permitir troca de docId durante edição
         if (data.id && data.id !== editingId) {
           data.id = editingId;
         }
+        console.log('💾 Chamando updateAluno...');
         await updateAluno(editingId, data);
         toast('Aluno atualizado com sucesso!');
       } else {
+        console.log('💾 MODO: Criação');
         validateRequired(data, REQUIRED_FIELDS_CREATE);
         const docId = String(data.id).trim();
+        console.log('💾 Chamando createAluno...');
         await createAluno(docId, data);
         toast('Aluno cadastrado com sucesso!');
       }
+      console.log('💾 SALVAMENTO CONCLUÍDO!');
       resetForm();
       // Recarregar dados após operação
       await startLiveList();
     } catch (err) {
-      console.error(err);
+      console.error('💾 ERRO NO onSubmitForm:', err);
       toast(err.message || 'Falha ao salvar aluno.', 'erro');
     }
   }
@@ -302,13 +310,15 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   }
 
   async function updateAluno(docId, data) {
-    const ref = db.doc(docId);
-    const snap = await ref.get();
-    if (!snap.exists) {
-      throw new Error('Aluno com ID "' + docId + '" não encontrado para atualização.');
-    }
+    console.log('💾 updateAluno chamado - usando Supabase diretamente');
+    console.log('💾 docId recebido:', docId);
     const payload = sanitizeData(data, { forUpdate: true });
-    await ref.update(payload);
+    console.log('💾 payload para Supabase:', payload);
+    
+    // Usar Supabase diretamente - passar o docId como primeiro parâmetro
+    const result = await window.supabaseSystem.db.alunos.update(docId, payload);
+    console.log('💾 resultado do Supabase:', result);
+    
     debugLog('UPDATE ok', { id: docId, payload });
   }
 
@@ -325,11 +335,6 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       editingId = id;
       toggleFormMode('edit');
       scrollIntoViewSmooth(els.form);
-      
-      // Carregar foto preview se existir
-      if (alunoData.foto_url) {
-        loadPhotoPreview(alunoData.foto_url);
-      }
       
       debugLog('EDIT load', { id: id });
     } catch (err) {
@@ -544,6 +549,21 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     if (data.telefone != null) data.telefone = data.telefone.trim();
     if (data.email != null) data.email = data.email.trim().toLowerCase();
     
+    // Processar foto: converter File para base64 URL
+    const fotoInput = els.form.querySelector('input[name="foto"]');
+    if (fotoInput && fotoInput.files && fotoInput.files[0]) {
+      // Se tem arquivo, pegar do preview que já foi processado
+      const previewContainer = document.getElementById('foto-preview');
+      const previewImg = previewContainer ? previewContainer.querySelector('img') : null;
+      if (previewImg && previewImg.src) {
+        data.foto_url = previewImg.src; // Base64 data URL
+        console.log('📸 Foto processada para salvar:', data.foto_url.substring(0, 50) + '...');
+      }
+    }
+    
+    // Remover o campo 'foto' pois não precisamos do File object
+    delete data.foto;
+    
     console.log('🔍 Dados após limpeza:', data);
     return data;
   }
@@ -567,6 +587,11 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       const v = mappedData[k];
       const input = els.form.querySelector('[name="' + cssEscape(k) + '"]');
       if (input) input.value = v == null ? '' : String(v);
+    }
+    
+    // Carregar foto se existir
+    if (data.foto_url) {
+      loadPhotoPreview(data.foto_url);
     }
     
     debugLog('fillForm mapeado:', mappedData);
@@ -612,6 +637,10 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   function sanitizeData(data, opts) {
     opts = opts || {}; var forCreate = !!opts.forCreate; var forUpdate = !!opts.forUpdate;
     
+    // DEBUG: ver dados recebidos
+    console.log('🧹 SANITIZE - Dados recebidos:', data);
+    console.log('🧹 SANITIZE - Campo foto_url:', data.foto_url);
+    
     // Mapear campos do formulário para a estrutura do banco
     var out = {};
     
@@ -626,6 +655,10 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     if (data.telefone) out.telefone = String(data.telefone).trim();
     if (data.telefone2) out.telefone2 = String(data.telefone2).trim();
     if (data.foto_url) out.foto_url = String(data.foto_url).trim();
+    
+    // DEBUG: ver resultado
+    console.log('🧹 SANITIZE - Dados sanitizados:', out);
+    console.log('🧹 SANITIZE - foto_url no out:', out.foto_url);
     
     // Campos para compatibilidade
     if (data.telefone) out.telefone_responsavel = String(data.telefone).trim();

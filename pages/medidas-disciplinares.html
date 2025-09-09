@@ -1479,7 +1479,7 @@
                 console.log('🔄 Carregando alunos do Supabase...');
                 const { data: alunosData, error } = await window.supabaseClient
                     .from('alunos')
-                    .select('codigo, "Nome completo", turma')
+                    .select('codigo, "Nome completo", turma, foto_url')
                     .order('"Nome completo"');
 
                 if (error) throw error;
@@ -1488,7 +1488,8 @@
                     id: item.codigo,
                     codigo: item.codigo,
                     nome: item['Nome completo'],
-                    turma: item.turma
+                    turma: item.turma,
+                    foto_url: item.foto_url
                 }));
 
                 // Guardar dados para uso posterior
@@ -1611,7 +1612,7 @@
                 // Buscar dados do aluno do Supabase
                 const { data: dadosAluno, error: alunoError } = await window.supabaseClient
                     .from('alunos')
-                    .select('codigo, "Nome completo", turma')
+                    .select('codigo, "Nome completo", turma, foto_url')
                     .eq('codigo', parseInt(alunoId))
                     .single();
                     
@@ -2380,7 +2381,7 @@
                 // Carregar diretamente do Supabase
                 const { data: alunosData, error } = await window.supabaseClient
                     .from('alunos')
-                    .select('codigo, "Nome completo", turma');
+                    .select('codigo, "Nome completo", turma, foto_url');
                     
                 if (error) throw error;
                 
@@ -2390,7 +2391,8 @@
                             id: aluno.codigo,
                             codigo: aluno.codigo,
                             nome: aluno['Nome completo'],
-                            turma: aluno.turma
+                            turma: aluno.turma,
+                            foto_url: aluno.foto_url
                         });
                     }
                 });
@@ -2547,12 +2549,14 @@
                     } else {
                         console.log('FICHA: Criando dados básicos para o aluno:', selectAluno.value);
                         
-                        // Tentar buscar turma dos dados de medidas se disponível
+                        // Tentar buscar turma e foto dos dados de medidas se disponível
                         let turmaAluno = 'N/A';
+                        let fotoAluno = null;
                         if (window.alunosMedidasGlobal) {
-                            const alunoComTurma = window.alunosMedidasGlobal.find(a => a.codigo == selectAluno.value || a.id == selectAluno.value);
-                            if (alunoComTurma) {
-                                turmaAluno = alunoComTurma.turma || 'N/A';
+                            const alunoComDados = window.alunosMedidasGlobal.find(a => a.codigo == selectAluno.value || a.id == selectAluno.value);
+                            if (alunoComDados) {
+                                turmaAluno = alunoComDados.turma || 'N/A';
+                                fotoAluno = alunoComDados.foto_url;
                             }
                         }
                         
@@ -2560,7 +2564,8 @@
                             id: selectAluno.value,
                             nome: selectAluno.options[selectAluno.selectedIndex]?.text || 'Aluno não identificado',
                             codigo: selectAluno.value,
-                            turma: turmaAluno
+                            turma: turmaAluno,
+                            foto_url: fotoAluno
                         };
                     }
                 }
@@ -2570,13 +2575,14 @@
                     try {
                         const { data: dadosSupabase, error } = await window.supabaseClient
                             .from('alunos')
-                            .select('turma, "Nome completo"')
+                            .select('turma, "Nome completo", foto_url')
                             .eq('codigo', parseInt(selectAluno.value))
                             .single();
                             
                         if (!error && dadosSupabase) {
                             alunoData.turma = dadosSupabase.turma || 'N/A';
                             alunoData.nome_completo = dadosSupabase['Nome completo'] || alunoData.nome;
+                            alunoData.foto_url = dadosSupabase.foto_url;
                             console.log('FICHA: Dados complementados do Supabase:', dadosSupabase);
                         }
                     } catch (error) {
@@ -2773,6 +2779,27 @@
         }
 
         async function exibirFichaDisciplinar(aluno, medidas) {
+            // DEBUG: Verificar dados do aluno para foto
+            console.log('🖼️ DEBUG FOTO - Dados completos do aluno:', aluno);
+            console.log('🖼️ DEBUG FOTO - Campo foto_url:', aluno.foto_url);
+            console.log('🖼️ DEBUG FOTO - Campos disponíveis:', Object.keys(aluno));
+            console.log('🖼️ DEBUG FOTO - Tipo do foto_url:', typeof aluno.foto_url);
+            console.log('🖼️ DEBUG FOTO - foto_url está vazio?', !aluno.foto_url);
+            
+            // DEBUG: Buscar diretamente no banco para confirmar
+            if (window.supabaseClient && aluno.codigo) {
+                try {
+                    const { data: fotoCheck, error } = await window.supabaseClient
+                        .from('alunos')
+                        .select('codigo, "Nome completo", foto_url')
+                        .eq('codigo', parseInt(aluno.codigo))
+                        .single();
+                    console.log('🖼️ DEBUG FOTO - Dados direto do banco:', fotoCheck);
+                } catch (e) {
+                    console.log('🖼️ DEBUG FOTO - Erro ao buscar no banco:', e);
+                }
+            }
+            
             // Dados pessoais com foto
             const fotoHtml = aluno.foto_url ? 
                 `<div class="dado-item" style="grid-column: 1; grid-row: 1 / span 3; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px;">

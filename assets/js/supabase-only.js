@@ -436,7 +436,8 @@ const alunosDB = {
                     'turma': data.turma,
                     'responsável': data.responsavel || data.responsável,
                     'Telefone do responsável': parseTelefone(data.telefone1 || data.telefone),
-                    'Telefone do responsável 2': parseTelefone(data.telefone2)
+                    'Telefone do responsável 2': parseTelefone(data.telefone2),
+                    'foto_url': data.foto_url || null
                 };
                 
                 console.log('🔍 Dados mapeados para Supabase:', mappedData);
