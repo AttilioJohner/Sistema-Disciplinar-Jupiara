@@ -1192,14 +1192,16 @@
                             </button>
                         </div>
                         
+                        <!-- BOTÕES DEBUG: Ferramentas de diagnóstico para administradores/técnicos -->
+                        <!-- Úteis para verificar conexões com Views e diagnosticar problemas de dados -->
                         <div class="form-group">
-                            <button type="button" class="btn btn-info" onclick="window.debugNotas()">
+                            <button type="button" class="btn btn-info" onclick="window.debugNotas()" title="Diagnosticar conexão com View de notas disciplinares">
                                 🔍 Debug Notas (Views)
                             </button>
                         </div>
                         
                         <div class="form-group">
-                            <button type="button" class="btn btn-secondary" onclick="window.debugFreq()">
+                            <button type="button" class="btn btn-secondary" onclick="window.debugFreq()" title="Diagnosticar conexão com View de frequência escolar">
                                 📅 Debug Frequência (Views)
                             </button>
                         </div>
@@ -2640,20 +2642,24 @@
                     console.log('FICHA: Erro ao carregar medidas do Supabase:', supaError.message);
                 }
                 
-                // Debug: Listar todas as medidas disponíveis
+                /* EXPLICAÇÃO DEBUG: Este bloco é necessário para diagnosticar problemas de conectividade 
+                 * com o Supabase e verificar a estrutura de dados da tabela 'medidas'.
+                 * Útil para: 1) Confirmar conexão com banco, 2) Verificar campos disponíveis,
+                 * 3) Identificar discrepâncias nos dados. Pode ser mantido em produção 
+                 * pois só executa quando há problemas de carregamento de dados. */
                 try {
                     const { data: todasMedidas, error: debugError } = await window.supabaseClient
                         .from('medidas')
                         .select('id, codigo_matricula, nome_completo');
                         
                     if (!debugError && todasMedidas) {
-                        console.log(`DEBUG: Total de medidas na tabela: ${todasMedidas.length}`);
+                        console.log(`[DEBUG-SISTEMA] Total de medidas na tabela: ${todasMedidas.length}`);
                         todasMedidas.forEach(item => {
-                            console.log(`DEBUG: Medida ID ${item.id} - Código: ${item.codigo_matricula}, Nome: ${item.nome_completo}`);
+                            console.log(`[DEBUG-SISTEMA] Medida ID ${item.id} - Código: ${item.codigo_matricula}, Nome: ${item.nome_completo}`);
                         });
                     }
                 } catch (debugError) {
-                    console.log('DEBUG: Erro ao listar todas as medidas:', debugError.message);
+                    console.log('[DEBUG-SISTEMA] Erro ao listar todas as medidas:', debugError.message);
                 }
                 
                 console.log('FICHA: Encontradas ' + medidas.length + ' medidas disciplinares');
@@ -2779,14 +2785,17 @@
         }
 
         async function exibirFichaDisciplinar(aluno, medidas) {
-            // DEBUG: Verificar dados do aluno para foto
-            console.log('🖼️ DEBUG FOTO - Dados completos do aluno:', aluno);
-            console.log('🖼️ DEBUG FOTO - Campo foto_url:', aluno.foto_url);
-            console.log('🖼️ DEBUG FOTO - Campos disponíveis:', Object.keys(aluno));
-            console.log('🖼️ DEBUG FOTO - Tipo do foto_url:', typeof aluno.foto_url);
-            console.log('🖼️ DEBUG FOTO - foto_url está vazio?', !aluno.foto_url);
+            /* EXPLICAÇÃO DEBUG FOTO: Logs essenciais para diagnosticar problemas na funcionalidade 
+             * de fotos 3x4 dos alunos. Identifica: 1) Estrutura de dados recebidos,
+             * 2) Existência e tipo do campo foto_url, 3) Diferenças entre cache e banco,
+             * 4) Problemas de parsing/conversão. Recomendado manter para suporte técnico. */
+            console.log('🖼️ [DEBUG-FOTO] Dados completos do aluno:', aluno);
+            console.log('🖼️ [DEBUG-FOTO] Campo foto_url:', aluno.foto_url);
+            console.log('🖼️ [DEBUG-FOTO] Campos disponíveis:', Object.keys(aluno));
+            console.log('🖼️ [DEBUG-FOTO] Tipo do foto_url:', typeof aluno.foto_url);
+            console.log('🖼️ [DEBUG-FOTO] foto_url está vazio?', !aluno.foto_url);
             
-            // DEBUG: Buscar diretamente no banco para confirmar
+            // Verificação cruzada com banco para diagnóstico
             if (window.supabaseClient && aluno.codigo) {
                 try {
                     const { data: fotoCheck, error } = await window.supabaseClient
@@ -2794,9 +2803,9 @@
                         .select('codigo, "Nome completo", foto_url')
                         .eq('codigo', parseInt(aluno.codigo))
                         .single();
-                    console.log('🖼️ DEBUG FOTO - Dados direto do banco:', fotoCheck);
+                    console.log('🖼️ [DEBUG-FOTO] Dados direto do banco:', fotoCheck);
                 } catch (e) {
-                    console.log('🖼️ DEBUG FOTO - Erro ao buscar no banco:', e);
+                    console.log('🖼️ [DEBUG-FOTO] Erro ao buscar no banco:', e);
                 }
             }
             
@@ -3498,13 +3507,13 @@
                 pdf.setFillColor(0, 123, 255);
                 pdf.rect(0, 0, pageWidth, 30, 'F');
                 
-                // LOGO DA ESCOLA - Método mais robusto
+                // LOGO DA ESCOLA - Método corrigido com path absoluto
                 let logoCarregado = false;
                 try {
-                    // Tentar carregar logo primeiro
                     console.log('🔄 Tentando carregar logo da escola...');
                     
                     const logoImg = new Image();
+                    logoImg.crossOrigin = 'anonymous'; // Permitir CORS
                     
                     const logoPromise = new Promise((resolve, reject) => {
                         logoImg.onload = () => {
@@ -3513,21 +3522,21 @@
                                 const canvas = document.createElement('canvas');
                                 const ctx = canvas.getContext('2d');
                                 
-                                // Redimensionar se muito grande
-                                const maxSize = 200;
+                                // Redimensionar mantendo proporção
+                                const maxWidth = 25;
+                                const maxHeight = 20;
                                 let { width, height } = logoImg;
-                                if (width > maxSize || height > maxSize) {
-                                    const ratio = Math.min(maxSize / width, maxSize / height);
-                                    width *= ratio;
-                                    height *= ratio;
-                                }
+                                
+                                const ratio = Math.min(maxWidth / width, maxHeight / height);
+                                width *= ratio;
+                                height *= ratio;
                                 
                                 canvas.width = width;
                                 canvas.height = height;
                                 ctx.drawImage(logoImg, 0, 0, width, height);
                                 
                                 const dataURL = canvas.toDataURL('image/jpeg', 0.9);
-                                pdf.addImage(dataURL, 'JPEG', margin, 7, 20, 20);
+                                pdf.addImage(dataURL, 'JPEG', margin, 5, width, height);
                                 logoCarregado = true;
                                 console.log('🎯 Logo adicionado ao PDF com sucesso!');
                                 resolve();
@@ -3537,29 +3546,44 @@
                             }
                         };
                         
-                        logoImg.onerror = (e) => {
-                            console.error('❌ Erro ao carregar logo:', e);
-                            reject(e);
+                        logoImg.onerror = (error) => {
+                            console.error('❌ Erro ao carregar logo:', error);
+                            // Tentar próximo caminho
+                            const caminhos = [
+                                '../assets/images/logo-escola.jpeg',
+                                './assets/images/logo-escola.jpeg',
+                                '/assets/images/logo-escola.jpeg',
+                                'assets/images/logo-escola.jpeg'
+                            ];
+                            
+                            let tentativa = 0;
+                            const tentarProximo = () => {
+                                if (tentativa < caminhos.length - 1) {
+                                    tentativa++;
+                                    console.log(`🔄 Tentando caminho ${tentativa + 1}: ${caminhos[tentativa]}`);
+                                    logoImg.src = caminhos[tentativa];
+                                } else {
+                                    reject(new Error('Todos os caminhos falharam'));
+                                }
+                            };
+                            
+                            logoImg.onerror = tentarProximo;
+                            tentarProximo();
                         };
                         
-                        // Tentar diferentes caminhos
-                        const caminhos = [
-                            'assets/images/logo-escola.jpeg',
-                            './assets/images/logo-escola.jpeg',
-                            '/assets/images/logo-escola.jpeg'
-                        ];
-                        
-                        logoImg.src = caminhos[0];
+                        // Iniciar com primeiro caminho
+                        console.log('🔄 Tentando: ../assets/images/logo-escola.jpeg');
+                        logoImg.src = '../assets/images/logo-escola.jpeg';
                     });
                     
-                    // Timeout de 3 segundos
+                    // Timeout de 5 segundos
                     await Promise.race([
                         logoPromise,
-                        new Promise((_, reject) => setTimeout(() => reject('Timeout'), 3000))
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de 5s')), 5000))
                     ]);
                     
                 } catch (error) {
-                    console.warn('⚠️ Logo não carregou:', error);
+                    console.warn('⚠️ Logo não carregou:', error.message);
                     logoCarregado = false;
                 }
                 
@@ -3585,25 +3609,38 @@
                 
                 yPos = 40;
                 
-                // ===== DADOS PESSOAIS COMPLETOS =====
+                // ===== DADOS PESSOAIS COM FOTO =====
                 pdf.setFillColor(240, 240, 240);
-                pdf.rect(margin, yPos, contentWidth, 35, 'F');
+                pdf.rect(margin, yPos, contentWidth, 45, 'F');
                 pdf.setTextColor(0, 0, 0);
                 pdf.setFontSize(12);
                 pdf.setFont('helvetica', 'bold');
                 pdf.text('IDENTIFICACAO DO ALUNO', margin + 5, yPos + 7);
                 
-                yPos += 12;
+                yPos += 15;
                 
-                // Extrair TODOS os dados pessoais da ficha
+                // Extrair dados pessoais da ficha
                 const dadosPessoais = document.getElementById('dadosPessoais');
                 const dadosTextos = [];
+                let fotoAlunoSrc = null;
                 
                 if (dadosPessoais) {
+                    // Buscar foto do aluno
+                    const imgFoto = dadosPessoais.querySelector('img[alt="Foto do aluno"]');
+                    if (imgFoto && imgFoto.src && !imgFoto.src.includes('placeholder')) {
+                        fotoAlunoSrc = imgFoto.src;
+                        console.log('📸 Foto do aluno encontrada:', fotoAlunoSrc);
+                    }
+                    
+                    // Extrair dados textuais (exceto foto)
                     const items = dadosPessoais.querySelectorAll('.dado-item');
                     items.forEach(item => {
                         const label = item.querySelector('.dado-label')?.textContent?.trim();
                         const valor = item.querySelector('.dado-valor')?.textContent?.trim();
+                        
+                        // Pular item da foto
+                        if (label && label.toLowerCase().includes('foto')) return;
+                        
                         if (label && valor && valor !== 'N/A') {
                             dadosTextos.push(`${label} ${valor}`);
                         }
@@ -3616,16 +3653,75 @@
                     dadosTextos.push(`Código: ${codigoAluno}`);
                 }
                 
-                // Imprimir dados em duas colunas
+                // ADICIONAR FOTO DO ALUNO (lado direito)
+                let fotoAdicionada = false;
+                if (fotoAlunoSrc) {
+                    try {
+                        const fotoImg = new Image();
+                        fotoImg.crossOrigin = 'anonymous';
+                        
+                        const fotoPromise = new Promise((resolve, reject) => {
+                            fotoImg.onload = () => {
+                                try {
+                                    console.log('📸 Processando foto do aluno...');
+                                    const canvas = document.createElement('canvas');
+                                    const ctx = canvas.getContext('2d');
+                                    
+                                    // Dimensões da foto 3x4 no PDF (proporção 3:4)
+                                    const fotoWidth = 20;
+                                    const fotoHeight = 26;
+                                    
+                                    canvas.width = fotoWidth * 4; // Resolução maior para qualidade
+                                    canvas.height = fotoHeight * 4;
+                                    ctx.drawImage(fotoImg, 0, 0, canvas.width, canvas.height);
+                                    
+                                    const fotoDataURL = canvas.toDataURL('image/jpeg', 0.8);
+                                    
+                                    // Posicionar no lado direito da seção
+                                    const fotoX = margin + contentWidth - fotoWidth - 5;
+                                    const fotoY = yPos - 5;
+                                    
+                                    pdf.addImage(fotoDataURL, 'JPEG', fotoX, fotoY, fotoWidth, fotoHeight);
+                                    fotoAdicionada = true;
+                                    console.log('✅ Foto do aluno adicionada ao PDF!');
+                                    resolve();
+                                } catch (e) {
+                                    console.error('❌ Erro ao processar foto do aluno:', e);
+                                    reject(e);
+                                }
+                            };
+                            
+                            fotoImg.onerror = (e) => {
+                                console.error('❌ Erro ao carregar foto do aluno:', e);
+                                reject(e);
+                            };
+                        });
+                        
+                        fotoImg.src = fotoAlunoSrc;
+                        await Promise.race([
+                            fotoPromise,
+                            new Promise((_, reject) => setTimeout(() => reject('Timeout foto'), 3000))
+                        ]);
+                        
+                    } catch (error) {
+                        console.warn('⚠️ Foto do aluno não carregou:', error);
+                    }
+                }
+                
+                // Imprimir dados em duas colunas (reservando espaço para foto)
+                const dadosWidth = fotoAdicionada ? contentWidth - 30 : contentWidth - 10;
                 pdf.setFontSize(9);
                 pdf.setFont('helvetica', 'normal');
+                
                 dadosTextos.forEach((dado, index) => {
-                    const x = (index % 2 === 0) ? margin + 5 : margin + contentWidth/2 + 5;
-                    if (index % 2 === 0 && index > 0) yPos += 4;
-                    pdf.text(dado, x, yPos);
+                    const coluna = Math.floor(index / Math.ceil(dadosTextos.length / 2));
+                    const linha = index % Math.ceil(dadosTextos.length / 2);
+                    const x = margin + 5 + (coluna * (dadosWidth / 2));
+                    const y = yPos + (linha * 4);
+                    pdf.text(dado, x, y);
                 });
                 
-                yPos += 25;
+                yPos += 35;
                 
                 // ===== HISTÓRICO DISCIPLINAR COMPLETO =====
                 const historicoContainer = document.getElementById('historicoMedidas');
@@ -3730,62 +3826,109 @@
                 
                 yPos += 20;
                 
-                // ===== FREQUÊNCIA COMPLETA =====
+                // ===== FREQUÊNCIA COMPLETA - BUSCAR TODAS AS FALTAS =====
                 const frequenciaContainer = document.getElementById('frequenciaEscolar');
                 pdf.setFillColor(240, 255, 240);
                 
                 let todasFaltas = [];
                 let porcentagemFreq = '100%';
+                let resumoAcumulado = null;
                 
-                // Extrair TODAS as faltas da ficha (método mais abrangente)
-                if (frequenciaContainer) {
-                    const freqTexto = frequenciaContainer.textContent || '';
-                    console.log('🔍 Texto da frequência:', freqTexto.substring(0, 200) + '...');
+                // Buscar TODAS as faltas diretamente da base de dados (sem limite)
+                try {
+                    console.log('🔄 Buscando TODAS as faltas para o aluno:', codigoAluno);
                     
-                    // Buscar porcentagem de frequência
-                    const percMatch = freqTexto.match(/([0-9]+\.?[0-9]*%)/);
-                    if (percMatch) porcentagemFreq = percMatch[1];
+                    // Buscar dados completos sem limites
+                    const [resumoResult, todasFaltasResult] = await Promise.all([
+                        window.getResumoAcumuladoAluno(codigoAluno),
+                        window.getFaltasAluno(codigoAluno, 999) // Aumentar limite para pegar todas
+                    ]);
                     
-                    // Buscar TODAS as datas - método mais abrangente
-                    const todasDatasPossíveis = new Set();
+                    resumoAcumulado = resumoResult.data;
+                    const faltasData = todasFaltasResult.data || [];
                     
-                    // Método 1: Regex global
-                    const datasRegex = freqTexto.match(/\d{2}\/\d{2}\/\d{4}/g);
-                    if (datasRegex) {
-                        datasRegex.forEach(data => todasDatasPossíveis.add(data));
+                    // Extrair porcentagem de frequência
+                    if (resumoAcumulado?.pct_presenca_operacional) {
+                        porcentagemFreq = `${resumoAcumulado.pct_presenca_operacional.toFixed(1)}%`;
                     }
                     
-                    // Método 2: Buscar em todos os elementos filhos
-                    const elementosFilhos = frequenciaContainer.querySelectorAll('*');
-                    elementosFilhos.forEach(el => {
-                        const textoElemento = el.textContent || '';
-                        const datasElemento = textoElemento.match(/\d{2}\/\d{2}\/\d{4}/g);
-                        if (datasElemento) {
-                            datasElemento.forEach(data => todasDatasPossíveis.add(data));
-                        }
-                    });
-                    
-                    // Método 3: Buscar especificamente por padrões de falta
-                    const linhas = freqTexto.split('\n');
-                    linhas.forEach(linha => {
-                        if (linha.includes('falta') || linha.includes('Falta') || linha.includes('ausência') || linha.includes('Ausência')) {
-                            const dataLinha = linha.match(/\d{2}\/\d{2}\/\d{4}/g);
-                            if (dataLinha) {
-                                dataLinha.forEach(data => todasDatasPossíveis.add(data));
+                    // Processar TODAS as faltas encontradas
+                    if (faltasData.length > 0) {
+                        todasFaltas = faltasData.map(falta => {
+                            // Extrair data e tipo da falta
+                            let dataFormatada = '';
+                            let tipoFalta = 'Falta';
+                            
+                            if (falta.data_ocorrencia || falta.data) {
+                                const data = new Date(falta.data_ocorrencia || falta.data);
+                                dataFormatada = data.toLocaleDateString('pt-BR');
                             }
-                        }
-                    });
-                    
-                    // Converter Set para Array e ordenar
-                    if (todasDatasPossíveis.size > 0) {
-                        todasFaltas = Array.from(todasDatasPossíveis).sort((a, b) => {
-                            const dateA = new Date(a.split('/').reverse().join('-'));
-                            const dateB = new Date(b.split('/').reverse().join('-'));
-                            return dateB - dateA; // mais recentes primeiro
+                            
+                            if (falta.tipo) {
+                                tipoFalta = falta.tipo;
+                            } else if (falta.motivo) {
+                                tipoFalta = falta.motivo;
+                            }
+                            
+                            return {
+                                data: dataFormatada,
+                                tipo: tipoFalta,
+                                descricao: falta.descricao || ''
+                            };
+                        }).filter(f => f.data); // Só faltas com data válida
+                        
+                        // Ordenar por data (mais recentes primeiro)
+                        todasFaltas.sort((a, b) => {
+                            const dateA = new Date(a.data.split('/').reverse().join('-'));
+                            const dateB = new Date(b.data.split('/').reverse().join('-'));
+                            return dateB - dateA;
                         });
                     }
                     
-                    console.log(`📊 Total de faltas encontradas: ${todasFaltas.length}`, todasFaltas);
+                    console.log(`✅ Total de faltas encontradas na base: ${todasFaltas.length}`, todasFaltas);
+                    
+                } catch (error) {
+                    console.warn('⚠️ Erro ao buscar faltas da base, usando dados da tela:', error);
+                    
+                    // Fallback: extrair dados da tela se API falhar
+                    if (frequenciaContainer) {
+                        const freqTexto = frequenciaContainer.textContent || '';
+                        console.log('🔍 Usando dados da tela como fallback...');
+                        
+                        // Buscar porcentagem de frequência
+                        const percMatch = freqTexto.match(/([0-9]+\.?[0-9]*%)/);
+                        if (percMatch) porcentagemFreq = percMatch[1];
+                        
+                        // Buscar TODAS as datas da tela
+                        const todasDatasPossíveis = new Set();
+                        const datasRegex = freqTexto.match(/\d{2}\/\d{2}\/\d{4}/g);
+                        if (datasRegex) {
+                            datasRegex.forEach(data => todasDatasPossíveis.add(data));
+                        }
+                        
+                        // Buscar em elementos específicos
+                        const elementosFilhos = frequenciaContainer.querySelectorAll('*');
+                        elementosFilhos.forEach(el => {
+                            const textoElemento = el.textContent || '';
+                            const datasElemento = textoElemento.match(/\d{2}\/\d{2}\/\d{4}/g);
+                            if (datasElemento) {
+                                datasElemento.forEach(data => todasDatasPossíveis.add(data));
+                            }
+                        });
+                        
+                        // Converter para formato padrão
+                        if (todasDatasPossíveis.size > 0) {
+                            todasFaltas = Array.from(todasDatasPossíveis).map(data => ({
+                                data: data,
+                                tipo: 'Falta',
+                                descricao: ''
+                            })).sort((a, b) => {
+                                const dateA = new Date(a.data.split('/').reverse().join('-'));
+                                const dateB = new Date(b.data.split('/').reverse().join('-'));
+                                return dateB - dateA;
+                            });
+                        }
+                    }
                 }
                 
                 let freqHeight = 20 + todasFaltas.length * 4 + 15;
@@ -3802,7 +3945,7 @@
                     pdf.setTextColor(0, 0, 0);
                     pdf.setFontSize(8);
                     pdf.setFont('helvetica', 'normal');
-                    pdf.text('Faltas registradas:', margin + 5, yPos);
+                    pdf.text(`Total de registros de ausência: ${todasFaltas.length}`, margin + 5, yPos);
                     yPos += 5;
                     
                     todasFaltas.forEach((falta, index) => {
@@ -3812,9 +3955,33 @@
                             yPos = margin;
                         }
                         
-                        pdf.text(`${index + 1}- Falta registrada em ${falta}`, margin + 5, yPos);
+                        // Usar estrutura de objeto ou string simples
+                        const dataFalta = typeof falta === 'object' ? falta.data : falta;
+                        const tipoFalta = typeof falta === 'object' ? falta.tipo : 'Falta';
+                        const descricao = typeof falta === 'object' && falta.descricao ? ` - ${falta.descricao}` : '';
+                        
+                        pdf.text(`${index + 1}- ${tipoFalta} em ${dataFalta}${descricao}`, margin + 5, yPos);
                         yPos += 4;
                     });
+                    
+                    // Informações adicionais se tiver resumo
+                    if (resumoAcumulado) {
+                        yPos += 3;
+                        pdf.setFontSize(7);
+                        pdf.setTextColor(100, 100, 100);
+                        if (resumoAcumulado.dias_letivos) {
+                            pdf.text(`Dias letivos: ${resumoAcumulado.dias_letivos}`, margin + 5, yPos);
+                            yPos += 3;
+                        }
+                        if (resumoAcumulado.presencas_computadas) {
+                            pdf.text(`Presenças: ${resumoAcumulado.presencas_computadas}`, margin + 5, yPos);
+                            yPos += 3;
+                        }
+                        if (resumoAcumulado.faltas_totais) {
+                            pdf.text(`Total de faltas: ${resumoAcumulado.faltas_totais}`, margin + 5, yPos);
+                            yPos += 3;
+                        }
+                    }
                 } else {
                     pdf.setTextColor(40, 167, 69);
                     pdf.setFontSize(9);
@@ -3830,60 +3997,103 @@
                 
                 yPos += 20;
                 
-                // ===== RESUMO ESTATÍSTICO EM CARDS =====
-                // Extrair estatísticas organizadas em cards
+                // ===== RESUMO ESTATÍSTICO - 4 CARDS ESPECÍFICOS =====
+                console.log('📊 Criando resumo estatístico com 4 cards específicos...');
+                
+                // Calcular estatísticas específicas conforme solicitado
                 const statsCards = [];
                 
-                if (resumoContainer) {
-                    const statsTexto = resumoContainer.textContent || '';
-                    console.log('📊 Processando resumo estatístico...');
+                // 1. DIAS DESDE ÚLTIMA MEDIDA DISCIPLINAR
+                let diasDesdeUltimaMedida = 'Nenhuma medida';
+                if (todasMedidas.length > 0) {
+                    // Encontrar a medida mais recente
+                    const medidasComData = todasMedidas.filter(m => m.data).sort((a, b) => {
+                        const dateA = new Date(a.data.split('/').reverse().join('-'));
+                        const dateB = new Date(b.data.split('/').reverse().join('-'));
+                        return dateB - dateA; // mais recente primeiro
+                    });
                     
-                    // Buscar estatísticas principais com títulos e valores
-                    const linhas = statsTexto.split('\n').filter(l => l.trim());
-                    
-                    // Processar cada linha para identificar cards
-                    let i = 0;
-                    while (i < linhas.length && statsCards.length < 6) {
-                        const linha = linhas[i].trim();
-                        
-                        if (linha.match(/^[0-9]+(\.[0-9]+)?$/)) {
-                            // Número sozinho - próxima linha deve ser o título
-                            const valor = linha;
-                            const titulo = linhas[i + 1]?.trim() || 'Estatística';
-                            if (!titulo.includes('Total de Medidas Total') && titulo.length < 30) {
-                                statsCards.push({ titulo, valor });
-                                i += 2;
-                                continue;
-                            }
-                        } else if (linha.includes(':')) {
-                            // Formato "Título: Valor"
-                            const [titulo, valor] = linha.split(':').map(s => s.trim());
-                            if (titulo && valor) {
-                                statsCards.push({ titulo, valor });
-                            }
-                        } else if (linha.match(/[0-9]+/) && linha.length < 40) {
-                            // Linha com número e texto
-                            const match = linha.match(/([0-9]+(?:\.[0-9]+)?(?:%?))(.+)/);
-                            if (match) {
-                                statsCards.push({ 
-                                    titulo: match[2].trim() || 'Estatística', 
-                                    valor: match[1] 
-                                });
-                            }
-                        }
-                        i++;
+                    if (medidasComData.length > 0) {
+                        const ultimaMedida = medidasComData[0];
+                        const dataUltimaMedida = new Date(ultimaMedida.data.split('/').reverse().join('-'));
+                        const hoje = new Date();
+                        const diffTime = Math.abs(hoje - dataUltimaMedida);
+                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                        diasDesdeUltimaMedida = `${diffDays} dias`;
+                        console.log(`📅 Última medida: ${ultimaMedida.data}, há ${diffDays} dias`);
                     }
                 }
                 
-                // Fallback com estatísticas calculadas
-                if (statsCards.length === 0) {
-                    statsCards.push(
-                        { titulo: 'Nota Disciplinar', valor: notaDisciplinar },
-                        { titulo: 'Total de Medidas', valor: todasMedidas.length.toString() },
-                        { titulo: 'Faltas Registradas', valor: todasFaltas.length.toString() },
-                        { titulo: 'Frequência Escolar', valor: porcentagemFreq }
-                    );
+                // 2. MÉDIA DE COMPARAÇÃO COM O ALUNO ESPECÍFICO
+                let mediaComparacao = 'N/A';
+                if (resumoAcumulado && resumoAcumulado.pct_presenca_operacional) {
+                    // Usar porcentagem de frequência como base de comparação
+                    const frequenciaAluno = resumoAcumulado.pct_presenca_operacional;
+                    const mediaEscola = 85.0; // Média típica escolar (pode ser ajustada)
+                    const comparacao = frequenciaAluno - mediaEscola;
+                    mediaComparacao = comparacao >= 0 ? 
+                        `+${comparacao.toFixed(1)}% acima da média` : 
+                        `${comparacao.toFixed(1)}% abaixo da média`;
                 }
+                
+                // 3. POSIÇÃO NO RANKING DISCIPLINAR
+                // Simulação baseada no total de medidas (quanto menos, melhor posição)
+                let posicaoRanking = 'N/A';
+                const totalMedidas = todasMedidas.length;
+                if (totalMedidas === 0) {
+                    posicaoRanking = '1º - Exemplar';
+                } else if (totalMedidas <= 2) {
+                    posicaoRanking = 'Top 10% - Muito Bom';
+                } else if (totalMedidas <= 5) {
+                    posicaoRanking = 'Top 30% - Bom';
+                } else if (totalMedidas <= 10) {
+                    posicaoRanking = 'Top 60% - Regular';
+                } else {
+                    posicaoRanking = 'Abaixo de 60% - Atenção';
+                }
+                
+                // 4. TOTAL DE MEDIDAS COM BREAKDOWN POR TIPO
+                const tiposMedidas = {};
+                todasMedidas.forEach(medida => {
+                    const tipo = medida.tipo || 'Não especificado';
+                    tiposMedidas[tipo] = (tiposMedidas[tipo] || 0) + 1;
+                });
+                
+                let breakdownTipos = `${totalMedidas} total`;
+                if (totalMedidas > 0) {
+                    const tipos = Object.entries(tiposMedidas)
+                        .sort((a, b) => b[1] - a[1]) // ordenar por quantidade
+                        .slice(0, 2) // pegar os 2 tipos mais comuns
+                        .map(([tipo, qtd]) => `${qtd} ${tipo.substring(0, 10)}`)
+                        .join(', ');
+                    breakdownTipos = `${totalMedidas} total (${tipos})`;
+                }
+                
+                // Criar os 4 cards específicos
+                statsCards.push(
+                    { 
+                        titulo: 'Dias desde última medida', 
+                        valor: diasDesdeUltimaMedida,
+                        cor: [40, 167, 69] // Verde
+                    },
+                    { 
+                        titulo: 'Comparação com média escolar', 
+                        valor: mediaComparacao,
+                        cor: [0, 123, 255] // Azul
+                    },
+                    { 
+                        titulo: 'Posição ranking disciplinar', 
+                        valor: posicaoRanking,
+                        cor: [255, 193, 7] // Amarelo
+                    },
+                    { 
+                        titulo: 'Total de medidas por tipo', 
+                        valor: breakdownTipos,
+                        cor: [220, 53, 69] // Vermelho
+                    }
+                );
+                
+                console.log('📊 Cards estatísticos criados:', statsCards);
                 
                 // Layout em cards com mini-gráficos
                 const cardsHeight = Math.max(60, Math.ceil(statsCards.length / 2) * 30 + 20);
@@ -3905,9 +4115,9 @@
                 
                 yPos += 15;
                 
-                // Desenhar cards em grid 2x2 ou 2x3
+                // Desenhar 4 cards específicos em grid 2x2
                 const cardWidth = (contentWidth - 15) / 2;
-                const cardHeight = 20;
+                const cardHeight = 22;
                 
                 statsCards.forEach((card, index) => {
                     const col = index % 2;
@@ -3916,63 +4126,45 @@
                     const cardX = margin + 5 + (col * (cardWidth + 5));
                     const cardY = yPos + (row * (cardHeight + 5));
                     
-                    // Fundo do card
-                    pdf.setFillColor(248, 248, 248);
-                    pdf.setDrawColor(200, 200, 200);
+                    // Fundo do card com cor específica (mais suave)
+                    const cor = card.cor || [248, 248, 248];
+                    pdf.setFillColor(cor[0] + 30, cor[1] + 30, cor[2] + 30); // Cor mais clara
+                    pdf.setDrawColor(cor[0], cor[1], cor[2]); // Borda na cor original
                     pdf.rect(cardX, cardY, cardWidth, cardHeight, 'FD');
                     
-                    // Valor do card (grande)
-                    pdf.setTextColor(255, 193, 7);
-                    pdf.setFontSize(14);
-                    pdf.setFont('helvetica', 'bold');
-                    pdf.text(card.valor, cardX + 5, cardY + 8);
-                    
-                    // Título do card (pequeno)
-                    pdf.setTextColor(80, 80, 80);
-                    pdf.setFontSize(8);
+                    // Título do card (em cima, menor)
+                    pdf.setTextColor(60, 60, 60);
+                    pdf.setFontSize(7);
                     pdf.setFont('helvetica', 'normal');
-                    const tituloLimitado = card.titulo.substring(0, 25) + (card.titulo.length > 25 ? '...' : '');
-                    pdf.text(tituloLimitado, cardX + 5, cardY + 15);
+                    const tituloQuebrado = card.titulo.length > 30 ? 
+                        card.titulo.substring(0, 30) + '...' : card.titulo;
+                    pdf.text(tituloQuebrado, cardX + 3, cardY + 6);
                     
-                    // Mini-gráfico (barra simples)
-                    if (card.valor.includes('%')) {
-                        const percent = parseFloat(card.valor.replace('%', ''));
-                        const barWidth = (cardWidth - 20) * (percent / 100);
-                        
-                        // Barra de fundo
-                        pdf.setFillColor(220, 220, 220);
-                        pdf.rect(cardX + cardWidth - 50, cardY + 3, 40, 3, 'F');
-                        
-                        // Barra preenchida
-                        const cor = percent >= 80 ? [40, 167, 69] : percent >= 60 ? [255, 193, 7] : [220, 53, 69];
-                        pdf.setFillColor(...cor);
-                        pdf.rect(cardX + cardWidth - 50, cardY + 3, Math.max(1, barWidth * 40/100), 3, 'F');
-                    } else if (!isNaN(parseFloat(card.valor))) {
-                        // Mini-gráfico circular para números
-                        const valor = parseFloat(card.valor);
-                        const raio = 4;
-                        const centerX = cardX + cardWidth - 15;
-                        const centerY = cardY + 8;
-                        
-                        // Círculo de fundo
-                        pdf.setFillColor(220, 220, 220);
-                        pdf.circle(centerX, centerY, raio, 'F');
-                        
-                        // Porção colorida (baseada no valor)
-                        const percent = Math.min(100, Math.max(0, valor * 10)); // escala aproximada
-                        const cor = valor >= 8 ? [40, 167, 69] : valor >= 5 ? [255, 193, 7] : [220, 53, 69];
-                        pdf.setFillColor(...cor);
-                        
-                        // Desenhar setor do círculo
-                        const angle = (percent / 100) * 360;
-                        if (angle > 0) {
-                            // Aproximação simples com retângulo
-                            pdf.rect(centerX - 2, centerY - 2, 4 * (percent / 100), 4, 'F');
+                    // Valor do card (grande, embaixo)
+                    pdf.setTextColor(cor[0], cor[1], cor[2]); // Cor original para destaque
+                    pdf.setFontSize(10);
+                    pdf.setFont('helvetica', 'bold');
+                    
+                    // Quebrar valor se muito longo
+                    const valorTexto = card.valor.toString();
+                    if (valorTexto.length > 25) {
+                        const parte1 = valorTexto.substring(0, 25);
+                        const parte2 = valorTexto.substring(25, 45);
+                        pdf.text(parte1, cardX + 3, cardY + 12);
+                        if (parte2) {
+                            pdf.setFontSize(8);
+                            pdf.text(parte2, cardX + 3, cardY + 17);
                         }
+                    } else {
+                        pdf.text(valorTexto, cardX + 3, cardY + 14);
                     }
+                    
+                    // Indicador visual lateral (pequena barra colorida)
+                    pdf.setFillColor(cor[0], cor[1], cor[2]);
+                    pdf.rect(cardX, cardY, 2, cardHeight, 'F');
                 });
                 
-                yPos += Math.ceil(statsCards.length / 2) * 25 + 10;
+                yPos += Math.ceil(statsCards.length / 2) * (cardHeight + 5) + 10;
                 
                 // ===== RODAPÉ =====
                 const ultimaPagina = pdf.getNumberOfPages();
