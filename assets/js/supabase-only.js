@@ -279,18 +279,38 @@ const alunosDB = {
     },
     
     async update(codigo, aluno) {
+        console.log('🔍 UPDATE - Procurando por:', codigo);
+        
         // Buscar primeiro para obter registro completo
         const { data: allData } = await supabase
             .from('alunos')
             .select('*');
         
-        const existing = allData?.find(item => 
-            item['código (matrícula)'] === codigo
-        );
+        console.log('🔍 UPDATE - Dados encontrados:', allData?.length, 'registros');
+        
+        // Procurar por diferentes campos possíveis
+        const existing = allData?.find(item => {
+            const matches = (
+                item['código (matrícula)'] === codigo || 
+                item.codigo === codigo ||
+                item.id === codigo
+            );
+            console.log('🔍 Comparando:', {
+                codigo_busca: codigo,
+                codigo_matricula: item['código (matrícula)'],
+                codigo_simples: item.codigo,
+                id: item.id,
+                matches: matches
+            });
+            return matches;
+        });
         
         if (!existing) {
+            console.log('❌ UPDATE - Nenhum aluno encontrado para:', codigo);
             throw new Error('Aluno não encontrado');
         }
+        
+        console.log('✅ UPDATE - Aluno encontrado:', existing);
         
         // Fazer update usando WHERE na primary key
         const updateData = { ...aluno };
