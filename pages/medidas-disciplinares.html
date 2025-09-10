@@ -3646,7 +3646,7 @@
                 let fotoAlunoSrc = null;
                 
                 // Mapeamento de ícones para campos
-                const icones = {
+                const iconesCampos = {
                     'nome': '👤', 'código': '🔢', 'turma': '📚', 'série': '📝',
                     'nascimento': '📅', 'cpf': '📄', 'rg': '🆔', 'telefone': '📞',
                     'email': '📧', 'endereço': '🏠', 'responsável': '👥'
@@ -3670,8 +3670,8 @@
                         
                         if (label && valor && valor !== 'N/A') {
                             // Encontrar ícone apropriado
-                            const chave = Object.keys(icones).find(k => label.toLowerCase().includes(k));
-                            const icone = icones[chave] || '📋';
+                            const chave = Object.keys(iconesCampos).find(k => label.toLowerCase().includes(k));
+                            const icone = iconesCampos[chave] || '📋';
                             
                             dadosComIcones.push({
                                 icone: icone,
