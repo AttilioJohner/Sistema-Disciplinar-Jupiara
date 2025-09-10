@@ -881,9 +881,13 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       }
       
       // Tentar diferentes campos para encontrar o aluno
+      const numId = parseInt(alunoId);
       let aluno = alunosCache.find(a => a.id === alunoId);
       if (!aluno) {
         aluno = alunosCache.find(a => a.id === String(alunoId));
+      }
+      if (!aluno) {
+        aluno = alunosCache.find(a => a.id === numId);
       }
       if (!aluno) {
         aluno = alunosCache.find(a => a.codigo === alunoId);
@@ -891,6 +895,17 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       if (!aluno) {
         aluno = alunosCache.find(a => a.codigo === String(alunoId));
       }
+      if (!aluno) {
+        aluno = alunosCache.find(a => a.codigo === numId);
+      }
+      
+      console.log('🔍 Tentativas de busca:');
+      console.log('  Por a.id === alunoId:', alunosCache.some(a => a.id === alunoId));
+      console.log('  Por a.id === String(alunoId):', alunosCache.some(a => a.id === String(alunoId)));
+      console.log('  Por a.id === numId:', alunosCache.some(a => a.id === numId));
+      console.log('  Por a.codigo === alunoId:', alunosCache.some(a => a.codigo === alunoId));
+      console.log('  Por a.codigo === String(alunoId):', alunosCache.some(a => a.codigo === String(alunoId)));
+      console.log('  Por a.codigo === numId:', alunosCache.some(a => a.codigo === numId));
       
       console.log('🔍 Aluno encontrado:', !!aluno);
       
