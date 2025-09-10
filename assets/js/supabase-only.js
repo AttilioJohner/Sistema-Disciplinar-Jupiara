@@ -288,15 +288,23 @@ const alunosDB = {
         
         console.log('🔍 UPDATE - Dados encontrados:', allData?.length, 'registros');
         
-        // Procurar por diferentes campos possíveis
+        // Procurar por diferentes campos possíveis (convertendo tipos)
         const existing = allData?.find(item => {
+            const codigoStr = String(codigo);
+            const codigoNum = Number(codigo);
+            
             const matches = (
-                item['código (matrícula)'] === codigo || 
-                item.codigo === codigo ||
-                item.id === codigo
+                item['código (matrícula)'] === codigoStr || 
+                item['código (matrícula)'] === codigoNum ||
+                item.codigo === codigoStr ||
+                item.codigo === codigoNum ||
+                item.id === codigoStr ||
+                item.id === codigoNum
             );
             console.log('🔍 Comparando:', {
                 codigo_busca: codigo,
+                codigo_busca_str: codigoStr,
+                codigo_busca_num: codigoNum,
                 codigo_matricula: item['código (matrícula)'],
                 codigo_simples: item.codigo,
                 id: item.id,
