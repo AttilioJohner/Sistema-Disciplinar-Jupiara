@@ -3499,24 +3499,32 @@
                 pdf.setFillColor(0, 123, 255);
                 pdf.rect(0, 0, pageWidth, 35, 'F');
                 
-                // Logo simulado
-                pdf.setFillColor(255, 255, 255);
-                pdf.circle(margin + 8, 17, 8, 'F');
-                pdf.setTextColor(0, 123, 255);
-                pdf.setFontSize(8);
-                pdf.setFont('helvetica', 'bold');
-                pdf.text('EEC', margin + 8, 19, { align: 'center' });
+                // Logo oficial da escola
+                try {
+                    // Tentar adicionar logo oficial
+                    const logoPath = 'assets/images/logo-escola.jpeg';
+                    pdf.addImage(logoPath, 'JPEG', margin, 8, 20, 20);
+                } catch (error) {
+                    console.warn('Erro ao carregar logo, usando fallback:', error);
+                    // Fallback: logo simulado
+                    pdf.setFillColor(255, 255, 255);
+                    pdf.circle(margin + 8, 17, 8, 'F');
+                    pdf.setTextColor(0, 123, 255);
+                    pdf.setFontSize(8);
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.text('EEC', margin + 8, 19, { align: 'center' });
+                }
                 
                 // Título principal
                 pdf.setTextColor(255, 255, 255);
                 pdf.setFontSize(18);
                 pdf.setFont('helvetica', 'bold');
-                pdf.text('FICHA DISCIPLINAR DO ALUNO', margin + 25, 16);
+                pdf.text('FICHA DISCIPLINAR DO ALUNO', margin + 30, 16);
                 
                 // Subtítulo
                 pdf.setFontSize(11);
                 pdf.setFont('helvetica', 'normal');
-                pdf.text('Escola Estadual de Caridade Jupiara', margin + 25, 24);
+                pdf.text('Escola Estadual Civico-Militar Jupiara', margin + 30, 24);
                 
                 yPos = 45;
                 
@@ -3534,7 +3542,7 @@
                 pdf.setTextColor(0, 123, 255);
                 pdf.setFontSize(14);
                 pdf.setFont('helvetica', 'bold');
-                pdf.text('👤 IDENTIFICAÇÃO DO ALUNO', margin + 5, yPos + 8);
+                pdf.text('IDENTIFICACAO DO ALUNO', margin + 5, yPos + 8);
                 
                 yPos += 15;
                 
@@ -3575,19 +3583,33 @@
                 pdf.setTextColor(50, 50, 50);
                 pdf.setFontSize(11);
                 
-                // Extrair dados do DOM
+                // Extrair dados do DOM de forma mais robusta
                 const dadosPessoais = document.getElementById('dadosPessoais');
                 let dadosAluno = {
                     nome: nomeAluno,
                     codigo: codigoAluno,
                     turma: 'N/A',
-                    responsavel: 'N/A'
+                    responsavel: 'N/A',
+                    status: 'Ativo'
                 };
                 
                 if (dadosPessoais) {
-                    const valores = dadosPessoais.querySelectorAll('.dado-valor');
-                    if (valores.length >= 3) dadosAluno.turma = valores[2]?.textContent?.trim() || 'N/A';
-                    if (valores.length >= 4) dadosAluno.responsavel = valores[3]?.textContent?.trim() || 'N/A';
+                    // Buscar por labels e valores específicos
+                    const dadosItems = dadosPessoais.querySelectorAll('.dado-item');
+                    dadosItems.forEach(item => {
+                        const label = item.querySelector('.dado-label')?.textContent?.trim().toLowerCase() || '';
+                        const valor = item.querySelector('.dado-valor')?.textContent?.trim() || '';
+                        
+                        if (label.includes('turma') && valor !== 'N/A') {
+                            dadosAluno.turma = valor;
+                        } else if (label.includes('responsavel') && valor !== 'N/A') {
+                            dadosAluno.responsavel = valor;
+                        } else if (label.includes('status') && valor !== 'N/A') {
+                            dadosAluno.status = valor;
+                        }
+                    });
+                    
+                    console.log('Dados extraídos:', dadosAluno);
                 }
                 
                 // Layout em grid dos dados
@@ -3613,6 +3635,11 @@
                 pdf.text(dadosAluno.turma, margin + 5 + colWidth, yPos + 20);
                 
                 pdf.setFont('helvetica', 'bold');
+                pdf.text('Status:', margin + 5 + colWidth, yPos + 28);
+                pdf.setFont('helvetica', 'normal');
+                pdf.text(dadosAluno.status, margin + 5 + colWidth, yPos + 32);
+                
+                pdf.setFont('helvetica', 'bold');
                 pdf.text('Responsável:', margin + 5, yPos + 28);
                 pdf.setFont('helvetica', 'normal');
                 const respLines = pdf.splitTextToSize(dadosAluno.responsavel, colWidth * 1.8);
@@ -3631,7 +3658,7 @@
                 pdf.setTextColor(220, 53, 69);
                 pdf.setFontSize(14);
                 pdf.setFont('helvetica', 'bold');
-                pdf.text('⚖️ HISTÓRICO DISCIPLINAR', margin + 5, yPos + 8);
+                pdf.text('HISTORICO DISCIPLINAR', margin + 5, yPos + 8);
                 
                 yPos += 15;
                 
@@ -3673,7 +3700,7 @@
                 pdf.setTextColor(40, 167, 69);
                 pdf.setFontSize(14);
                 pdf.setFont('helvetica', 'bold');
-                pdf.text('📊 FREQUÊNCIA ESCOLAR', margin + 5, yPos + 8);
+                pdf.text('FREQUENCIA ESCOLAR', margin + 5, yPos + 8);
                 
                 yPos += 15;
                 
@@ -3708,7 +3735,7 @@
                 pdf.setTextColor(255, 193, 7);
                 pdf.setFontSize(14);
                 pdf.setFont('helvetica', 'bold');
-                pdf.text('📈 RESUMO ESTATÍSTICO', margin + 5, yPos + 8);
+                pdf.text('RESUMO ESTATISTICO', margin + 5, yPos + 8);
                 
                 yPos += 15;
                 
@@ -3746,7 +3773,7 @@
                 pdf.setTextColor(100, 100, 100);
                 pdf.setFontSize(9);
                 pdf.setFont('helvetica', 'normal');
-                pdf.text('Escola Estadual de Caridade Jupiara - Sistema de Gestão Disciplinar', pageWidth / 2, yPos, { align: 'center' });
+                pdf.text('Escola Estadual Civico-Militar Jupiara - Sistema de Gestao Disciplinar', pageWidth / 2, yPos, { align: 'center' });
                 
                 yPos += 4;
                 pdf.setFontSize(8);
