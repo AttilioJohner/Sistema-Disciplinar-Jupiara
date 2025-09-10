@@ -329,8 +329,7 @@ const alunosDB = {
             'responsável': aluno.responsavel || aluno.responsável,
             'Telefone do responsável': aluno.telefone1 || aluno.telefone,
             'Telefone do responsável 2': aluno.telefone2,
-            'foto_url': aluno.foto_url || null,
-            'updated_at': aluno.updated_at
+            'foto_url': aluno.foto_url || null
         };
         
         console.log('🔍 UPDATE - Dados mapeados:', mappedData);
