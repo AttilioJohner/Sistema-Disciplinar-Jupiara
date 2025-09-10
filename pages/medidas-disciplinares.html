@@ -3489,235 +3489,275 @@
                 const pdf = new jsPDF('p', 'mm', 'a4');
                 const pageWidth = 210;
                 const pageHeight = 297;
-                const margin = 15;
+                const margin = 20;
                 const contentWidth = pageWidth - (margin * 2);
                 
                 let yPos = margin;
                 
-                // === CABEÇALHO ===
-                pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(18);
+                // ===== CABEÇALHO INSTITUCIONAL =====
+                // Fundo azul para cabeçalho
+                pdf.setFillColor(0, 123, 255);
+                pdf.rect(0, 0, pageWidth, 35, 'F');
+                
+                // Logo simulado
+                pdf.setFillColor(255, 255, 255);
+                pdf.circle(margin + 8, 17, 8, 'F');
                 pdf.setTextColor(0, 123, 255);
-                pdf.text('FICHA DISCIPLINAR DO ALUNO', pageWidth / 2, yPos, { align: 'center' });
-                
-                yPos += 8;
-                pdf.setFontSize(12);
-                pdf.setTextColor(100, 100, 100);
-                pdf.text('Dashboard Disciplinar - E.E.C. Jupiara', pageWidth / 2, yPos, { align: 'center' });
-                
-                yPos += 8;
-                pdf.setFontSize(10);
-                pdf.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, pageWidth / 2, yPos, { align: 'center' });
-                
-                // Linha separadora
-                yPos += 5;
-                pdf.setDrawColor(200, 200, 200);
-                pdf.line(margin, yPos, pageWidth - margin, yPos);
-                yPos += 10;
-                
-                // === DADOS PESSOAIS E FOTO ===
+                pdf.setFontSize(8);
                 pdf.setFont('helvetica', 'bold');
+                pdf.text('EEC', margin + 8, 19, { align: 'center' });
+                
+                // Título principal
+                pdf.setTextColor(255, 255, 255);
+                pdf.setFontSize(18);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('FICHA DISCIPLINAR DO ALUNO', margin + 25, 16);
+                
+                // Subtítulo
+                pdf.setFontSize(11);
+                pdf.setFont('helvetica', 'normal');
+                pdf.text('Escola Estadual de Caridade Jupiara', margin + 25, 24);
+                
+                yPos = 45;
+                
+                // ===== IDENTIFICAÇÃO DO ALUNO =====
+                // Fundo da seção
+                pdf.setFillColor(248, 249, 250);
+                pdf.rect(margin, yPos, contentWidth, 55, 'F');
+                
+                // Borda da seção
+                pdf.setDrawColor(0, 123, 255);
+                pdf.setLineWidth(0.5);
+                pdf.rect(margin, yPos, contentWidth, 55, 'S');
+                
+                // Título da seção
+                pdf.setTextColor(0, 123, 255);
                 pdf.setFontSize(14);
-                pdf.setTextColor(0, 0, 0);
-                pdf.text('👤 DADOS PESSOAIS', margin, yPos);
-                yPos += 8;
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('👤 IDENTIFICAÇÃO DO ALUNO', margin + 5, yPos + 8);
                 
-                // Coletar dados pessoais
-                const dadosPessoais = document.getElementById('dadosPessoais');
-                let dadosTexto = [];
+                yPos += 15;
                 
-                if (dadosPessoais) {
-                    const items = dadosPessoais.querySelectorAll('.dado-item');
-                    items.forEach(item => {
-                        const label = item.querySelector('.dado-label')?.textContent || '';
-                        const valor = item.querySelector('.dado-valor')?.textContent || '';
-                        if (label && valor) {
-                            dadosTexto.push(`${label}: ${valor}`);
-                        }
-                    });
-                }
-                
-                // Adicionar dados básicos se não encontrou
-                if (dadosTexto.length === 0) {
-                    dadosTexto = [
-                        `Nome: ${nomeAluno}`,
-                        `Código: ${codigoAluno}`,
-                        `Turma: ${document.getElementById('turmaConsulta').value || 'N/A'}`
-                    ];
-                }
-                
-                // Área para foto (lado direito)
-                const fotoWidth = 40;
-                const fotoHeight = 50;
-                const fotoX = pageWidth - margin - fotoWidth;
+                // Foto do aluno (lado direito)
+                const fotoSize = 35;
+                const fotoX = pageWidth - margin - fotoSize - 5;
                 const fotoY = yPos - 5;
                 
-                // Tentar adicionar foto se existir
+                // Tentar adicionar foto
+                let fotoAdicionada = false;
                 try {
-                    const fotoElements = document.querySelectorAll('img[alt*="Foto"]');
-                    let fotoAdicionada = false;
-                    
-                    for (let img of fotoElements) {
-                        if (img.src && !img.src.includes('placeholder') && img.style.display !== 'none') {
-                            // Verificar se é uma imagem válida
-                            if (img.complete && img.naturalHeight !== 0) {
-                                pdf.addImage(img.src, 'JPEG', fotoX, fotoY, fotoWidth, fotoHeight);
+                    const dadosPessoais = document.getElementById('dadosPessoais');
+                    if (dadosPessoais) {
+                        const imgs = dadosPessoais.querySelectorAll('img');
+                        for (let img of imgs) {
+                            if (img.src && !img.src.includes('data:image/svg') && img.complete && img.naturalHeight > 0) {
+                                pdf.addImage(img.src, 'JPEG', fotoX, fotoY, fotoSize, fotoSize * 1.2);
                                 fotoAdicionada = true;
-                                console.log('📸 Foto adicionada ao PDF');
                                 break;
                             }
                         }
                     }
-                    
-                    if (!fotoAdicionada) {
-                        // Desenhar placeholder para foto
-                        pdf.setDrawColor(200, 200, 200);
-                        pdf.setFillColor(245, 245, 245);
-                        pdf.rect(fotoX, fotoY, fotoWidth, fotoHeight, 'FD');
-                        pdf.setFontSize(8);
-                        pdf.setTextColor(150, 150, 150);
-                        pdf.text('Sem foto', fotoX + fotoWidth/2, fotoY + fotoHeight/2, { align: 'center' });
-                    }
                 } catch (error) {
-                    console.warn('⚠️ Erro ao adicionar foto:', error);
-                    // Desenhar placeholder
-                    pdf.setDrawColor(200, 200, 200);
-                    pdf.setFillColor(245, 245, 245);
-                    pdf.rect(fotoX, fotoY, fotoWidth, fotoHeight, 'FD');
-                    pdf.setFontSize(8);
-                    pdf.setTextColor(150, 150, 150);
-                    pdf.text('Sem foto', fotoX + fotoWidth/2, fotoY + fotoHeight/2, { align: 'center' });
+                    console.warn('Erro ao processar foto:', error);
                 }
                 
-                // Dados pessoais (lado esquerdo, evitando área da foto)
+                // Placeholder se não tem foto
+                if (!fotoAdicionada) {
+                    pdf.setFillColor(230, 230, 230);
+                    pdf.setDrawColor(180, 180, 180);
+                    pdf.rect(fotoX, fotoY, fotoSize, fotoSize * 1.2, 'FD');
+                    pdf.setTextColor(150, 150, 150);
+                    pdf.setFontSize(8);
+                    pdf.text('SEM FOTO', fotoX + fotoSize/2, fotoY + fotoSize*0.6, { align: 'center' });
+                }
+                
+                // Dados do aluno (lado esquerdo)
+                pdf.setTextColor(50, 50, 50);
+                pdf.setFontSize(11);
+                
+                // Extrair dados do DOM
+                const dadosPessoais = document.getElementById('dadosPessoais');
+                let dadosAluno = {
+                    nome: nomeAluno,
+                    codigo: codigoAluno,
+                    turma: 'N/A',
+                    responsavel: 'N/A'
+                };
+                
+                if (dadosPessoais) {
+                    const valores = dadosPessoais.querySelectorAll('.dado-valor');
+                    if (valores.length >= 3) dadosAluno.turma = valores[2]?.textContent?.trim() || 'N/A';
+                    if (valores.length >= 4) dadosAluno.responsavel = valores[3]?.textContent?.trim() || 'N/A';
+                }
+                
+                // Layout em grid dos dados
+                const colWidth = (contentWidth - fotoSize - 20) / 2;
+                
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(10);
+                pdf.text('Nome Completo:', margin + 5, yPos);
                 pdf.setFont('helvetica', 'normal');
                 pdf.setFontSize(10);
-                pdf.setTextColor(50, 50, 50);
-                const dadosWidth = contentWidth - fotoWidth - 10;
+                const nomeLines = pdf.splitTextToSize(dadosAluno.nome, colWidth * 1.8);
+                pdf.text(nomeLines[0], margin + 5, yPos + 4);
+                if (nomeLines[1]) pdf.text(nomeLines[1], margin + 5, yPos + 8);
                 
-                dadosTexto.forEach((dado, index) => {
-                    if (yPos > pageHeight - 30) return; // Evitar sair da página
-                    pdf.text(dado, margin, yPos);
-                    yPos += 5;
-                });
-                
-                // Ajustar yPos para continuar depois da foto
-                yPos = Math.max(yPos, fotoY + fotoHeight + 10);
-                
-                // === HISTÓRICO DE MEDIDAS ===
                 pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(12);
-                pdf.setTextColor(0, 0, 0);
-                pdf.text('⚖️ HISTÓRICO DE MEDIDAS DISCIPLINARES', margin, yPos);
-                yPos += 8;
+                pdf.text('Código:', margin + 5, yPos + 16);
+                pdf.setFont('helvetica', 'normal');
+                pdf.text(dadosAluno.codigo, margin + 5, yPos + 20);
                 
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('Turma:', margin + 5 + colWidth, yPos + 16);
+                pdf.setFont('helvetica', 'normal');
+                pdf.text(dadosAluno.turma, margin + 5 + colWidth, yPos + 20);
+                
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('Responsável:', margin + 5, yPos + 28);
+                pdf.setFont('helvetica', 'normal');
+                const respLines = pdf.splitTextToSize(dadosAluno.responsavel, colWidth * 1.8);
+                pdf.text(respLines[0], margin + 5, yPos + 32);
+                
+                yPos += 65;
+                
+                // ===== HISTÓRICO DISCIPLINAR =====
+                pdf.setFillColor(255, 243, 243);
                 const historicoContainer = document.getElementById('historicoMedidas');
-                if (historicoContainer && historicoContainer.innerHTML.trim()) {
-                    const medidas = historicoContainer.querySelectorAll('.medida-item, .historico-item, tr');
-                    let countMedidas = 0;
+                const historicoHeight = 50;
+                pdf.rect(margin, yPos, contentWidth, historicoHeight, 'F');
+                pdf.setDrawColor(220, 53, 69);
+                pdf.rect(margin, yPos, contentWidth, historicoHeight, 'S');
+                
+                pdf.setTextColor(220, 53, 69);
+                pdf.setFontSize(14);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('⚖️ HISTÓRICO DISCIPLINAR', margin + 5, yPos + 8);
+                
+                yPos += 15;
+                
+                if (historicoContainer && historicoContainer.children.length > 0) {
+                    pdf.setTextColor(70, 70, 70);
+                    pdf.setFontSize(9);
+                    pdf.setFont('helvetica', 'normal');
                     
-                    medidas.forEach(medida => {
-                        if (yPos > pageHeight - 30) return;
+                    const medidas = Array.from(historicoContainer.children).slice(0, 4);
+                    medidas.forEach((medida, index) => {
                         const texto = medida.textContent?.trim();
-                        if (texto && texto.length > 10) {
-                            pdf.setFont('helvetica', 'normal');
-                            pdf.setFontSize(9);
-                            pdf.setTextColor(70, 70, 70);
-                            
-                            // Limitar texto e quebrar linha se necessário
-                            const textoLimitado = texto.length > 80 ? texto.substring(0, 80) + '...' : texto;
+                        if (texto && !texto.includes('Nenhuma medida')) {
+                            const textoLimitado = texto.length > 85 ? texto.substring(0, 85) + '...' : texto;
                             pdf.text(`• ${textoLimitado}`, margin + 5, yPos);
-                            yPos += 5;
-                            countMedidas++;
-                            if (countMedidas >= 8) return; // Limitar para caber na página
+                            yPos += 4;
                         }
                     });
                     
-                    if (countMedidas === 0) {
-                        pdf.setFont('helvetica', 'normal');
-                        pdf.setFontSize(10);
-                        pdf.setTextColor(100, 150, 100);
-                        pdf.text('✅ Nenhuma medida disciplinar registrada', margin, yPos);
-                        yPos += 8;
+                    if (medidas.length === 0 || medidas.every(m => m.textContent?.includes('Nenhuma'))) {
+                        pdf.setTextColor(40, 167, 69);
+                        pdf.setFont('helvetica', 'italic');
+                        pdf.text('✅ Nenhuma ocorrência disciplinar registrada', margin + 5, yPos);
                     }
                 } else {
-                    pdf.setFont('helvetica', 'normal');
-                    pdf.setFontSize(10);
-                    pdf.setTextColor(100, 150, 100);
-                    pdf.text('✅ Nenhuma medida disciplinar registrada', margin, yPos);
-                    yPos += 8;
+                    pdf.setTextColor(40, 167, 69);
+                    pdf.setFont('helvetica', 'italic');
+                    pdf.text('✅ Nenhuma ocorrência disciplinar registrada', margin + 5, yPos);
                 }
                 
-                // === FREQUÊNCIA ESCOLAR ===
+                yPos += 45;
+                
+                // ===== FREQUÊNCIA E DESEMPENHO =====
+                const freqHeight = 40;
+                pdf.setFillColor(243, 251, 243);
+                pdf.rect(margin, yPos, contentWidth, freqHeight, 'F');
+                pdf.setDrawColor(40, 167, 69);
+                pdf.rect(margin, yPos, contentWidth, freqHeight, 'S');
+                
+                pdf.setTextColor(40, 167, 69);
+                pdf.setFontSize(14);
                 pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(12);
-                pdf.setTextColor(0, 0, 0);
-                pdf.text('📅 FREQUÊNCIA ESCOLAR', margin, yPos);
-                yPos += 8;
+                pdf.text('📊 FREQUÊNCIA ESCOLAR', margin + 5, yPos + 8);
+                
+                yPos += 15;
                 
                 const frequenciaContainer = document.getElementById('frequenciaEscolar');
-                if (frequenciaContainer && frequenciaContainer.innerHTML.trim()) {
-                    const frequenciaTexto = frequenciaContainer.textContent?.trim() || 'Dados de frequência não disponíveis';
-                    pdf.setFont('helvetica', 'normal');
-                    pdf.setFontSize(9);
+                if (frequenciaContainer && frequenciaContainer.textContent && !frequenciaContainer.textContent.includes('Carregando')) {
                     pdf.setTextColor(70, 70, 70);
+                    pdf.setFontSize(9);
+                    pdf.setFont('helvetica', 'normal');
                     
-                    // Quebrar texto em linhas para caber na página
-                    const linhas = pdf.splitTextToSize(frequenciaTexto, contentWidth);
-                    linhas.slice(0, 6).forEach(linha => { // Máximo 6 linhas
-                        if (yPos > pageHeight - 20) return;
-                        pdf.text(linha, margin, yPos);
+                    const freqTexto = frequenciaContainer.textContent.trim();
+                    const freqLines = pdf.splitTextToSize(freqTexto, contentWidth - 10);
+                    freqLines.slice(0, 3).forEach(line => {
+                        pdf.text(line, margin + 5, yPos);
                         yPos += 4;
                     });
                 } else {
-                    pdf.setFont('helvetica', 'normal');
-                    pdf.setFontSize(10);
-                    pdf.setTextColor(150, 150, 150);
-                    pdf.text('Dados de frequência não disponíveis', margin, yPos);
-                    yPos += 8;
+                    pdf.setTextColor(120, 120, 120);
+                    pdf.setFontSize(9);
+                    pdf.setFont('helvetica', 'italic');
+                    pdf.text('Dados de frequência sendo processados...', margin + 5, yPos);
                 }
                 
-                // === RESUMO ESTATÍSTICO ===
-                yPos += 5;
+                yPos += 30;
+                
+                // ===== RESUMO ESTATÍSTICO =====
+                const resumoHeight = 35;
+                pdf.setFillColor(255, 248, 225);
+                pdf.rect(margin, yPos, contentWidth, resumoHeight, 'F');
+                pdf.setDrawColor(255, 193, 7);
+                pdf.rect(margin, yPos, contentWidth, resumoHeight, 'S');
+                
+                pdf.setTextColor(255, 193, 7);
+                pdf.setFontSize(14);
                 pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(12);
-                pdf.setTextColor(0, 0, 0);
-                pdf.text('📊 RESUMO ESTATÍSTICO', margin, yPos);
-                yPos += 8;
+                pdf.text('📈 RESUMO ESTATÍSTICO', margin + 5, yPos + 8);
+                
+                yPos += 15;
                 
                 const resumoContainer = document.getElementById('resumoEstatistico');
-                if (resumoContainer && resumoContainer.innerHTML.trim()) {
-                    const stats = resumoContainer.querySelectorAll('.stat-item, .estatistica-item');
-                    stats.forEach(stat => {
-                        if (yPos > pageHeight - 20) return;
-                        const texto = stat.textContent?.trim();
+                if (resumoContainer && resumoContainer.children.length > 0) {
+                    pdf.setTextColor(70, 70, 70);
+                    pdf.setFontSize(9);
+                    pdf.setFont('helvetica', 'normal');
+                    
+                    Array.from(resumoContainer.children).slice(0, 3).forEach(item => {
+                        const texto = item.textContent?.trim();
                         if (texto) {
-                            pdf.setFont('helvetica', 'normal');
-                            pdf.setFontSize(9);
-                            pdf.setTextColor(70, 70, 70);
                             pdf.text(`• ${texto}`, margin + 5, yPos);
-                            yPos += 5;
+                            yPos += 4;
                         }
                     });
                 } else {
-                    pdf.setFont('helvetica', 'normal');
-                    pdf.setFontSize(10);
-                    pdf.setTextColor(150, 150, 150);
-                    pdf.text('Resumo estatístico não disponível', margin, yPos);
+                    pdf.setTextColor(120, 120, 120);
+                    pdf.setFontSize(9);
+                    pdf.setFont('helvetica', 'italic');
+                    pdf.text('Estatísticas em processamento...', margin + 5, yPos);
                 }
                 
-                // === RODAPÉ ===
-                pdf.setFont('helvetica', 'normal');
-                pdf.setFontSize(8);
-                pdf.setTextColor(150, 150, 150);
-                pdf.text(`Dashboard Disciplinar - E.E.C. Jupiara | Código do Aluno: ${codigoAluno}`, 
-                         pageWidth / 2, pageHeight - 10, { align: 'center' });
+                // ===== RODAPÉ OFICIAL =====
+                yPos = pageHeight - 25;
                 
-                // Salvar PDF
-                const nomeArquivo = `ficha_disciplinar_${codigoAluno}_${nomeAluno.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+                // Linha divisória
+                pdf.setDrawColor(0, 123, 255);
+                pdf.setLineWidth(1);
+                pdf.line(margin, yPos, pageWidth - margin, yPos);
+                
+                yPos += 8;
+                
+                // Informações do documento
+                pdf.setTextColor(100, 100, 100);
+                pdf.setFontSize(9);
+                pdf.setFont('helvetica', 'normal');
+                pdf.text('Escola Estadual de Caridade Jupiara - Sistema de Gestão Disciplinar', pageWidth / 2, yPos, { align: 'center' });
+                
+                yPos += 4;
+                pdf.setFontSize(8);
+                pdf.text(`Documento gerado em ${new Date().toLocaleString('pt-BR')} | Código: ${codigoAluno}`, pageWidth / 2, yPos, { align: 'center' });
+                
+                // Salvar o PDF
+                const nomeArquivo = `ficha_disciplinar_${codigoAluno}_${dadosAluno.nome.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20)}.pdf`;
                 pdf.save(nomeArquivo);
                 
                 console.log('✅ PDF gerado com sucesso:', nomeArquivo);
+                alert('✅ PDF profissional gerado com sucesso!');
                 
             } catch (error) {
                 console.error('❌ Erro ao gerar PDF:', error);
