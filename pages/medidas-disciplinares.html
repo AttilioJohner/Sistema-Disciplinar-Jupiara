@@ -3463,16 +3463,16 @@
 
         // ======= FUNÇÃO DE EXPORTAÇÃO PARA PDF =======
         async function exportarFichaPDF() {
+            console.log('📄 Iniciando exportação para PDF...');
+            const btnExportar = document.getElementById('btnExportarPDF');
+            const selectAluno = document.getElementById('alunoConsulta');
+            
+            // Desabilitar botão durante exportação
+            const textoOriginal = btnExportar.innerHTML;
+            btnExportar.disabled = true;
+            btnExportar.innerHTML = '⏳ Gerando PDF...';
+            
             try {
-                console.log('📄 Iniciando exportação para PDF...');
-                const btnExportar = document.getElementById('btnExportarPDF');
-                const selectAluno = document.getElementById('alunoConsulta');
-                
-                // Desabilitar botão durante exportação
-                const textoOriginal = btnExportar.innerHTML;
-                btnExportar.disabled = true;
-                btnExportar.innerHTML = '⏳ Gerando PDF...';
-                
                 // Verificar se ficha está carregada
                 const fichaContainer = document.getElementById('fichaAluno');
                 if (!fichaContainer || fichaContainer.style.display === 'none') {
@@ -3724,7 +3724,6 @@
                 alert('❌ Erro ao gerar PDF: ' + error.message);
             } finally {
                 // Restaurar botão
-                const btnExportar = document.getElementById('btnExportarPDF');
                 btnExportar.disabled = false;
                 btnExportar.innerHTML = textoOriginal;
             }
