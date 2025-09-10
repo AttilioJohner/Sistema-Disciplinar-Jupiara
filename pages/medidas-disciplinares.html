@@ -3460,6 +3460,275 @@
         function fecharFrequencia() {
             document.getElementById('areaFrequenciaAluno').style.display = 'none';
         }
+
+        // ======= FUNÇÃO DE EXPORTAÇÃO PARA PDF =======
+        async function exportarFichaPDF() {
+            try {
+                console.log('📄 Iniciando exportação para PDF...');
+                const btnExportar = document.getElementById('btnExportarPDF');
+                const selectAluno = document.getElementById('alunoConsulta');
+                
+                // Desabilitar botão durante exportação
+                const textoOriginal = btnExportar.innerHTML;
+                btnExportar.disabled = true;
+                btnExportar.innerHTML = '⏳ Gerando PDF...';
+                
+                // Verificar se ficha está carregada
+                const fichaContainer = document.getElementById('fichaAluno');
+                if (!fichaContainer || fichaContainer.style.display === 'none') {
+                    alert('❌ Por favor, primeiro carregue a ficha disciplinar do aluno!');
+                    return;
+                }
+                
+                // Obter dados do aluno
+                const nomeAluno = selectAluno.options[selectAluno.selectedIndex]?.text || 'Aluno não identificado';
+                const codigoAluno = selectAluno.value;
+                
+                // Inicializar jsPDF
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pageWidth = 210;
+                const pageHeight = 297;
+                const margin = 15;
+                const contentWidth = pageWidth - (margin * 2);
+                
+                let yPos = margin;
+                
+                // === CABEÇALHO ===
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(18);
+                pdf.setTextColor(0, 123, 255);
+                pdf.text('FICHA DISCIPLINAR DO ALUNO', pageWidth / 2, yPos, { align: 'center' });
+                
+                yPos += 8;
+                pdf.setFontSize(12);
+                pdf.setTextColor(100, 100, 100);
+                pdf.text('Dashboard Disciplinar - E.E.C. Jupiara', pageWidth / 2, yPos, { align: 'center' });
+                
+                yPos += 8;
+                pdf.setFontSize(10);
+                pdf.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, pageWidth / 2, yPos, { align: 'center' });
+                
+                // Linha separadora
+                yPos += 5;
+                pdf.setDrawColor(200, 200, 200);
+                pdf.line(margin, yPos, pageWidth - margin, yPos);
+                yPos += 10;
+                
+                // === DADOS PESSOAIS E FOTO ===
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(14);
+                pdf.setTextColor(0, 0, 0);
+                pdf.text('👤 DADOS PESSOAIS', margin, yPos);
+                yPos += 8;
+                
+                // Coletar dados pessoais
+                const dadosPessoais = document.getElementById('dadosPessoais');
+                let dadosTexto = [];
+                
+                if (dadosPessoais) {
+                    const items = dadosPessoais.querySelectorAll('.dado-item');
+                    items.forEach(item => {
+                        const label = item.querySelector('.dado-label')?.textContent || '';
+                        const valor = item.querySelector('.dado-valor')?.textContent || '';
+                        if (label && valor) {
+                            dadosTexto.push(`${label}: ${valor}`);
+                        }
+                    });
+                }
+                
+                // Adicionar dados básicos se não encontrou
+                if (dadosTexto.length === 0) {
+                    dadosTexto = [
+                        `Nome: ${nomeAluno}`,
+                        `Código: ${codigoAluno}`,
+                        `Turma: ${document.getElementById('turmaConsulta').value || 'N/A'}`
+                    ];
+                }
+                
+                // Área para foto (lado direito)
+                const fotoWidth = 40;
+                const fotoHeight = 50;
+                const fotoX = pageWidth - margin - fotoWidth;
+                const fotoY = yPos - 5;
+                
+                // Tentar adicionar foto se existir
+                try {
+                    const fotoElements = document.querySelectorAll('img[alt*="Foto"]');
+                    let fotoAdicionada = false;
+                    
+                    for (let img of fotoElements) {
+                        if (img.src && !img.src.includes('placeholder') && img.style.display !== 'none') {
+                            // Verificar se é uma imagem válida
+                            if (img.complete && img.naturalHeight !== 0) {
+                                pdf.addImage(img.src, 'JPEG', fotoX, fotoY, fotoWidth, fotoHeight);
+                                fotoAdicionada = true;
+                                console.log('📸 Foto adicionada ao PDF');
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (!fotoAdicionada) {
+                        // Desenhar placeholder para foto
+                        pdf.setDrawColor(200, 200, 200);
+                        pdf.setFillColor(245, 245, 245);
+                        pdf.rect(fotoX, fotoY, fotoWidth, fotoHeight, 'FD');
+                        pdf.setFontSize(8);
+                        pdf.setTextColor(150, 150, 150);
+                        pdf.text('Sem foto', fotoX + fotoWidth/2, fotoY + fotoHeight/2, { align: 'center' });
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Erro ao adicionar foto:', error);
+                    // Desenhar placeholder
+                    pdf.setDrawColor(200, 200, 200);
+                    pdf.setFillColor(245, 245, 245);
+                    pdf.rect(fotoX, fotoY, fotoWidth, fotoHeight, 'FD');
+                    pdf.setFontSize(8);
+                    pdf.setTextColor(150, 150, 150);
+                    pdf.text('Sem foto', fotoX + fotoWidth/2, fotoY + fotoHeight/2, { align: 'center' });
+                }
+                
+                // Dados pessoais (lado esquerdo, evitando área da foto)
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(10);
+                pdf.setTextColor(50, 50, 50);
+                const dadosWidth = contentWidth - fotoWidth - 10;
+                
+                dadosTexto.forEach((dado, index) => {
+                    if (yPos > pageHeight - 30) return; // Evitar sair da página
+                    pdf.text(dado, margin, yPos);
+                    yPos += 5;
+                });
+                
+                // Ajustar yPos para continuar depois da foto
+                yPos = Math.max(yPos, fotoY + fotoHeight + 10);
+                
+                // === HISTÓRICO DE MEDIDAS ===
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(12);
+                pdf.setTextColor(0, 0, 0);
+                pdf.text('⚖️ HISTÓRICO DE MEDIDAS DISCIPLINARES', margin, yPos);
+                yPos += 8;
+                
+                const historicoContainer = document.getElementById('historicoMedidas');
+                if (historicoContainer && historicoContainer.innerHTML.trim()) {
+                    const medidas = historicoContainer.querySelectorAll('.medida-item, .historico-item, tr');
+                    let countMedidas = 0;
+                    
+                    medidas.forEach(medida => {
+                        if (yPos > pageHeight - 30) return;
+                        const texto = medida.textContent?.trim();
+                        if (texto && texto.length > 10) {
+                            pdf.setFont('helvetica', 'normal');
+                            pdf.setFontSize(9);
+                            pdf.setTextColor(70, 70, 70);
+                            
+                            // Limitar texto e quebrar linha se necessário
+                            const textoLimitado = texto.length > 80 ? texto.substring(0, 80) + '...' : texto;
+                            pdf.text(`• ${textoLimitado}`, margin + 5, yPos);
+                            yPos += 5;
+                            countMedidas++;
+                            if (countMedidas >= 8) return; // Limitar para caber na página
+                        }
+                    });
+                    
+                    if (countMedidas === 0) {
+                        pdf.setFont('helvetica', 'normal');
+                        pdf.setFontSize(10);
+                        pdf.setTextColor(100, 150, 100);
+                        pdf.text('✅ Nenhuma medida disciplinar registrada', margin, yPos);
+                        yPos += 8;
+                    }
+                } else {
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setFontSize(10);
+                    pdf.setTextColor(100, 150, 100);
+                    pdf.text('✅ Nenhuma medida disciplinar registrada', margin, yPos);
+                    yPos += 8;
+                }
+                
+                // === FREQUÊNCIA ESCOLAR ===
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(12);
+                pdf.setTextColor(0, 0, 0);
+                pdf.text('📅 FREQUÊNCIA ESCOLAR', margin, yPos);
+                yPos += 8;
+                
+                const frequenciaContainer = document.getElementById('frequenciaEscolar');
+                if (frequenciaContainer && frequenciaContainer.innerHTML.trim()) {
+                    const frequenciaTexto = frequenciaContainer.textContent?.trim() || 'Dados de frequência não disponíveis';
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setFontSize(9);
+                    pdf.setTextColor(70, 70, 70);
+                    
+                    // Quebrar texto em linhas para caber na página
+                    const linhas = pdf.splitTextToSize(frequenciaTexto, contentWidth);
+                    linhas.slice(0, 6).forEach(linha => { // Máximo 6 linhas
+                        if (yPos > pageHeight - 20) return;
+                        pdf.text(linha, margin, yPos);
+                        yPos += 4;
+                    });
+                } else {
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setFontSize(10);
+                    pdf.setTextColor(150, 150, 150);
+                    pdf.text('Dados de frequência não disponíveis', margin, yPos);
+                    yPos += 8;
+                }
+                
+                // === RESUMO ESTATÍSTICO ===
+                yPos += 5;
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(12);
+                pdf.setTextColor(0, 0, 0);
+                pdf.text('📊 RESUMO ESTATÍSTICO', margin, yPos);
+                yPos += 8;
+                
+                const resumoContainer = document.getElementById('resumoEstatistico');
+                if (resumoContainer && resumoContainer.innerHTML.trim()) {
+                    const stats = resumoContainer.querySelectorAll('.stat-item, .estatistica-item');
+                    stats.forEach(stat => {
+                        if (yPos > pageHeight - 20) return;
+                        const texto = stat.textContent?.trim();
+                        if (texto) {
+                            pdf.setFont('helvetica', 'normal');
+                            pdf.setFontSize(9);
+                            pdf.setTextColor(70, 70, 70);
+                            pdf.text(`• ${texto}`, margin + 5, yPos);
+                            yPos += 5;
+                        }
+                    });
+                } else {
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setFontSize(10);
+                    pdf.setTextColor(150, 150, 150);
+                    pdf.text('Resumo estatístico não disponível', margin, yPos);
+                }
+                
+                // === RODAPÉ ===
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(8);
+                pdf.setTextColor(150, 150, 150);
+                pdf.text(`Dashboard Disciplinar - E.E.C. Jupiara | Código do Aluno: ${codigoAluno}`, 
+                         pageWidth / 2, pageHeight - 10, { align: 'center' });
+                
+                // Salvar PDF
+                const nomeArquivo = `ficha_disciplinar_${codigoAluno}_${nomeAluno.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+                pdf.save(nomeArquivo);
+                
+                console.log('✅ PDF gerado com sucesso:', nomeArquivo);
+                
+            } catch (error) {
+                console.error('❌ Erro ao gerar PDF:', error);
+                alert('❌ Erro ao gerar PDF: ' + error.message);
+            } finally {
+                // Restaurar botão
+                const btnExportar = document.getElementById('btnExportarPDF');
+                btnExportar.disabled = false;
+                btnExportar.innerHTML = textoOriginal;
+            }
+        }
     </script>
     <script>
         // Proteger página - requer autenticação
