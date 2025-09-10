@@ -870,38 +870,35 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   
   window.visualizarFoto = async function(alunoId) {
     try {
-      console.log('📸 Visualizando foto para aluno:', alunoId);
+      console.log('📸 Carregando aluno no formulário:', alunoId);
       
       // Buscar aluno no cache local primeiro
       const aluno = alunosCache.find(a => a.id === alunoId);
       
-      if (!aluno || !aluno.foto_url) {
-        alert('Foto não disponível para este aluno');
+      if (!aluno) {
+        alert('Aluno não encontrado');
         return;
       }
       
-      // Criar modal para exibir a foto
-      const modal = document.createElement('div');
-      modal.style.cssText = `
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.8); display: flex; align-items: center;
-        justify-content: center; z-index: 10000; cursor: pointer;
-      `;
+      // Carregar o aluno no formulário (usa a função existente)
+      onEdit(alunoId);
       
-      modal.innerHTML = `
-        <div style="background: white; padding: 20px; border-radius: 8px; max-width: 400px; text-align: center;">
-          <h3 style="margin: 0 0 15px 0;">${aluno.nome_completo || aluno.nome || 'Aluno'}</h3>
-          <img src="${aluno.foto_url}" alt="Foto do aluno" style="max-width: 300px; max-height: 400px; border-radius: 4px;">
-          <p style="margin: 15px 0 0 0; color: #666;">Clique para fechar</p>
-        </div>
-      `;
+      // Se não tem foto, informar
+      if (!aluno.foto_url) {
+        toast('Este aluno não possui foto cadastrada', 'info');
+        return;
+      }
       
-      modal.onclick = () => document.body.removeChild(modal);
-      document.body.appendChild(modal);
+      // Aguardar um pouco para o formulário carregar
+      setTimeout(() => {
+        // Carregar a foto no preview
+        loadPhotoPreview(aluno.foto_url);
+        toast('Foto carregada no formulário', 'ok');
+      }, 300);
       
     } catch (error) {
-      console.error('Erro ao carregar foto:', error);
-      alert('Erro ao carregar foto do aluno');
+      console.error('Erro ao carregar aluno:', error);
+      toast('Erro ao carregar dados do aluno', 'erro');
     }
   }
 
