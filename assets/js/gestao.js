@@ -73,13 +73,13 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       // Não carregar alunos automaticamente - aguardar clique do usuário
       setTimeout(() => adicionarBotaoCarregarAlunos(), 100);
       
-      // Única atualização de estatísticas
+      // Carregar estatísticas SEMPRE (sem carregar dados pesados)
       setTimeout(() => {
         if (!window.statsUpdated) {
           window.statsUpdated = true;
-          updateStatistics();
+          carregarEstatisticasOtimizadas();
         }
-      }, 1000);
+      }, 500);
       
       console.log('✅ gestao.js inicializado DEFINITIVAMENTE');
     } catch (e) {
@@ -866,7 +866,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     if (tabela) {
       tabela.innerHTML = `
         <tr>
-          <td colspan="9" style="text-align: center; padding: 20px;">
+          <td colspan="5" style="text-align: center; padding: 20px;">
             <button type="button" class="btn btn-primary" onclick="carregarAlunosManual()" style="padding: 10px 20px;">
               📚 Carregar Lista de Alunos
             </button>
@@ -885,9 +885,9 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   window.carregarAlunosManual = async function() {
     const tabela = document.querySelector('#alunosTableBody');
     if (tabela) {
-      tabela.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px;"><div class="loading">Carregando alunos...</div></td></tr>';
+      tabela.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;"><div class="loading">Carregando lista básica de alunos...</div></td></tr>';
     }
-    await startLiveList();
+    await carregarListaBasicaAlunos();
   }
   
   async function recarregarAlunos() {
@@ -936,6 +936,224 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     } catch (error) {
       console.error('Erro ao carregar foto:', error);
       alert('Erro ao carregar foto do aluno');
+    }
+  }
+
+  // =====================
+  // ESTATÍSTICAS OTIMIZADAS (SEMPRE VISÍVEIS)
+  // =====================
+  
+  async function carregarEstatisticasOtimizadas() {
+    try {
+      console.log('📊 Carregando estatísticas otimizadas...');
+      
+      // 1. TOTAL ALUNOS ATIVOS (apenas contagem)
+      const { count: totalAtivos, error: erroAtivos } = await db
+        .from('alunos')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'ativo');
+        
+      if (!erroAtivos && totalAtivos !== null) {
+        document.getElementById('totalAlunosAtivos').textContent = totalAtivos;
+      }
+      
+      // 2. TOTAL TURMAS (contagem distinta)
+      const { data: turmasData, error: erroTurmas } = await db
+        .from('alunos')
+        .select('turma')
+        .not('turma', 'is', null);
+        
+      if (!erroTurmas && turmasData) {
+        const turmasUnicas = [...new Set(turmasData.map(item => item.turma))].length;
+        document.getElementById('totalTurmas').textContent = `${turmasUnicas}/12`;
+      }
+      
+      // 3. CADASTROS HOJE (apenas contagem com filtro de data)
+      const hoje = new Date().toISOString().split('T')[0];
+      const { count: cadastrosHoje, error: erroCadastros } = await db
+        .from('alunos')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', hoje);
+        
+      if (!erroCadastros && cadastrosHoje !== null) {
+        document.getElementById('cadastrosHoje').textContent = cadastrosHoje;
+      }
+      
+      // 4. DADOS INCOMPLETOS (alunos sem telefone ou responsável)
+      const { count: dadosIncompletos, error: erroIncompletos } = await db
+        .from('alunos')
+        .select('id', { count: 'exact', head: true })
+        .or('telefone1.is.null,responsavel.is.null');
+        
+      if (!erroIncompletos && dadosIncompletos !== null) {
+        document.getElementById('dadosIncompletos').textContent = dadosIncompletos;
+      }
+      
+      console.log('✅ Estatísticas carregadas com sucesso');
+      
+    } catch (error) {
+      console.error('❌ Erro ao carregar estatísticas:', error);
+    }
+  }
+
+  // =====================
+  // LISTA BÁSICA DE ALUNOS (4 CAMPOS APENAS)
+  // =====================
+  
+  async function carregarListaBasicaAlunos() {
+    try {
+      console.log('📚 Carregando lista básica de alunos...');
+      
+      // Query otimizada - apenas 4 campos essenciais
+      const { data: alunos, error } = await db
+        .from('alunos')
+        .select('id, codigo, nome_completo, turma, status')
+        .order('nome_completo');
+        
+      if (error) throw error;
+      
+      // Renderizar tabela básica
+      renderTabelaBasica(alunos);
+      
+      console.log(`✅ ${alunos.length} alunos carregados na lista básica`);
+      
+    } catch (error) {
+      console.error('❌ Erro ao carregar lista básica:', error);
+      const tabela = document.querySelector('#alunosTableBody');
+      if (tabela) {
+        tabela.innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">Erro ao carregar alunos</td></tr>';
+      }
+    }
+  }
+  
+  function renderTabelaBasica(alunos) {
+    if (!els.tbody) return;
+    
+    if (!alunos || alunos.length === 0) {
+      els.tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Nenhum aluno encontrado</td></tr>';
+      return;
+    }
+    
+    els.tbody.innerHTML = alunos
+      .map(aluno => {
+        const statusClass = aluno.status === 'ativo' ? 'status-ativo' : 'status-inativo';
+        const statusIcon = aluno.status === 'ativo' ? '✅' : '❌';
+        
+        return `
+          <tr data-id="${escapeHtml(aluno.id)}">
+            <td>${escapeHtml(aluno.codigo || aluno.id || '')}</td>
+            <td>${escapeHtml(aluno.nome_completo || aluno.nome || '')}</td>
+            <td>${escapeHtml(aluno.turma || '')}</td>
+            <td class="${statusClass}">${statusIcon} ${escapeHtml(aluno.status || 'ativo')}</td>
+            <td style="white-space:nowrap">
+              <button type="button" class="btn btn-small" onclick="verInformacoesCompletas('${encodeURIComponent(aluno.id)}')">
+                👁️ Ver Informações
+              </button>
+            </td>
+          </tr>
+        `;
+      })
+      .join('');
+  }
+
+  // =====================
+  // INFORMAÇÕES COMPLETAS (SOB DEMANDA)
+  // =====================
+  
+  window.verInformacoesCompletas = async function(alunoId) {
+    try {
+      console.log('👁️ Carregando informações completas para aluno:', alunoId);
+      
+      // Buscar dados completos do aluno específico
+      const { data: aluno, error } = await db
+        .from('alunos')
+        .select('*')
+        .eq('id', alunoId)
+        .single();
+        
+      if (error) throw error;
+      
+      // Criar modal com informações completas
+      criarModalInformacoes(aluno);
+      
+    } catch (error) {
+      console.error('❌ Erro ao carregar informações completas:', error);
+      alert('Erro ao carregar informações do aluno');
+    }
+  }
+  
+  function criarModalInformacoes(aluno) {
+    // Remover modal existente se houver
+    const modalExistente = document.getElementById('modalInformacoesAluno');
+    if (modalExistente) modalExistente.remove();
+    
+    const modal = document.createElement('div');
+    modal.id = 'modalInformacoesAluno';
+    modal.style.cssText = `
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8); display: flex; align-items: center;
+      justify-content: center; z-index: 10000; padding: 20px; box-sizing: border-box;
+    `;
+    
+    modal.innerHTML = `
+      <div style="background: white; padding: 30px; border-radius: 12px; max-width: 600px; max-height: 80vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h3 style="margin: 0; color: #333;">Informações Completas</h3>
+          <button onclick="fecharModalInformacoes()" style="background: #dc3545; color: white; border: none; border-radius: 4px; padding: 8px 12px; cursor: pointer;">✕ Fechar</button>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div>
+            <h4 style="color: #0066cc; margin: 0 0 15px 0;">Dados Básicos</h4>
+            <p><strong>Código:</strong> ${aluno.codigo || 'N/A'}</p>
+            <p><strong>Nome:</strong> ${aluno.nome_completo || aluno.nome || 'N/A'}</p>
+            <p><strong>Turma:</strong> ${aluno.turma || 'N/A'}</p>
+            <p><strong>Status:</strong> ${aluno.status || 'ativo'}</p>
+          </div>
+          
+          <div>
+            <h4 style="color: #0066cc; margin: 0 0 15px 0;">Contatos</h4>
+            <p><strong>Responsável:</strong> ${aluno.responsavel || aluno.responsável || 'N/A'}</p>
+            <p><strong>Telefone 1:</strong> ${aluno.telefone1 || aluno.telefone || 'N/A'}</p>
+            <p><strong>Telefone 2:</strong> ${aluno.telefone2 || 'N/A'}</p>
+          </div>
+        </div>
+        
+        ${aluno.foto_url ? `
+          <div style="margin-top: 20px; text-align: center;">
+            <h4 style="color: #0066cc;">Foto do Aluno</h4>
+            <img src="${aluno.foto_url}" alt="Foto do aluno" style="max-width: 200px; max-height: 250px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+          </div>
+        ` : ''}
+        
+        <div style="margin-top: 30px; text-align: center;">
+          <button onclick="editarAluno('${encodeURIComponent(aluno.id)}')" style="background: #28a745; color: white; border: none; border-radius: 6px; padding: 12px 24px; margin-right: 10px; cursor: pointer;">
+            ✏️ Editar Aluno
+          </button>
+          <button onclick="fecharModalInformacoes()" style="background: #6c757d; color: white; border: none; border-radius: 6px; padding: 12px 24px; cursor: pointer;">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+  }
+  
+  window.fecharModalInformacoes = function() {
+    const modal = document.getElementById('modalInformacoesAluno');
+    if (modal) modal.remove();
+  }
+  
+  window.editarAluno = function(alunoId) {
+    // Fechar modal
+    fecharModalInformacoes();
+    
+    // Carregar dados no formulário usando função existente
+    if (window.editRecord) {
+      window.editRecord(alunoId);
+    } else {
+      console.error('Função editRecord não encontrada');
     }
   }
 
