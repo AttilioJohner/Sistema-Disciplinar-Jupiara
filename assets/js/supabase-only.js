@@ -279,14 +279,14 @@ const alunosDB = {
     },
     
     async update(codigo, aluno) {
-        console.log('🔍 UPDATE - Procurando por:', codigo);
+        // Procurando aluno para atualização...
         
         // Buscar primeiro para obter registro completo
         const { data: allData } = await supabase
             .from('alunos')
             .select('*');
         
-        console.log('🔍 UPDATE - Dados encontrados:', allData?.length, 'registros');
+        // Dados carregados do Supabase
         
         // Procurar por diferentes campos possíveis (convertendo tipos)
         const existing = allData?.find(item => {
@@ -301,15 +301,7 @@ const alunosDB = {
                 item.id === codigoStr ||
                 item.id === codigoNum
             );
-            console.log('🔍 Comparando:', {
-                codigo_busca: codigo,
-                codigo_busca_str: codigoStr,
-                codigo_busca_num: codigoNum,
-                codigo_matricula: item['código (matrícula)'],
-                codigo_simples: item.codigo,
-                id: item.id,
-                matches: matches
-            });
+            // Debug removido para limpar console
             return matches;
         });
         
@@ -332,7 +324,7 @@ const alunosDB = {
             'foto_url': aluno.foto_url || null
         };
         
-        console.log('🔍 UPDATE - Dados mapeados:', mappedData);
+        // Dados mapeados para atualização
         
         const { data, error } = await supabase
             .from('alunos')
