@@ -322,31 +322,21 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     debugLog('UPDATE ok', { id: docId, payload });
   }
 
-  async function onEdit(codigo) {
+  async function onEdit(id) {
     try {
-      console.log('🔍 EDIT - Carregando aluno com código:', codigo);
-      
-      // Buscar aluno no Supabase pelo código de matrícula usando window.supabaseSystem
-      const allData = await window.supabaseSystem.db.alunos.getAll();
-      
-      const aluno = allData?.find(item => 
-        item['código (matrícula)'] === codigo || 
-        item.codigo === codigo
-      );
-      
-      if (!aluno) {
+      const ref = db.doc(id);
+      const snap = await ref.get();
+      if (!snap.exists) {
         toast('Registro não encontrado.', 'erro');
         return;
       }
-      
-      console.log('✅ EDIT - Aluno encontrado:', aluno);
-      const alunoData = { codigo: codigo, ...aluno };
+      const alunoData = { id: id, ...snap.data() };
       fillForm(alunoData);
-      editingId = codigo; // Usar código de matrícula como editingId
+      editingId = id;
       toggleFormMode('edit');
       scrollIntoViewSmooth(els.form);
       
-      debugLog('EDIT load', { codigo: codigo });
+      debugLog('EDIT load', { id: id });
     } catch (err) {
       console.error(err);
       toast('Falha ao carregar aluno para edição.', 'erro');
@@ -527,7 +517,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
               '<td>' + escapeHtml(a.telefone2 || '') + '</td>' +
               '<td>' + (a.foto_url ? '<img src="' + escapeHtml(a.foto_url) + '" alt="Foto" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px;">' : '<span style="color: #999;">-</span>') + '</td>' +
               '<td style="white-space:nowrap">' +
-                '<button type="button" class="btn btn-small" data-action="edit" data-id="' + encodeURIComponent(a['código (matrícula)'] || a.codigo) + '">Editar</button>' +
+                '<button type="button" class="btn btn-small" data-action="edit" data-id="' + encodeURIComponent(a.id) + '">Editar</button>' +
                 deleteButton +
               '</td>' +
             '</tr>'
