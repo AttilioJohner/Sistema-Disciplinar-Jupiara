@@ -3648,9 +3648,25 @@
                 yPos += 65;
                 
                 // ===== HISTÓRICO DISCIPLINAR =====
-                pdf.setFillColor(255, 243, 243);
                 const historicoContainer = document.getElementById('historicoMedidas');
-                const historicoHeight = 50;
+                const resumoEstatisticoContainer = document.getElementById('resumoEstatistico');
+                
+                // Calcular altura dinâmica baseada no conteúdo
+                let historicoHeight = 25; // altura mínima para título
+                let numMedidas = 0;
+                
+                if (historicoContainer && historicoContainer.children.length > 0) {
+                    const medidasValidas = Array.from(historicoContainer.children).filter(medida => {
+                        const texto = medida.textContent?.trim();
+                        return texto && !texto.includes('Nenhuma medida') && !texto.includes('Comportamento exemplar');
+                    });
+                    numMedidas = medidasValidas.length;
+                    historicoHeight += Math.max(numMedidas * 5 + 15, 35); // espaço para medidas + nota
+                } else {
+                    historicoHeight = 40; // altura para mensagem "sem medidas"
+                }
+                
+                pdf.setFillColor(255, 243, 243);
                 pdf.rect(margin, yPos, contentWidth, historicoHeight, 'F');
                 pdf.setDrawColor(220, 53, 69);
                 pdf.rect(margin, yPos, contentWidth, historicoHeight, 'S');
@@ -3662,36 +3678,97 @@
                 
                 yPos += 15;
                 
-                if (historicoContainer && historicoContainer.children.length > 0) {
+                if (numMedidas > 0) {
                     pdf.setTextColor(70, 70, 70);
                     pdf.setFontSize(9);
                     pdf.setFont('helvetica', 'normal');
                     
-                    const medidas = Array.from(historicoContainer.children).slice(0, 4);
-                    medidas.forEach((medida, index) => {
+                    // Listar TODAS as medidas disciplinares
+                    const todasMedidas = Array.from(historicoContainer.children);
+                    let medidaCount = 0;
+                    
+                    todasMedidas.forEach((medida) => {
                         const texto = medida.textContent?.trim();
-                        if (texto && !texto.includes('Nenhuma medida')) {
-                            const textoLimitado = texto.length > 85 ? texto.substring(0, 85) + '...' : texto;
-                            pdf.text(`• ${textoLimitado}`, margin + 5, yPos);
+                        if (texto && !texto.includes('Nenhuma medida') && !texto.includes('Comportamento exemplar')) {
+                            // Extrair informações da medida
+                            const linhas = texto.split('\n').filter(linha => linha.trim());
+                            const dataMatch = texto.match(/(\d{2}\/\d{2}\/\d{4})/);
+                            const tipoMatch = texto.match(/(Advertência|Suspensão|Expulsão|Repreensão|Orientação)/i);
+                            
+                            let medidaTexto = '';
+                            if (dataMatch && tipoMatch) {
+                                medidaTexto = `${dataMatch[1]} - ${tipoMatch[1]}`;
+                            } else {
+                                medidaTexto = texto.length > 70 ? texto.substring(0, 70) + '...' : texto;
+                            }
+                            
+                            pdf.text(`${medidaCount + 1}. ${medidaTexto}`, margin + 5, yPos);
                             yPos += 4;
+                            medidaCount++;
                         }
                     });
                     
-                    if (medidas.length === 0 || medidas.every(m => m.textContent?.includes('Nenhuma'))) {
-                        pdf.setTextColor(40, 167, 69);
-                        pdf.setFont('helvetica', 'italic');
-                        pdf.text('✅ Nenhuma ocorrência disciplinar registrada', margin + 5, yPos);
+                    // Adicionar nota disciplinar como subtítulo
+                    yPos += 3;
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setFontSize(10);
+                    pdf.setTextColor(220, 53, 69);
+                    
+                    // Buscar nota disciplinar no resumo estatístico
+                    let notaDisciplinar = 'N/A';
+                    if (resumoEstatisticoContainer) {
+                        const statsTexto = resumoEstatisticoContainer.textContent || '';
+                        const notaMatch = statsTexto.match(/Nota disciplinar[:\s]*([0-9]+(?:\.[0-9]+)?)/i);
+                        if (notaMatch) {
+                            notaDisciplinar = notaMatch[1];
+                        }
                     }
+                    
+                    pdf.text(`Nota Disciplinar: ${notaDisciplinar}`, margin + 5, yPos);
                 } else {
                     pdf.setTextColor(40, 167, 69);
                     pdf.setFont('helvetica', 'italic');
-                    pdf.text('✅ Nenhuma ocorrência disciplinar registrada', margin + 5, yPos);
+                    pdf.setFontSize(10);
+                    pdf.text('Nenhuma ocorrencia disciplinar registrada', margin + 5, yPos);
+                    
+                    yPos += 8;
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setTextColor(40, 167, 69);
+                    pdf.text('Nota Disciplinar: 10.0', margin + 5, yPos);
                 }
                 
                 yPos += 45;
                 
-                // ===== FREQUÊNCIA E DESEMPENHO =====
-                const freqHeight = 40;
+                // ===== FREQUÊNCIA ESCOLAR =====
+                const frequenciaContainer = document.getElementById('frequenciaEscolar');
+                
+                // Calcular altura dinâmica para frequência
+                let freqHeight = 25; // altura mínima
+                let faltas = [];
+                let porcentagemFreq = 'N/A';
+                
+                if (frequenciaContainer && !frequenciaContainer.textContent.includes('Carregando')) {
+                    // Extrair faltas e porcentagem
+                    const freqTexto = frequenciaContainer.textContent || '';
+                    
+                    // Buscar porcentagem de frequência
+                    const percMatch = freqTexto.match(/([0-9]+(?:\.[0-9]+)?%)/);
+                    if (percMatch) {
+                        porcentagemFreq = percMatch[1];
+                    }
+                    
+                    // Buscar datas de faltas (formato dd/mm/yyyy)
+                    const faltasMatch = freqTexto.match(/(\d{2}\/\d{2}\/\d{4})/g);
+                    if (faltasMatch) {
+                        faltas = faltasMatch;
+                    }
+                    
+                    // Ajustar altura baseada no número de faltas
+                    freqHeight += Math.max(faltas.length * 4 + 15, 35);
+                } else {
+                    freqHeight = 40;
+                }
+                
                 pdf.setFillColor(243, 251, 243);
                 pdf.rect(margin, yPos, contentWidth, freqHeight, 'F');
                 pdf.setDrawColor(40, 167, 69);
@@ -3704,29 +3781,71 @@
                 
                 yPos += 15;
                 
-                const frequenciaContainer = document.getElementById('frequenciaEscolar');
-                if (frequenciaContainer && frequenciaContainer.textContent && !frequenciaContainer.textContent.includes('Carregando')) {
+                if (faltas.length > 0) {
                     pdf.setTextColor(70, 70, 70);
                     pdf.setFontSize(9);
                     pdf.setFont('helvetica', 'normal');
                     
-                    const freqTexto = frequenciaContainer.textContent.trim();
-                    const freqLines = pdf.splitTextToSize(freqTexto, contentWidth - 10);
-                    freqLines.slice(0, 3).forEach(line => {
-                        pdf.text(line, margin + 5, yPos);
+                    // Listar TODAS as faltas registradas
+                    pdf.text('Faltas registradas:', margin + 5, yPos);
+                    yPos += 5;
+                    
+                    faltas.forEach((dataFalta, index) => {
+                        pdf.text(`${index + 1}. ${dataFalta}`, margin + 10, yPos);
                         yPos += 4;
                     });
+                    
+                    // Adicionar porcentagem como subtítulo
+                    yPos += 3;
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setFontSize(10);
+                    pdf.setTextColor(40, 167, 69);
+                    pdf.text(`Percentual de Frequencia: ${porcentagemFreq}`, margin + 5, yPos);
                 } else {
-                    pdf.setTextColor(120, 120, 120);
-                    pdf.setFontSize(9);
+                    // Se não há faltas, mostrar mensagem positiva
+                    pdf.setTextColor(40, 167, 69);
                     pdf.setFont('helvetica', 'italic');
-                    pdf.text('Dados de frequência sendo processados...', margin + 5, yPos);
+                    pdf.setFontSize(10);
+                    pdf.text('Nenhuma falta registrada - Frequencia exemplar!', margin + 5, yPos);
+                    
+                    yPos += 8;
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setTextColor(40, 167, 69);
+                    pdf.text(`Percentual de Frequencia: ${porcentagemFreq || '100%'}`, margin + 5, yPos);
                 }
                 
                 yPos += 30;
                 
                 // ===== RESUMO ESTATÍSTICO =====
-                const resumoHeight = 35;
+                const resumoContainer = document.getElementById('resumoEstatistico');
+                
+                // Calcular altura baseada nos cards de estatísticas
+                let estatisticas = [];
+                let resumoHeight = 25; // altura mínima
+                
+                if (resumoContainer && resumoContainer.children.length > 0) {
+                    // Extrair estatísticas de cada card
+                    Array.from(resumoContainer.children).forEach(card => {
+                        const texto = card.textContent?.trim();
+                        if (texto) {
+                            // Tentar extrair título e valor dos cards
+                            const linhas = texto.split('\n').filter(l => l.trim());
+                            if (linhas.length >= 2) {
+                                const titulo = linhas[0].trim();
+                                const valor = linhas[1].trim();
+                                estatisticas.push({ titulo, valor });
+                            } else {
+                                // Fallback: usar texto completo
+                                estatisticas.push({ titulo: 'Estatística', valor: texto });
+                            }
+                        }
+                    });
+                    
+                    resumoHeight += estatisticas.length * 8 + 10;
+                } else {
+                    resumoHeight = 35;
+                }
+                
                 pdf.setFillColor(255, 248, 225);
                 pdf.rect(margin, yPos, contentWidth, resumoHeight, 'F');
                 pdf.setDrawColor(255, 193, 7);
@@ -3739,24 +3858,43 @@
                 
                 yPos += 15;
                 
-                const resumoContainer = document.getElementById('resumoEstatistico');
-                if (resumoContainer && resumoContainer.children.length > 0) {
-                    pdf.setTextColor(70, 70, 70);
-                    pdf.setFontSize(9);
-                    pdf.setFont('helvetica', 'normal');
-                    
-                    Array.from(resumoContainer.children).slice(0, 3).forEach(item => {
-                        const texto = item.textContent?.trim();
-                        if (texto) {
-                            pdf.text(`• ${texto}`, margin + 5, yPos);
-                            yPos += 4;
-                        }
+                if (estatisticas.length > 0) {
+                    // Mostrar cards de estatísticas organizados
+                    estatisticas.forEach((stat, index) => {
+                        // Título do card
+                        pdf.setTextColor(255, 193, 7);
+                        pdf.setFontSize(9);
+                        pdf.setFont('helvetica', 'bold');
+                        pdf.text(`${stat.titulo}:`, margin + 5, yPos);
+                        
+                        // Valor do card
+                        pdf.setTextColor(70, 70, 70);
+                        pdf.setFont('helvetica', 'normal');
+                        pdf.text(stat.valor, margin + 70, yPos);
+                        
+                        yPos += 6;
                     });
                 } else {
-                    pdf.setTextColor(120, 120, 120);
-                    pdf.setFontSize(9);
-                    pdf.setFont('helvetica', 'italic');
-                    pdf.text('Estatísticas em processamento...', margin + 5, yPos);
+                    // Estatísticas padrão se não houver dados
+                    const statsDefault = [
+                        { titulo: 'Total de Medidas', valor: numMedidas.toString() },
+                        { titulo: 'Faltas Registradas', valor: faltas.length.toString() },
+                        { titulo: 'Frequencia', valor: porcentagemFreq },
+                        { titulo: 'Nota Disciplinar', valor: notaDisciplinar }
+                    ];
+                    
+                    statsDefault.forEach(stat => {
+                        pdf.setTextColor(255, 193, 7);
+                        pdf.setFontSize(9);
+                        pdf.setFont('helvetica', 'bold');
+                        pdf.text(`${stat.titulo}:`, margin + 5, yPos);
+                        
+                        pdf.setTextColor(70, 70, 70);
+                        pdf.setFont('helvetica', 'normal');
+                        pdf.text(stat.valor, margin + 70, yPos);
+                        
+                        yPos += 6;
+                    });
                 }
                 
                 // ===== RODAPÉ OFICIAL =====
