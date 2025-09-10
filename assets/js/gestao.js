@@ -154,8 +154,19 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     console.log('✅ Listeners reativados com throttling');
 
     if (els.tbody) {
-      // Delegação para Editar/Excluir
+      // Delegação para Editar/Excluir/Foto
       els.tbody.addEventListener('click', async (e) => {
+        // Botão de foto
+        const btnFoto = e.target.closest('.btn-foto');
+        if (btnFoto) {
+          const alunoId = btnFoto.dataset.alunoId;
+          if (alunoId) {
+            visualizarFoto(alunoId);
+          }
+          return;
+        }
+        
+        // Outros botões com data-action
         const btn = e.target.closest('[data-action]');
         if (!btn) return;
         const action = btn.dataset.action;
@@ -516,7 +527,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
               '<td>' + escapeHtml(a.responsavel || '') + '</td>' +
               '<td>' + escapeHtml(a.telefone1 || '') + '</td>' +
               '<td>' + escapeHtml(a.telefone2 || '') + '</td>' +
-              '<td><button type="button" class="btn btn-small" onclick="visualizarFoto(\"' + encodeURIComponent(a.id) + '\")" ' + (a.foto_url ? '' : 'disabled style="opacity:0.5"') + '>📷 Ver Foto</button></td>' +
+              '<td><button type="button" class="btn btn-small btn-foto" data-aluno-id="' + escapeHtml(a.id) + '" ' + (a.foto_url ? '' : 'disabled style="opacity:0.5"') + '>📷 Ver Foto</button></td>' +
               '<td style="white-space:nowrap">' +
                 '<button type="button" class="btn btn-small" data-action="edit" data-id="' + encodeURIComponent(a.id) + '">Editar</button>' +
                 deleteButton +
