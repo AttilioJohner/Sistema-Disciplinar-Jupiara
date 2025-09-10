@@ -871,12 +871,32 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   window.visualizarFoto = async function(alunoId) {
     try {
       console.log('📸 Carregando aluno no formulário:', alunoId);
+      console.log('🔍 Cache atual:', alunosCache.length, 'alunos');
+      console.log('🔍 Procurando por ID:', alunoId, typeof alunoId);
       
-      // Buscar aluno no cache local primeiro
-      const aluno = alunosCache.find(a => a.id === alunoId);
+      // Debug: mostrar os primeiros alunos do cache
+      if (alunosCache.length > 0) {
+        console.log('🔍 Primeiro aluno do cache:', alunosCache[0]);
+        console.log('🔍 Campos disponíveis:', Object.keys(alunosCache[0]));
+      }
+      
+      // Tentar diferentes campos para encontrar o aluno
+      let aluno = alunosCache.find(a => a.id === alunoId);
+      if (!aluno) {
+        aluno = alunosCache.find(a => a.id === String(alunoId));
+      }
+      if (!aluno) {
+        aluno = alunosCache.find(a => a.codigo === alunoId);
+      }
+      if (!aluno) {
+        aluno = alunosCache.find(a => a.codigo === String(alunoId));
+      }
+      
+      console.log('🔍 Aluno encontrado:', !!aluno);
       
       if (!aluno) {
-        alert('Aluno não encontrado');
+        console.error('❌ Aluno não encontrado com ID:', alunoId);
+        alert('Aluno não encontrado no cache. ID: ' + alunoId);
         return;
       }
       
