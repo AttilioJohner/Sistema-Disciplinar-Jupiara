@@ -4153,14 +4153,13 @@
                     tiposMedidas[tipo] = (tiposMedidas[tipo] || 0) + 1;
                 });
                 
-                let breakdownTipos = `${totalMedidas} total`;
+                let breakdownTipos = `Total: ${totalMedidas}`;
                 if (totalMedidas > 0) {
                     const tipos = Object.entries(tiposMedidas)
                         .sort((a, b) => b[1] - a[1]) // ordenar por quantidade
-                        .slice(0, 2) // pegar os 2 tipos mais comuns
-                        .map(([tipo, qtd]) => `${qtd} ${tipo.substring(0, 10)}`)
-                        .join(', ');
-                    breakdownTipos = `${totalMedidas} total (${tipos})`;
+                        .map(([tipo, qtd]) => `${tipo}: ${qtd}`)
+                        .join('\n');
+                    breakdownTipos = `Total: ${totalMedidas}\n${tipos}`;
                 }
                 
                 // Criar os 4 cards específicos
