@@ -3498,38 +3498,81 @@
                 pdf.setFillColor(0, 123, 255);
                 pdf.rect(0, 0, pageWidth, 30, 'F');
                 
-                // LOGO REAL DA ESCOLA
+                // LOGO DA ESCOLA - Método mais robusto
+                let logoCarregado = false;
                 try {
-                    // Carregar logo como base64 para funcionar no PDF
-                    const logoImg = new Image();
-                    logoImg.crossOrigin = 'anonymous';
+                    // Tentar carregar logo primeiro
+                    console.log('🔄 Tentando carregar logo da escola...');
                     
-                    await new Promise((resolve, reject) => {
+                    const logoImg = new Image();
+                    
+                    const logoPromise = new Promise((resolve, reject) => {
                         logoImg.onload = () => {
                             try {
+                                console.log('✅ Logo carregado, dimensões:', logoImg.width, 'x', logoImg.height);
                                 const canvas = document.createElement('canvas');
                                 const ctx = canvas.getContext('2d');
-                                canvas.width = logoImg.width;
-                                canvas.height = logoImg.height;
-                                ctx.drawImage(logoImg, 0, 0);
-                                const dataURL = canvas.toDataURL('image/jpeg', 0.8);
-                                pdf.addImage(dataURL, 'JPEG', margin, 5, 20, 20);
+                                
+                                // Redimensionar se muito grande
+                                const maxSize = 200;
+                                let { width, height } = logoImg;
+                                if (width > maxSize || height > maxSize) {
+                                    const ratio = Math.min(maxSize / width, maxSize / height);
+                                    width *= ratio;
+                                    height *= ratio;
+                                }
+                                
+                                canvas.width = width;
+                                canvas.height = height;
+                                ctx.drawImage(logoImg, 0, 0, width, height);
+                                
+                                const dataURL = canvas.toDataURL('image/jpeg', 0.9);
+                                pdf.addImage(dataURL, 'JPEG', margin, 7, 20, 20);
+                                logoCarregado = true;
+                                console.log('🎯 Logo adicionado ao PDF com sucesso!');
                                 resolve();
                             } catch (e) {
+                                console.error('❌ Erro ao processar logo:', e);
                                 reject(e);
                             }
                         };
-                        logoImg.onerror = reject;
-                        logoImg.src = './assets/images/logo-escola.jpeg';
+                        
+                        logoImg.onerror = (e) => {
+                            console.error('❌ Erro ao carregar logo:', e);
+                            reject(e);
+                        };
+                        
+                        // Tentar diferentes caminhos
+                        const caminhos = [
+                            'assets/images/logo-escola.jpeg',
+                            './assets/images/logo-escola.jpeg',
+                            '/assets/images/logo-escola.jpeg'
+                        ];
+                        
+                        logoImg.src = caminhos[0];
                     });
+                    
+                    // Timeout de 3 segundos
+                    await Promise.race([
+                        logoPromise,
+                        new Promise((_, reject) => setTimeout(() => reject('Timeout'), 3000))
+                    ]);
+                    
                 } catch (error) {
-                    console.warn('Logo não carregou, usando placeholder:', error);
-                    // Placeholder simples
+                    console.warn('⚠️ Logo não carregou:', error);
+                    logoCarregado = false;
+                }
+                
+                // Placeholder se logo não carregou
+                if (!logoCarregado) {
+                    console.log('📋 Usando placeholder para logo');
                     pdf.setFillColor(255, 255, 255);
-                    pdf.rect(margin, 5, 20, 20, 'F');
+                    pdf.setDrawColor(0, 123, 255);
+                    pdf.rect(margin, 7, 20, 20, 'FD');
                     pdf.setTextColor(0, 123, 255);
-                    pdf.setFontSize(8);
-                    pdf.text('LOGO', margin + 10, 15, { align: 'center' });
+                    pdf.setFontSize(6);
+                    pdf.text('ESCOLA', margin + 10, 15, { align: 'center' });
+                    pdf.text('LOGO', margin + 10, 19, { align: 'center' });
                 }
                 
                 // Títulos
@@ -3694,25 +3737,55 @@
                 let todasFaltas = [];
                 let porcentagemFreq = '100%';
                 
-                // Extrair faltas de forma organizada
+                // Extrair TODAS as faltas da ficha (método mais abrangente)
                 if (frequenciaContainer) {
                     const freqTexto = frequenciaContainer.textContent || '';
+                    console.log('🔍 Texto da frequência:', freqTexto.substring(0, 200) + '...');
                     
                     // Buscar porcentagem de frequência
                     const percMatch = freqTexto.match(/([0-9]+\.?[0-9]*%)/);
                     if (percMatch) porcentagemFreq = percMatch[1];
                     
-                    // Buscar todas as datas de falta únicas e ordená-las
-                    const datasMatch = freqTexto.match(/\d{2}\/\d{2}\/\d{4}/g);
-                    if (datasMatch) {
-                        // Remover duplicadas e ordenar por data (mais recentes primeiro)
-                        const datasUnicas = [...new Set(datasMatch)];
-                        todasFaltas = datasUnicas.sort((a, b) => {
+                    // Buscar TODAS as datas - método mais abrangente
+                    const todasDatasPossíveis = new Set();
+                    
+                    // Método 1: Regex global
+                    const datasRegex = freqTexto.match(/\d{2}\/\d{2}\/\d{4}/g);
+                    if (datasRegex) {
+                        datasRegex.forEach(data => todasDatasPossíveis.add(data));
+                    }
+                    
+                    // Método 2: Buscar em todos os elementos filhos
+                    const elementosFilhos = frequenciaContainer.querySelectorAll('*');
+                    elementosFilhos.forEach(el => {
+                        const textoElemento = el.textContent || '';
+                        const datasElemento = textoElemento.match(/\d{2}\/\d{2}\/\d{4}/g);
+                        if (datasElemento) {
+                            datasElemento.forEach(data => todasDatasPossíveis.add(data));
+                        }
+                    });
+                    
+                    // Método 3: Buscar especificamente por padrões de falta
+                    const linhas = freqTexto.split('\n');
+                    linhas.forEach(linha => {
+                        if (linha.includes('falta') || linha.includes('Falta') || linha.includes('ausência') || linha.includes('Ausência')) {
+                            const dataLinha = linha.match(/\d{2}\/\d{2}\/\d{4}/g);
+                            if (dataLinha) {
+                                dataLinha.forEach(data => todasDatasPossíveis.add(data));
+                            }
+                        }
+                    });
+                    
+                    // Converter Set para Array e ordenar
+                    if (todasDatasPossíveis.size > 0) {
+                        todasFaltas = Array.from(todasDatasPossíveis).sort((a, b) => {
                             const dateA = new Date(a.split('/').reverse().join('-'));
                             const dateB = new Date(b.split('/').reverse().join('-'));
-                            return dateB - dateA;
+                            return dateB - dateA; // mais recentes primeiro
                         });
                     }
+                    
+                    console.log(`📊 Total de faltas encontradas: ${todasFaltas.length}`, todasFaltas);
                 }
                 
                 let freqHeight = 20 + todasFaltas.length * 4 + 15;
@@ -3757,72 +3830,149 @@
                 
                 yPos += 20;
                 
-                // ===== RESUMO ESTATÍSTICO COMPLETO =====
-                pdf.setFillColor(255, 250, 240);
+                // ===== RESUMO ESTATÍSTICO EM CARDS =====
+                // Extrair estatísticas organizadas em cards
+                const statsCards = [];
                 
-                let todasStats = [];
-                
-                // Extrair estatísticas sem duplicações
                 if (resumoContainer) {
                     const statsTexto = resumoContainer.textContent || '';
-                    const linhasUnicas = new Set();
+                    console.log('📊 Processando resumo estatístico...');
                     
-                    // Buscar estatísticas principais
-                    const linhas = statsTexto.split('\n').filter(l => {
-                        const linha = l.trim();
-                        return linha.length > 2 && linha.length < 60 && 
-                               (linha.match(/[0-9]+/) || linha.includes('%')) &&
-                               !linha.includes('Total de Medidas Total') &&
-                               !linha.includes('Últimos 30 dias Últimos');
-                    });
+                    // Buscar estatísticas principais com títulos e valores
+                    const linhas = statsTexto.split('\n').filter(l => l.trim());
                     
-                    // Filtrar duplicações e manter apenas relevantes
-                    linhas.forEach(linha => {
-                        const linhaNormalizada = linha.trim();
-                        if (!linhasUnicas.has(linhaNormalizada) && 
-                            (linhaNormalizada.match(/^[0-9]/) || linhaNormalizada.includes(':'))) {
-                            linhasUnicas.add(linhaNormalizada);
+                    // Processar cada linha para identificar cards
+                    let i = 0;
+                    while (i < linhas.length && statsCards.length < 6) {
+                        const linha = linhas[i].trim();
+                        
+                        if (linha.match(/^[0-9]+(\.[0-9]+)?$/)) {
+                            // Número sozinho - próxima linha deve ser o título
+                            const valor = linha;
+                            const titulo = linhas[i + 1]?.trim() || 'Estatística';
+                            if (!titulo.includes('Total de Medidas Total') && titulo.length < 30) {
+                                statsCards.push({ titulo, valor });
+                                i += 2;
+                                continue;
+                            }
+                        } else if (linha.includes(':')) {
+                            // Formato "Título: Valor"
+                            const [titulo, valor] = linha.split(':').map(s => s.trim());
+                            if (titulo && valor) {
+                                statsCards.push({ titulo, valor });
+                            }
+                        } else if (linha.match(/[0-9]+/) && linha.length < 40) {
+                            // Linha com número e texto
+                            const match = linha.match(/([0-9]+(?:\.[0-9]+)?(?:%?))(.+)/);
+                            if (match) {
+                                statsCards.push({ 
+                                    titulo: match[2].trim() || 'Estatística', 
+                                    valor: match[1] 
+                                });
+                            }
                         }
-                    });
-                    
-                    todasStats = Array.from(linhasUnicas).slice(0, 6);
+                        i++;
+                    }
                 }
                 
-                // Estatísticas calculadas se não encontrou
-                if (todasStats.length === 0) {
-                    todasStats = [
-                        `Total de Medidas: ${todasMedidas.length}`,
-                        `Faltas: ${todasFaltas.length}`,
-                        `Frequencia: ${porcentagemFreq}`,
-                        `Nota Disciplinar: ${notaDisciplinar}`
-                    ];
+                // Fallback com estatísticas calculadas
+                if (statsCards.length === 0) {
+                    statsCards.push(
+                        { titulo: 'Nota Disciplinar', valor: notaDisciplinar },
+                        { titulo: 'Total de Medidas', valor: todasMedidas.length.toString() },
+                        { titulo: 'Faltas Registradas', valor: todasFaltas.length.toString() },
+                        { titulo: 'Frequência Escolar', valor: porcentagemFreq }
+                    );
                 }
                 
-                let statsHeight = 15 + todasStats.length * 5;
+                // Layout em cards com mini-gráficos
+                const cardsHeight = Math.max(60, Math.ceil(statsCards.length / 2) * 30 + 20);
                 
-                // Verificar se precisa de nova página
-                if (yPos + statsHeight > pageHeight - 30) {
+                if (yPos + cardsHeight > pageHeight - 30) {
                     pdf.addPage();
                     yPos = margin;
                 }
                 
-                pdf.rect(margin, yPos, contentWidth, statsHeight, 'F');
+                // Fundo da seção
+                pdf.setFillColor(255, 250, 235);
+                pdf.rect(margin, yPos, contentWidth, cardsHeight, 'F');
                 
+                // Título da seção
                 pdf.setTextColor(255, 193, 7);
                 pdf.setFontSize(12);
                 pdf.setFont('helvetica', 'bold');
-                pdf.text('RESUMO ESTATISTICO', margin + 5, yPos + 7);
+                pdf.text('RESUMO ESTATISTICO', margin + 5, yPos + 8);
                 
-                yPos += 12;
+                yPos += 15;
                 
-                pdf.setTextColor(0, 0, 0);
-                pdf.setFontSize(9);
-                pdf.setFont('helvetica', 'normal');
+                // Desenhar cards em grid 2x2 ou 2x3
+                const cardWidth = (contentWidth - 15) / 2;
+                const cardHeight = 20;
                 
-                todasStats.forEach((stat, index) => {
-                    pdf.text(`• ${stat}`, margin + 5, yPos);
-                    yPos += 5;
+                statsCards.forEach((card, index) => {
+                    const col = index % 2;
+                    const row = Math.floor(index / 2);
+                    
+                    const cardX = margin + 5 + (col * (cardWidth + 5));
+                    const cardY = yPos + (row * (cardHeight + 5));
+                    
+                    // Fundo do card
+                    pdf.setFillColor(248, 248, 248);
+                    pdf.setDrawColor(200, 200, 200);
+                    pdf.rect(cardX, cardY, cardWidth, cardHeight, 'FD');
+                    
+                    // Valor do card (grande)
+                    pdf.setTextColor(255, 193, 7);
+                    pdf.setFontSize(14);
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.text(card.valor, cardX + 5, cardY + 8);
+                    
+                    // Título do card (pequeno)
+                    pdf.setTextColor(80, 80, 80);
+                    pdf.setFontSize(8);
+                    pdf.setFont('helvetica', 'normal');
+                    const tituloLimitado = card.titulo.substring(0, 25) + (card.titulo.length > 25 ? '...' : '');
+                    pdf.text(tituloLimitado, cardX + 5, cardY + 15);
+                    
+                    // Mini-gráfico (barra simples)
+                    if (card.valor.includes('%')) {
+                        const percent = parseFloat(card.valor.replace('%', ''));
+                        const barWidth = (cardWidth - 20) * (percent / 100);
+                        
+                        // Barra de fundo
+                        pdf.setFillColor(220, 220, 220);
+                        pdf.rect(cardX + cardWidth - 50, cardY + 3, 40, 3, 'F');
+                        
+                        // Barra preenchida
+                        const cor = percent >= 80 ? [40, 167, 69] : percent >= 60 ? [255, 193, 7] : [220, 53, 69];
+                        pdf.setFillColor(...cor);
+                        pdf.rect(cardX + cardWidth - 50, cardY + 3, Math.max(1, barWidth * 40/100), 3, 'F');
+                    } else if (!isNaN(parseFloat(card.valor))) {
+                        // Mini-gráfico circular para números
+                        const valor = parseFloat(card.valor);
+                        const raio = 4;
+                        const centerX = cardX + cardWidth - 15;
+                        const centerY = cardY + 8;
+                        
+                        // Círculo de fundo
+                        pdf.setFillColor(220, 220, 220);
+                        pdf.circle(centerX, centerY, raio, 'F');
+                        
+                        // Porção colorida (baseada no valor)
+                        const percent = Math.min(100, Math.max(0, valor * 10)); // escala aproximada
+                        const cor = valor >= 8 ? [40, 167, 69] : valor >= 5 ? [255, 193, 7] : [220, 53, 69];
+                        pdf.setFillColor(...cor);
+                        
+                        // Desenhar setor do círculo
+                        const angle = (percent / 100) * 360;
+                        if (angle > 0) {
+                            // Aproximação simples com retângulo
+                            pdf.rect(centerX - 2, centerY - 2, 4 * (percent / 100), 4, 'F');
+                        }
+                    }
                 });
+                
+                yPos += Math.ceil(statsCards.length / 2) * 25 + 10;
                 
                 // ===== RODAPÉ =====
                 const ultimaPagina = pdf.getNumberOfPages();
