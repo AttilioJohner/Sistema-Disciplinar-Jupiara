@@ -71,7 +71,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       bindEvents();
       initPhotoPreview();
       // Não carregar alunos automaticamente - aguardar clique do usuário
-      adicionarBotaoCarregarAlunos();
+      setTimeout(() => adicionarBotaoCarregarAlunos(), 100);
       
       // Única atualização de estatísticas
       setTimeout(() => {
@@ -860,7 +860,9 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   // =====================
   
   function adicionarBotaoCarregarAlunos() {
-    const tabela = document.querySelector('#tabela-alunos tbody');
+    console.log('🔄 Tentando adicionar botão carregar alunos...');
+    const tabela = document.querySelector('#alunosTableBody');
+    console.log('📋 Elemento tabela encontrado:', !!tabela);
     if (tabela) {
       tabela.innerHTML = `
         <tr>
@@ -874,11 +876,14 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
           </td>
         </tr>
       `;
+      console.log('✅ Botão carregar alunos adicionado com sucesso!');
+    } else {
+      console.error('❌ Elemento #alunosTableBody não encontrado!');
     }
   }
   
   window.carregarAlunosManual = async function() {
-    const tabela = document.querySelector('#tabela-alunos tbody');
+    const tabela = document.querySelector('#alunosTableBody');
     if (tabela) {
       tabela.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px;"><div class="loading">Carregando alunos...</div></td></tr>';
     }
