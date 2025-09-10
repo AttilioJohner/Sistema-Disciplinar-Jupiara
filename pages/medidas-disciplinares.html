@@ -3534,14 +3534,7 @@
                 pdf.setFont('helvetica', 'normal');
                 pdf.text('Escola Estadual Cívico-Militar Jupiara', pageWidth/2, 18, { align: 'center' });
                 
-                // Placeholder para logo se não carregou
-                if (!logoCarregado) {
-                    pdf.setFillColor(...cores.branco);
-                    pdf.rect(margin, 4, 20, 18, 'FD');
-                    pdf.setTextColor(...cores.azulPrimario);
-                    pdf.setFontSize(8);
-                    pdf.text('LOGO', margin + 10, 13, { align: 'center' });
-                }
+                // Logo removida completamente
                 
                 yPos = 35;
                 
