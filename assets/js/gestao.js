@@ -166,6 +166,16 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
           return;
         }
         
+        // Botão de ocultar foto
+        const btnOcultar = e.target.closest('.btn-ocultar-foto');
+        if (btnOcultar) {
+          const alunoId = btnOcultar.dataset.alunoId;
+          if (alunoId) {
+            ocultarFoto(alunoId);
+          }
+          return;
+        }
+        
         // Outros botões com data-action
         const btn = e.target.closest('[data-action]');
         if (!btn) return;
@@ -527,7 +537,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
               '<td>' + escapeHtml(a.responsavel || '') + '</td>' +
               '<td>' + escapeHtml(a.telefone1 || '') + '</td>' +
               '<td>' + escapeHtml(a.telefone2 || '') + '</td>' +
-              '<td><button type="button" class="btn btn-small btn-foto" data-aluno-id="' + escapeHtml(a.id) + '" ' + (a.foto_url ? '' : 'disabled style="opacity:0.5"') + '>📷 Ver Foto</button></td>' +
+              '<td id="foto-cell-' + escapeHtml(a.id) + '"><button type="button" class="btn btn-small btn-foto" data-aluno-id="' + escapeHtml(a.id) + '" ' + (a.foto_url ? '' : 'disabled style="opacity:0.5"') + '>Ver Foto</button></td>' +
               '<td style="white-space:nowrap">' +
                 '<button type="button" class="btn btn-small" data-action="edit" data-id="' + encodeURIComponent(a.id) + '">Editar</button>' +
                 deleteButton +
@@ -911,12 +921,9 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       
       if (!aluno) {
         console.error('❌ Aluno não encontrado com ID:', alunoId);
-        alert('Aluno não encontrado no cache. ID: ' + alunoId);
+        toast('Aluno não encontrado', 'erro');
         return;
       }
-      
-      // Carregar o aluno no formulário (usa a função existente)
-      onEdit(alunoId);
       
       // Se não tem foto, informar
       if (!aluno.foto_url) {
@@ -924,16 +931,38 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         return;
       }
       
-      // Aguardar um pouco para o formulário carregar
-      setTimeout(() => {
-        // Carregar a foto no preview
-        loadPhotoPreview(aluno.foto_url);
-        toast('Foto carregada no formulário', 'ok');
-      }, 300);
+      // Mostrar foto na própria célula da tabela
+      const fotoCell = document.getElementById('foto-cell-' + alunoId);
+      if (fotoCell) {
+        fotoCell.innerHTML = `
+          <div style="text-align: center;">
+            <img src="${aluno.foto_url}" alt="Foto do aluno" style="width: 60px; height: 80px; object-fit: cover; border-radius: 4px; margin-bottom: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+            <br>
+            <button type="button" class="btn btn-small btn-ocultar-foto" data-aluno-id="${alunoId}" style="font-size: 11px; padding: 2px 6px;">Ocultar</button>
+          </div>
+        `;
+        toast('Foto exibida', 'ok');
+      } else {
+        toast('Erro ao exibir foto', 'erro');
+      }
       
     } catch (error) {
       console.error('Erro ao carregar aluno:', error);
       toast('Erro ao carregar dados do aluno', 'erro');
+    }
+  }
+  
+  window.ocultarFoto = function(alunoId) {
+    const fotoCell = document.getElementById('foto-cell-' + alunoId);
+    if (fotoCell) {
+      // Buscar aluno para verificar se tem foto
+      const numId = parseInt(alunoId);
+      const aluno = alunosCache.find(a => a.id === numId) || alunosCache.find(a => a.codigo === numId);
+      
+      fotoCell.innerHTML = `
+        <button type="button" class="btn btn-small btn-foto" data-aluno-id="${alunoId}" ${aluno && aluno.foto_url ? '' : 'disabled style="opacity:0.5"'}>Ver Foto</button>
+      `;
+      toast('Foto ocultada', 'ok');
     }
   }
 
