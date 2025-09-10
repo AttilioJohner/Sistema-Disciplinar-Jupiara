@@ -3522,90 +3522,7 @@
                 pdf.setFillColor(...cores.azulSecundario);
                 pdf.rect(0, 20, pageWidth, 5, 'F'); // Gradiente simulado
                 
-                // ===== LOGO EM ALTA QUALIDADE =====
-                let logoCarregado = false;
-                try {
-                    console.log('🔄 Carregando logo em alta qualidade...');
-                    
-                    const logoImg = new Image();
-                    logoImg.crossOrigin = 'anonymous';
-                    
-                    const logoPromise = new Promise((resolve, reject) => {
-                        logoImg.onload = () => {
-                            try {
-                                console.log('✅ Logo carregado, dimensões:', logoImg.width, 'x', logoImg.height);
-                                const canvas = document.createElement('canvas');
-                                const ctx = canvas.getContext('2d');
-                                
-                                // Canvas em alta resolução (300 DPI)
-                                const logoWidth = 20;
-                                const logoHeight = 18;
-                                
-                                // Canvas 4x maior para qualidade
-                                canvas.width = logoWidth * 4;
-                                canvas.height = logoHeight * 4;
-                                
-                                // Rendering de alta qualidade
-                                ctx.imageSmoothingEnabled = true;
-                                ctx.imageSmoothingQuality = 'high';
-                                ctx.drawImage(logoImg, 0, 0, canvas.width, canvas.height);
-                                
-                                const logoDataURL = canvas.toDataURL('image/png', 1.0);
-                                
-                                // Criar fundo branco circular para logo
-                                pdf.setFillColor(...cores.branco);
-                                pdf.circle(margin + logoWidth/2, 4 + logoHeight/2, logoWidth/2 + 1, 'F');
-                                
-                                pdf.addImage(logoDataURL, 'PNG', margin, 4, logoWidth, logoHeight);
-                                logoCarregado = true;
-                                console.log('🎯 Logo adicionado ao PDF com sucesso!');
-                                resolve();
-                            } catch (e) {
-                                console.error('❌ Erro ao processar logo:', e);
-                                reject(e);
-                            }
-                        };
-                        
-                        logoImg.onerror = (error) => {
-                            console.error('❌ Erro ao carregar logo:', error);
-                            // Tentar próximo caminho
-                            const caminhos = [
-                                '../assets/images/logo-escola.jpeg',
-                                './assets/images/logo-escola.jpeg',
-                                '/assets/images/logo-escola.jpeg',
-                                'assets/images/logo-escola.jpeg'
-                            ];
-                            
-                            let tentativa = 0;
-                            const tentarProximo = () => {
-                                if (tentativa < caminhos.length - 1) {
-                                    tentativa++;
-                                    console.log(`🔄 Tentando caminho ${tentativa + 1}: ${caminhos[tentativa]}`);
-                                    logoImg.src = caminhos[tentativa];
-                                } else {
-                                    reject(new Error('Todos os caminhos falharam'));
-                                }
-                            };
-                            
-                            logoImg.onerror = tentarProximo;
-                            tentarProximo();
-                        };
-                        
-                        // Iniciar com primeiro caminho
-                        console.log('🔄 Tentando: ../assets/images/logo-escola.jpeg');
-                        logoImg.src = '../assets/images/logo-escola.jpeg';
-                    });
-                    
-                    // Timeout de 5 segundos
-                    await Promise.race([
-                        logoPromise,
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de 5s')), 5000))
-                    ]);
-                    
-                } catch (error) {
-                    console.warn('⚠️ Logo não carregou:', error.message);
-                    logoCarregado = false;
-                }
+                // Logo removida conforme solicitado - cabeçalho limpo
                 
                 // ===== TÍTULO PRINCIPAL =====
                 pdf.setTextColor(...cores.branco);
@@ -4118,20 +4035,25 @@
                     pdf.setFontSize(8);
                     pdf.text(`Ausências registradas: ${todasFaltas.length}`, margin + 4, yPos);
                     
-                    // Mostrar até 8 ausências em grid compacto
-                    const faltasExibir = todasFaltas.slice(0, 8);
+                    // Mostrar TODAS as ausências em grid compacto
                     const colunas = 4;
                     const espacoX = (contentWidth - 8) / colunas;
                     
                     yPos += 6;
                     
-                    faltasExibir.forEach((falta, index) => {
+                    todasFaltas.forEach((falta, index) => {
+                        // Verificar se precisa de nova página
+                        if (yPos > pageHeight - 40) {
+                            pdf.addPage();
+                            yPos = margin + 10;
+                        }
+                        
                         const coluna = index % colunas;
                         const linha = Math.floor(index / colunas);
                         const x = margin + 4 + (coluna * espacoX);
-                        const y = yPos + (linha * 6);
+                        const y = yPos + (linha * 5); // Reduzir espaçamento para 5px
                         
-                        // Ícone de ausência
+                        // Marcador de ausência
                         pdf.setTextColor(...cores.vermelho);
                         pdf.setFontSize(8);
                         pdf.text('X', x, y);
@@ -4141,14 +4063,16 @@
                         pdf.setFontSize(7);
                         const dataFalta = typeof falta === 'object' ? falta.data : falta;
                         pdf.text(dataFalta, x + 6, y);
+                        
+                        // Quebrar linha a cada 4 colunas
+                        if ((index + 1) % colunas === 0) {
+                            yPos += 5;
+                        }
                     });
                     
-                    // Indicador se há mais ausências
-                    if (todasFaltas.length > 8) {
-                        yPos += Math.ceil(faltasExibir.length / colunas) * 6 + 2;
-                        pdf.setTextColor(...cores.cinzaTexto);
-                        pdf.setFontSize(7);
-                        pdf.text(`... e mais ${todasFaltas.length - 8} ausências`, margin + 4, yPos);
+                    // Ajustar posição final
+                    if (todasFaltas.length % colunas !== 0) {
+                        yPos += 5;
                     }
                     
                     // Informações adicionais compactas
@@ -4344,15 +4268,32 @@
                     pdf.setFont('helvetica', 'bold');
                     
                     const valorTexto = card.valor.toString();
-                    if (valorTexto.length > 30) {
-                        // Quebrar em duas linhas se muito longo
-                        const metade = Math.ceil(valorTexto.length / 2);
-                        const linha1 = valorTexto.substring(0, metade);
-                        const linha2 = valorTexto.substring(metade);
+                    if (valorTexto.length > 25) {
+                        // Quebrar de forma inteligente por palavras
+                        const palavras = valorTexto.split(' ');
+                        let linha1 = '';
+                        let linha2 = '';
+                        let trocouLinha = false;
+                        
+                        palavras.forEach(palavra => {
+                            if (!trocouLinha && (linha1 + palavra).length <= 20) {
+                                linha1 += (linha1 ? ' ' : '') + palavra;
+                            } else {
+                                trocouLinha = true;
+                                linha2 += (linha2 ? ' ' : '') + palavra;
+                            }
+                        });
+                        
+                        // Se linha2 muito longa, truncar
+                        if (linha2.length > 22) {
+                            linha2 = linha2.substring(0, 19) + '...';
+                        }
                         
                         pdf.setFontSize(7);
                         pdf.text(linha1, cardX + 15, cardY + 10);
-                        pdf.text(linha2, cardX + 15, cardY + 14);
+                        if (linha2) {
+                            pdf.text(linha2, cardX + 15, cardY + 14);
+                        }
                     } else {
                         pdf.text(valorTexto, cardX + 15, cardY + 12);
                     }
