@@ -70,16 +70,16 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       mapElements();
       bindEvents();
       initPhotoPreview();
-      // Não carregar alunos automaticamente - aguardar clique do usuário
-      setTimeout(() => adicionarBotaoCarregarAlunos(), 100);
+      // Carregar alunos automaticamente (como antes) mas SEM fotos
+      await startLiveList();
       
-      // Carregar estatísticas SEMPRE (sem carregar dados pesados)
+      // Única atualização de estatísticas
       setTimeout(() => {
         if (!window.statsUpdated) {
           window.statsUpdated = true;
-          carregarEstatisticasOtimizadas();
+          updateStatistics();
         }
-      }, 500);
+      }, 1000);
       
       console.log('✅ gestao.js inicializado DEFINITIVAMENTE');
     } catch (e) {
@@ -855,59 +855,14 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     }
   };
 
-  // =====================
-  // NOVAS FUNÇÕES - CARREGAMENTO SOB DEMANDA
-  // =====================
-  
-  function adicionarBotaoCarregarAlunos() {
-    console.log('🔄 Tentando adicionar botão carregar alunos...');
-    const tabela = document.querySelector('#alunosTableBody');
-    console.log('📋 Elemento tabela encontrado:', !!tabela);
-    if (tabela) {
-      tabela.innerHTML = `
-        <tr>
-          <td colspan="5" style="text-align: center; padding: 20px;">
-            <button type="button" class="btn btn-primary" onclick="carregarAlunosManual()" style="padding: 10px 20px;">
-              📚 Carregar Lista de Alunos
-            </button>
-            <p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">
-              Clique para carregar os alunos (economia de dados)
-            </p>
-          </td>
-        </tr>
-      `;
-      console.log('✅ Botão carregar alunos adicionado com sucesso!');
-    } else {
-      console.error('❌ Elemento #alunosTableBody não encontrado!');
-    }
-  }
-  
-  window.carregarAlunosManual = async function() {
-    const tabela = document.querySelector('#alunosTableBody');
-    if (tabela) {
-      tabela.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;"><div class="loading">Carregando lista básica de alunos...</div></td></tr>';
-    }
-    await carregarListaBasicaAlunos();
-  }
-  
-  async function recarregarAlunos() {
-    if (alunosCache.length > 0) {
-      await startLiveList();
-    }
-  }
+  // Função visualizarFoto já existe mais abaixo - mantém a original
   
   window.visualizarFoto = async function(alunoId) {
     try {
-      console.log('📸 Carregando foto para aluno:', alunoId);
+      console.log('📸 Visualizando foto para aluno:', alunoId);
       
-      // Buscar dados do aluno específico com foto
-      const { data: aluno, error } = await db
-        .from('alunos')
-        .select('foto_url, nome_completo')
-        .eq('id', alunoId)
-        .single();
-        
-      if (error) throw error;
+      // Buscar aluno no cache local primeiro
+      const aluno = alunosCache.find(a => a.id === alunoId);
       
       if (!aluno || !aluno.foto_url) {
         alert('Foto não disponível para este aluno');
@@ -924,7 +879,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       
       modal.innerHTML = `
         <div style="background: white; padding: 20px; border-radius: 8px; max-width: 400px; text-align: center;">
-          <h3 style="margin: 0 0 15px 0;">${aluno.nome_completo}</h3>
+          <h3 style="margin: 0 0 15px 0;">${aluno.nome_completo || aluno.nome || 'Aluno'}</h3>
           <img src="${aluno.foto_url}" alt="Foto do aluno" style="max-width: 300px; max-height: 400px; border-radius: 4px;">
           <p style="margin: 15px 0 0 0; color: #666;">Clique para fechar</p>
         </div>
@@ -939,250 +894,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     }
   }
 
-  // =====================
-  // ESTATÍSTICAS OTIMIZADAS (SEMPRE VISÍVEIS)
-  // =====================
-  
-  async function carregarEstatisticasOtimizadas() {
-    try {
-      console.log('📊 Carregando estatísticas otimizadas...');
-      
-      // Aguardar Supabase estar pronto
-      if (!window.supabaseClient) {
-        console.log('⏳ Aguardando Supabase...');
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        if (!window.supabaseClient) {
-          throw new Error('Supabase não disponível');
-        }
-      }
-      
-      // 1. TOTAL ALUNOS ATIVOS (apenas contagem)
-      const { count: totalAtivos, error: erroAtivos } = await window.supabaseClient
-        .from('alunos')
-        .select('codigo', { count: 'exact', head: true })
-        .eq('status', 'ativo');
-        
-      if (!erroAtivos && totalAtivos !== null) {
-        document.getElementById('totalAlunosAtivos').textContent = totalAtivos;
-      }
-      
-      // 2. TOTAL TURMAS (contagem distinta)
-      const { data: turmasData, error: erroTurmas } = await window.supabaseClient
-        .from('alunos')
-        .select('turma')
-        .not('turma', 'is', null);
-        
-      if (!erroTurmas && turmasData) {
-        const turmasUnicas = [...new Set(turmasData.map(item => item.turma))].length;
-        document.getElementById('totalTurmas').textContent = `${turmasUnicas}/12`;
-      }
-      
-      // 3. CADASTROS HOJE (apenas contagem com filtro de data)
-      const hoje = new Date().toISOString().split('T')[0];
-      const { count: cadastrosHoje, error: erroCadastros } = await window.supabaseClient
-        .from('alunos')
-        .select('codigo', { count: 'exact', head: true })
-        .gte('created_at', hoje);
-        
-      if (!erroCadastros && cadastrosHoje !== null) {
-        document.getElementById('cadastrosHoje').textContent = cadastrosHoje;
-      }
-      
-      // 4. DADOS INCOMPLETOS (alunos sem telefone ou responsável)
-      const { count: dadosIncompletos, error: erroIncompletos } = await window.supabaseClient
-        .from('alunos')
-        .select('codigo', { count: 'exact', head: true })
-        .or('"Telefone do responsável".is.null,responsável.is.null');
-        
-      if (!erroIncompletos && dadosIncompletos !== null) {
-        document.getElementById('dadosIncompletos').textContent = dadosIncompletos;
-      }
-      
-      console.log('✅ Estatísticas carregadas com sucesso');
-      
-    } catch (error) {
-      console.error('❌ Erro ao carregar estatísticas:', error);
-    }
-  }
-
-  // =====================
-  // LISTA BÁSICA DE ALUNOS (4 CAMPOS APENAS)
-  // =====================
-  
-  async function carregarListaBasicaAlunos() {
-    try {
-      console.log('📚 Carregando lista básica de alunos...');
-      
-      // Aguardar Supabase estar pronto
-      if (!window.supabaseClient) {
-        console.log('⏳ Aguardando Supabase para lista...');
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        if (!window.supabaseClient) {
-          throw new Error('Supabase não disponível');
-        }
-      }
-      
-      // Query otimizada - apenas 4 campos essenciais
-      const { data: alunos, error } = await window.supabaseClient
-        .from('alunos')
-        .select('codigo, "Nome completo", turma, status')
-        .order('"Nome completo"');
-        
-      if (error) throw error;
-      
-      // Renderizar tabela básica
-      renderTabelaBasica(alunos);
-      
-      console.log(`✅ ${alunos.length} alunos carregados na lista básica`);
-      
-    } catch (error) {
-      console.error('❌ Erro ao carregar lista básica:', error);
-      const tabela = document.querySelector('#alunosTableBody');
-      if (tabela) {
-        tabela.innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">Erro ao carregar alunos</td></tr>';
-      }
-    }
-  }
-  
-  function renderTabelaBasica(alunos) {
-    if (!els.tbody) return;
-    
-    if (!alunos || alunos.length === 0) {
-      els.tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Nenhum aluno encontrado</td></tr>';
-      return;
-    }
-    
-    els.tbody.innerHTML = alunos
-      .map(aluno => {
-        const statusClass = aluno.status === 'ativo' ? 'status-ativo' : 'status-inativo';
-        const statusIcon = aluno.status === 'ativo' ? '✅' : '❌';
-        
-        return `
-          <tr data-codigo="${escapeHtml(aluno.codigo)}">
-            <td>${escapeHtml(aluno.codigo || '')}</td>
-            <td>${escapeHtml(aluno['Nome completo'] || aluno.nome || '')}</td>
-            <td>${escapeHtml(aluno.turma || '')}</td>
-            <td class="${statusClass}">${statusIcon} ${escapeHtml(aluno.status || 'ativo')}</td>
-            <td style="white-space:nowrap">
-              <button type="button" class="btn btn-small" onclick="verInformacoesCompletas('${encodeURIComponent(aluno.codigo)}')">
-                👁️ Ver Informações
-              </button>
-            </td>
-          </tr>
-        `;
-      })
-      .join('');
-  }
-
-  // =====================
-  // INFORMAÇÕES COMPLETAS (SOB DEMANDA)
-  // =====================
-  
-  window.verInformacoesCompletas = async function(alunoId) {
-    try {
-      console.log('👁️ Carregando informações completas para aluno:', alunoId);
-      
-      // Aguardar Supabase estar pronto
-      if (!window.supabaseClient) {
-        console.log('⏳ Aguardando Supabase para informações...');
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        if (!window.supabaseClient) {
-          throw new Error('Supabase não disponível');
-        }
-      }
-      
-      // Buscar dados completos do aluno específico
-      const { data: aluno, error } = await window.supabaseClient
-        .from('alunos')
-        .select('*')
-        .eq('codigo', parseInt(alunoId))
-        .single();
-        
-      if (error) throw error;
-      
-      // Criar modal com informações completas
-      criarModalInformacoes(aluno);
-      
-    } catch (error) {
-      console.error('❌ Erro ao carregar informações completas:', error);
-      alert('Erro ao carregar informações do aluno');
-    }
-  }
-  
-  function criarModalInformacoes(aluno) {
-    // Remover modal existente se houver
-    const modalExistente = document.getElementById('modalInformacoesAluno');
-    if (modalExistente) modalExistente.remove();
-    
-    const modal = document.createElement('div');
-    modal.id = 'modalInformacoesAluno';
-    modal.style.cssText = `
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.8); display: flex; align-items: center;
-      justify-content: center; z-index: 10000; padding: 20px; box-sizing: border-box;
-    `;
-    
-    modal.innerHTML = `
-      <div style="background: white; padding: 30px; border-radius: 12px; max-width: 600px; max-height: 80vh; overflow-y: auto;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <h3 style="margin: 0; color: #333;">Informações Completas</h3>
-          <button onclick="fecharModalInformacoes()" style="background: #dc3545; color: white; border: none; border-radius: 4px; padding: 8px 12px; cursor: pointer;">✕ Fechar</button>
-        </div>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-          <div>
-            <h4 style="color: #0066cc; margin: 0 0 15px 0;">Dados Básicos</h4>
-            <p><strong>Código:</strong> ${aluno.codigo || 'N/A'}</p>
-            <p><strong>Nome:</strong> ${aluno['Nome completo'] || aluno.nome || 'N/A'}</p>
-            <p><strong>Turma:</strong> ${aluno.turma || 'N/A'}</p>
-            <p><strong>Status:</strong> ${aluno.status || 'ativo'}</p>
-          </div>
-          
-          <div>
-            <h4 style="color: #0066cc; margin: 0 0 15px 0;">Contatos</h4>
-            <p><strong>Responsável:</strong> ${aluno.responsavel || aluno['responsável'] || 'N/A'}</p>
-            <p><strong>Telefone 1:</strong> ${aluno['Telefone do responsável'] || aluno.telefone1 || 'N/A'}</p>
-            <p><strong>Telefone 2:</strong> ${aluno['Telefone do responsável 2'] || aluno.telefone2 || 'N/A'}</p>
-          </div>
-        </div>
-        
-        ${aluno.foto_url ? `
-          <div style="margin-top: 20px; text-align: center;">
-            <h4 style="color: #0066cc;">Foto do Aluno</h4>
-            <img src="${aluno.foto_url}" alt="Foto do aluno" style="max-width: 200px; max-height: 250px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
-          </div>
-        ` : ''}
-        
-        <div style="margin-top: 30px; text-align: center;">
-          <button onclick="editarAluno('${encodeURIComponent(aluno.codigo)}')" style="background: #28a745; color: white; border: none; border-radius: 6px; padding: 12px 24px; margin-right: 10px; cursor: pointer;">
-            ✏️ Editar Aluno
-          </button>
-          <button onclick="fecharModalInformacoes()" style="background: #6c757d; color: white; border: none; border-radius: 6px; padding: 12px 24px; cursor: pointer;">
-            Cancelar
-          </button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-  }
-  
-  window.fecharModalInformacoes = function() {
-    const modal = document.getElementById('modalInformacoesAluno');
-    if (modal) modal.remove();
-  }
-  
-  window.editarAluno = function(alunoId) {
-    // Fechar modal
-    fecharModalInformacoes();
-    
-    // Carregar dados no formulário usando função existente
-    if (window.editRecord) {
-      window.editRecord(alunoId);
-    } else {
-      console.error('Função editRecord não encontrada');
-    }
-  }
+  // Funções removidas - volta ao sistema original
 
   // =====================
   // UTILITÁRIOS
