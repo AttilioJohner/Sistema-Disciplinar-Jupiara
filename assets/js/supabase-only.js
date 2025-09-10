@@ -320,15 +320,24 @@ const alunosDB = {
         
         console.log('✅ UPDATE - Aluno encontrado:', existing);
         
-        // Fazer update usando WHERE na primary key
-        const updateData = { ...aluno };
+        // Mapear dados igual ao create (campos com nomes corretos do Supabase)
+        const mappedData = {
+            'código (matrícula)': codigo,  // Primary key
+            'codigo': codigo,              // Coluna simples
+            'Nome completo': aluno.nome_completo || aluno.nome || aluno['Nome completo'],
+            'turma': aluno.turma,
+            'responsável': aluno.responsavel || aluno.responsável,
+            'Telefone do responsável': aluno.telefone1 || aluno.telefone,
+            'Telefone do responsável 2': aluno.telefone2,
+            'foto_url': aluno.foto_url || null,
+            'updated_at': aluno.updated_at
+        };
         
-        // Garantir que a primary key seja mantida
-        updateData['código (matrícula)'] = codigo;
+        console.log('🔍 UPDATE - Dados mapeados:', mappedData);
         
         const { data, error } = await supabase
             .from('alunos')
-            .upsert(updateData)
+            .upsert(mappedData)
             .select()
             .single();
         
