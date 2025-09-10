@@ -904,41 +904,46 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       return;
     }
     
-    // HTML do botão com seletor de turma
+    // Adicionar opções ao filtro existente e botão na área de ações
+    const tableActions = document.querySelector('.table-actions');
+    if (tableActions) {
+      // Adicionar botão de carregamento na área de ações
+      const botaoCarregar = document.createElement('button');
+      botaoCarregar.id = 'btnCarregarAlunos';
+      botaoCarregar.innerHTML = '🚀 Carregar Alunos';
+      botaoCarregar.className = 'btn btn-primary';
+      botaoCarregar.style.cssText = 'margin-left: 10px; padding: 8px 16px; font-size: 14px;';
+      botaoCarregar.onclick = carregarAlunosPorTurma;
+      
+      tableActions.appendChild(botaoCarregar);
+    }
+    
+    // Atualizar opções do filtro existente
+    if (els.filtroTurma) {
+      els.filtroTurma.innerHTML = `
+        <option value="todos">📋 Todas as Turmas</option>
+        <option value="1B">1º B</option>
+        <option value="1C">1º C</option>
+        <option value="2A">2º A</option>
+        <option value="6A">6º A</option>
+        <option value="6B">6º B</option>
+        <option value="7A">7º A</option>
+        <option value="7B">7º B</option>
+        <option value="8A">8º A</option>
+        <option value="8B">8º B</option>
+        <option value="9A">9º A</option>
+        <option value="9B">9º B</option>
+        <option value="9E">9º E</option>
+      `;
+    }
+    
+    // Mensagem na tabela
     els.tbody.innerHTML = `
       <tr>
-        <td colspan="9" style="text-align: center; padding: 30px;">
-          <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 10px 0;">
-            <h4 style="margin: 0 0 20px 0; color: #333;">📚 Carregar Lista de Alunos</h4>
-            
-            <div style="margin-bottom: 15px;">
-              <label for="seletorTurma" style="display: block; margin-bottom: 8px; font-weight: bold; color: #555;">
-                🏫 Selecionar Turma:
-              </label>
-              <select id="seletorTurma" style="padding: 8px 12px; border-radius: 4px; border: 1px solid #ddd; font-size: 14px;">
-                <option value="todos">📋 Todas as Turmas</option>
-                <option value="6A">6º A</option>
-                <option value="6B">6º B</option>
-                <option value="7A">7º A</option>
-                <option value="7B">7º B</option>
-                <option value="8A">8º A</option>
-                <option value="8B">8º B</option>
-                <option value="9A">9º A</option>
-                <option value="9B">9º B</option>
-              </select>
-            </div>
-            
-            <button 
-              type="button" 
-              class="btn btn-primary" 
-              onclick="carregarAlunosPorTurma()" 
-              style="padding: 12px 24px; font-size: 16px; border-radius: 6px; background: #007bff; border: none; color: white; cursor: pointer;">
-              🚀 Carregar Alunos
-            </button>
-            
-            <p style="margin: 15px 0 0 0; color: #666; font-size: 14px;">
-              💡 Escolha uma turma específica ou todas para melhor performance
-            </p>
+        <td colspan="9" style="text-align: center; padding: 40px;">
+          <div style="color: #666;">
+            <h4 style="margin: 0 0 15px 0;">👆 Use o filtro de turma acima</h4>
+            <p style="margin: 0;">Selecione uma turma ou "Todas as Turmas" e clique em <strong>"🚀 Carregar Alunos"</strong></p>
           </div>
         </td>
       </tr>
@@ -947,8 +952,8 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   
   window.carregarAlunosPorTurma = async function() {
     try {
-      const seletor = document.getElementById('seletorTurma');
-      const turmaSelecionada = seletor ? seletor.value : 'todos';
+      // Usar o filtro existente
+      const turmaSelecionada = els.filtroTurma ? els.filtroTurma.value : 'todos';
       
       console.log('🚀 Carregando alunos para turma:', turmaSelecionada);
       
@@ -1006,19 +1011,23 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   }
   
   function adicionarBotaoLimpar() {
-    // Adicionar botão na área de ações da tabela
+    // Remover botão "Carregar Alunos" e adicionar "Limpar Lista"
     const tableActions = document.querySelector('.table-actions');
     if (tableActions) {
-      // Remover botão existente se houver
+      // Remover botão de carregamento
+      const botaoCarregar = document.getElementById('btnCarregarAlunos');
+      if (botaoCarregar) botaoCarregar.remove();
+      
+      // Remover botão limpar existente se houver
       const botaoExistente = document.getElementById('btnLimparLista');
       if (botaoExistente) botaoExistente.remove();
       
-      // Criar novo botão
+      // Criar novo botão limpar
       const botaoLimpar = document.createElement('button');
       botaoLimpar.id = 'btnLimparLista';
       botaoLimpar.innerHTML = '🗑️ Limpar Lista';
       botaoLimpar.className = 'btn btn-secondary';
-      botaoLimpar.style.cssText = 'margin-left: 10px; padding: 6px 12px; font-size: 14px;';
+      botaoLimpar.style.cssText = 'margin-left: 10px; padding: 8px 16px; font-size: 14px;';
       botaoLimpar.onclick = limparListaAlunos;
       
       tableActions.appendChild(botaoLimpar);
@@ -1029,8 +1038,9 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     // Limpar cache de alunos
     alunosCache = [];
     
-    // Resetar filtro de turma
+    // Resetar filtro de turma para o padrão original
     if (els.filtroTurma) {
+      els.filtroTurma.innerHTML = '<option value="todos">Todos os alunos</option>';
       els.filtroTurma.value = 'todos';
     }
     
