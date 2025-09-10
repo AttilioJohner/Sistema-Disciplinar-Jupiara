@@ -3551,6 +3551,11 @@
                                 ctx.drawImage(logoImg, 0, 0, canvas.width, canvas.height);
                                 
                                 const logoDataURL = canvas.toDataURL('image/png', 1.0);
+                                
+                                // Criar fundo branco circular para logo
+                                pdf.setFillColor(...cores.branco);
+                                pdf.circle(margin + logoWidth/2, 4 + logoHeight/2, logoWidth/2 + 1, 'F');
+                                
                                 pdf.addImage(logoDataURL, 'PNG', margin, 4, logoWidth, logoHeight);
                                 logoCarregado = true;
                                 console.log('🎯 Logo adicionado ao PDF com sucesso!');
@@ -3632,11 +3637,11 @@
                 pdf.setFillColor(...cores.azulPrimario);
                 pdf.rect(margin, yPos, contentWidth, 2, 'F');
                 
-                // Título da seção com ícone
+                // Título da seção
                 pdf.setTextColor(...cores.azulPrimario);
                 pdf.setFontSize(12);
                 pdf.setFont('helvetica', 'bold');
-                pdf.text('👤 IDENTIFICAÇÃO DO ALUNO', margin + 4, yPos + 8);
+                pdf.text('IDENTIFICAÇÃO DO ALUNO', margin + 4, yPos + 8);
                 
                 yPos += 12;
                 
@@ -3645,11 +3650,11 @@
                 const dadosComIcones = [];
                 let fotoAlunoSrc = null;
                 
-                // Mapeamento de ícones para campos
+                // Mapeamento de marcadores para campos (sem emojis)
                 const iconesCampos = {
-                    'nome': '👤', 'código': '🔢', 'turma': '📚', 'série': '📝',
-                    'nascimento': '📅', 'cpf': '📄', 'rg': '🆔', 'telefone': '📞',
-                    'email': '📧', 'endereço': '🏠', 'responsável': '👥'
+                    'nome': '•', 'código': '•', 'turma': '•', 'série': '•',
+                    'nascimento': '•', 'cpf': '•', 'rg': '•', 'telefone': '•',
+                    'email': '•', 'endereço': '•', 'responsável': '•'
                 };
                 
                 if (dadosPessoais) {
@@ -3871,7 +3876,7 @@
                 pdf.setTextColor(...cores.vermelho);
                 pdf.setFontSize(12);
                 pdf.setFont('helvetica', 'bold');
-                pdf.text(`📝 HISTÓRICO DISCIPLINAR (${todasMedidas.length} ocorrências)`, margin + 4, yPos + 10);
+                pdf.text(`HISTÓRICO DISCIPLINAR (${todasMedidas.length} ocorrências)`, margin + 4, yPos + 10);
                 
                 // Nota disciplinar (canto superior direito)
                 pdf.setTextColor(...cores.azulPrimario);
@@ -3944,7 +3949,7 @@
                     pdf.setTextColor(...cores.verde);
                     pdf.setFontSize(10);
                     pdf.setFont('helvetica', 'normal');
-                    pdf.text('✅ Nenhuma medida disciplinar registrada - Comportamento exemplar!', 
+                    pdf.text('Nenhuma medida disciplinar registrada - Comportamento exemplar!', 
                             pageWidth/2, yPos + 8, { align: 'center' });
                     yPos += 20;
                 }
@@ -4070,7 +4075,7 @@
                 pdf.setTextColor(...cores.verde);
                 pdf.setFontSize(12);
                 pdf.setFont('helvetica', 'bold');
-                pdf.text('📅 FREQUÊNCIA ESCOLAR', margin + 4, yPos + 10);
+                pdf.text('FREQUÊNCIA ESCOLAR', margin + 4, yPos + 10);
                 
                 // Percentual em destaque
                 const porcentNum = parseFloat(porcentagemFreq.replace('%', ''));
@@ -4129,7 +4134,7 @@
                         // Ícone de ausência
                         pdf.setTextColor(...cores.vermelho);
                         pdf.setFontSize(8);
-                        pdf.text('❌', x, y);
+                        pdf.text('X', x, y);
                         
                         // Data
                         pdf.setTextColor(0, 0, 0);
@@ -4163,7 +4168,7 @@
                     // Mensagem quando não há faltas
                     pdf.setTextColor(...cores.verde);
                     pdf.setFontSize(10);
-                    pdf.text('✅ Frequência exemplar - Nenhuma ausência registrada!', 
+                    pdf.text('Frequência exemplar - Nenhuma ausência registrada!', 
                             pageWidth/2, yPos + 10, { align: 'center' });
                 }
                 
@@ -4292,8 +4297,8 @@
                 const cardHeight = 20;
                 const cardSpacing = 5;
                 
-                // Ícones para cada card
-                const icones = ['⏰', '📊', '🏆', '📋'];
+                // Marcadores para cada card (sem emojis problemáticos)
+                const icones = ['•', '•', '•', '•'];
                 
                 statsCards.forEach((card, index) => {
                     const col = index % 2;
