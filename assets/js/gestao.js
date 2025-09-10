@@ -947,8 +947,17 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     try {
       console.log('📊 Carregando estatísticas otimizadas...');
       
+      // Aguardar Supabase estar pronto
+      if (!window.supabaseClient) {
+        console.log('⏳ Aguardando Supabase...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        if (!window.supabaseClient) {
+          throw new Error('Supabase não disponível');
+        }
+      }
+      
       // 1. TOTAL ALUNOS ATIVOS (apenas contagem)
-      const { count: totalAtivos, error: erroAtivos } = await db
+      const { count: totalAtivos, error: erroAtivos } = await window.supabaseClient
         .from('alunos')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'ativo');
@@ -958,7 +967,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       }
       
       // 2. TOTAL TURMAS (contagem distinta)
-      const { data: turmasData, error: erroTurmas } = await db
+      const { data: turmasData, error: erroTurmas } = await window.supabaseClient
         .from('alunos')
         .select('turma')
         .not('turma', 'is', null);
@@ -970,7 +979,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       
       // 3. CADASTROS HOJE (apenas contagem com filtro de data)
       const hoje = new Date().toISOString().split('T')[0];
-      const { count: cadastrosHoje, error: erroCadastros } = await db
+      const { count: cadastrosHoje, error: erroCadastros } = await window.supabaseClient
         .from('alunos')
         .select('id', { count: 'exact', head: true })
         .gte('created_at', hoje);
@@ -980,7 +989,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       }
       
       // 4. DADOS INCOMPLETOS (alunos sem telefone ou responsável)
-      const { count: dadosIncompletos, error: erroIncompletos } = await db
+      const { count: dadosIncompletos, error: erroIncompletos } = await window.supabaseClient
         .from('alunos')
         .select('id', { count: 'exact', head: true })
         .or('telefone1.is.null,responsavel.is.null');
@@ -1004,8 +1013,17 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     try {
       console.log('📚 Carregando lista básica de alunos...');
       
+      // Aguardar Supabase estar pronto
+      if (!window.supabaseClient) {
+        console.log('⏳ Aguardando Supabase para lista...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        if (!window.supabaseClient) {
+          throw new Error('Supabase não disponível');
+        }
+      }
+      
       // Query otimizada - apenas 4 campos essenciais
-      const { data: alunos, error } = await db
+      const { data: alunos, error } = await window.supabaseClient
         .from('alunos')
         .select('id, codigo, nome_completo, turma, status')
         .order('nome_completo');
@@ -1064,8 +1082,17 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     try {
       console.log('👁️ Carregando informações completas para aluno:', alunoId);
       
+      // Aguardar Supabase estar pronto
+      if (!window.supabaseClient) {
+        console.log('⏳ Aguardando Supabase para informações...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        if (!window.supabaseClient) {
+          throw new Error('Supabase não disponível');
+        }
+      }
+      
       // Buscar dados completos do aluno específico
-      const { data: aluno, error } = await db
+      const { data: aluno, error } = await window.supabaseClient
         .from('alunos')
         .select('*')
         .eq('id', alunoId)
