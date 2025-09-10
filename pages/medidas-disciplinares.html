@@ -3484,451 +3484,355 @@
                 const nomeAluno = selectAluno.options[selectAluno.selectedIndex]?.text || 'Aluno não identificado';
                 const codigoAluno = selectAluno.value;
                 
-                // Inicializar jsPDF
+                // Inicializar jsPDF - USAR MÚLTIPLAS PÁGINAS SE NECESSÁRIO
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF('p', 'mm', 'a4');
                 const pageWidth = 210;
                 const pageHeight = 297;
-                const margin = 20;
+                const margin = 15;
                 const contentWidth = pageWidth - (margin * 2);
                 
                 let yPos = margin;
                 
-                // ===== CABEÇALHO INSTITUCIONAL =====
-                // Fundo azul para cabeçalho
+                // ===== CABEÇALHO COM LOGO REAL =====
                 pdf.setFillColor(0, 123, 255);
-                pdf.rect(0, 0, pageWidth, 35, 'F');
+                pdf.rect(0, 0, pageWidth, 30, 'F');
                 
-                // Logo oficial da escola
+                // LOGO REAL DA ESCOLA
                 try {
-                    // Tentar adicionar logo oficial
-                    const logoPath = 'assets/images/logo-escola.jpeg';
-                    pdf.addImage(logoPath, 'JPEG', margin, 8, 20, 20);
+                    // Carregar logo como base64 para funcionar no PDF
+                    const logoImg = new Image();
+                    logoImg.crossOrigin = 'anonymous';
+                    
+                    await new Promise((resolve, reject) => {
+                        logoImg.onload = () => {
+                            try {
+                                const canvas = document.createElement('canvas');
+                                const ctx = canvas.getContext('2d');
+                                canvas.width = logoImg.width;
+                                canvas.height = logoImg.height;
+                                ctx.drawImage(logoImg, 0, 0);
+                                const dataURL = canvas.toDataURL('image/jpeg', 0.8);
+                                pdf.addImage(dataURL, 'JPEG', margin, 5, 20, 20);
+                                resolve();
+                            } catch (e) {
+                                reject(e);
+                            }
+                        };
+                        logoImg.onerror = reject;
+                        logoImg.src = './assets/images/logo-escola.jpeg';
+                    });
                 } catch (error) {
-                    console.warn('Erro ao carregar logo, usando fallback:', error);
-                    // Fallback: logo simulado
+                    console.warn('Logo não carregou, usando placeholder:', error);
+                    // Placeholder simples
                     pdf.setFillColor(255, 255, 255);
-                    pdf.circle(margin + 8, 17, 8, 'F');
+                    pdf.rect(margin, 5, 20, 20, 'F');
                     pdf.setTextColor(0, 123, 255);
                     pdf.setFontSize(8);
-                    pdf.setFont('helvetica', 'bold');
-                    pdf.text('EEC', margin + 8, 19, { align: 'center' });
+                    pdf.text('LOGO', margin + 10, 15, { align: 'center' });
                 }
                 
-                // Título principal
+                // Títulos
                 pdf.setTextColor(255, 255, 255);
-                pdf.setFontSize(18);
+                pdf.setFontSize(16);
                 pdf.setFont('helvetica', 'bold');
-                pdf.text('FICHA DISCIPLINAR DO ALUNO', margin + 30, 16);
+                pdf.text('FICHA DISCIPLINAR DO ALUNO', margin + 25, 14);
+                pdf.setFontSize(10);
+                pdf.text('Escola Estadual Civico-Militar Jupiara', margin + 25, 21);
                 
-                // Subtítulo
-                pdf.setFontSize(11);
-                pdf.setFont('helvetica', 'normal');
-                pdf.text('Escola Estadual Civico-Militar Jupiara', margin + 30, 24);
+                yPos = 40;
                 
-                yPos = 45;
-                
-                // ===== IDENTIFICAÇÃO DO ALUNO =====
-                // Fundo da seção
-                pdf.setFillColor(248, 249, 250);
-                pdf.rect(margin, yPos, contentWidth, 55, 'F');
-                
-                // Borda da seção
-                pdf.setDrawColor(0, 123, 255);
-                pdf.setLineWidth(0.5);
-                pdf.rect(margin, yPos, contentWidth, 55, 'S');
-                
-                // Título da seção
-                pdf.setTextColor(0, 123, 255);
-                pdf.setFontSize(14);
+                // ===== DADOS PESSOAIS COMPLETOS =====
+                pdf.setFillColor(240, 240, 240);
+                pdf.rect(margin, yPos, contentWidth, 35, 'F');
+                pdf.setTextColor(0, 0, 0);
+                pdf.setFontSize(12);
                 pdf.setFont('helvetica', 'bold');
-                pdf.text('IDENTIFICACAO DO ALUNO', margin + 5, yPos + 8);
+                pdf.text('IDENTIFICACAO DO ALUNO', margin + 5, yPos + 7);
                 
-                yPos += 15;
+                yPos += 12;
                 
-                // Foto do aluno (lado direito)
-                const fotoSize = 35;
-                const fotoX = pageWidth - margin - fotoSize - 5;
-                const fotoY = yPos - 5;
-                
-                // Tentar adicionar foto
-                let fotoAdicionada = false;
-                try {
-                    const dadosPessoais = document.getElementById('dadosPessoais');
-                    if (dadosPessoais) {
-                        const imgs = dadosPessoais.querySelectorAll('img');
-                        for (let img of imgs) {
-                            if (img.src && !img.src.includes('data:image/svg') && img.complete && img.naturalHeight > 0) {
-                                pdf.addImage(img.src, 'JPEG', fotoX, fotoY, fotoSize, fotoSize * 1.2);
-                                fotoAdicionada = true;
-                                break;
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.warn('Erro ao processar foto:', error);
-                }
-                
-                // Placeholder se não tem foto
-                if (!fotoAdicionada) {
-                    pdf.setFillColor(230, 230, 230);
-                    pdf.setDrawColor(180, 180, 180);
-                    pdf.rect(fotoX, fotoY, fotoSize, fotoSize * 1.2, 'FD');
-                    pdf.setTextColor(150, 150, 150);
-                    pdf.setFontSize(8);
-                    pdf.text('SEM FOTO', fotoX + fotoSize/2, fotoY + fotoSize*0.6, { align: 'center' });
-                }
-                
-                // Dados do aluno (lado esquerdo)
-                pdf.setTextColor(50, 50, 50);
-                pdf.setFontSize(11);
-                
-                // Extrair dados do DOM de forma mais robusta
+                // Extrair TODOS os dados pessoais da ficha
                 const dadosPessoais = document.getElementById('dadosPessoais');
-                let dadosAluno = {
-                    nome: nomeAluno,
-                    codigo: codigoAluno,
-                    turma: 'N/A',
-                    responsavel: 'N/A',
-                    status: 'Ativo'
-                };
+                const dadosTextos = [];
                 
                 if (dadosPessoais) {
-                    // Buscar por labels e valores específicos
-                    const dadosItems = dadosPessoais.querySelectorAll('.dado-item');
-                    dadosItems.forEach(item => {
-                        const label = item.querySelector('.dado-label')?.textContent?.trim().toLowerCase() || '';
-                        const valor = item.querySelector('.dado-valor')?.textContent?.trim() || '';
-                        
-                        if (label.includes('turma') && valor !== 'N/A') {
-                            dadosAluno.turma = valor;
-                        } else if (label.includes('responsavel') && valor !== 'N/A') {
-                            dadosAluno.responsavel = valor;
-                        } else if (label.includes('status') && valor !== 'N/A') {
-                            dadosAluno.status = valor;
+                    const items = dadosPessoais.querySelectorAll('.dado-item');
+                    items.forEach(item => {
+                        const label = item.querySelector('.dado-label')?.textContent?.trim();
+                        const valor = item.querySelector('.dado-valor')?.textContent?.trim();
+                        if (label && valor && valor !== 'N/A') {
+                            dadosTextos.push(`${label} ${valor}`);
+                        }
+                    });
+                }
+                
+                // Se não encontrou dados, usar básicos
+                if (dadosTextos.length === 0) {
+                    dadosTextos.push(`Nome: ${nomeAluno}`);
+                    dadosTextos.push(`Código: ${codigoAluno}`);
+                }
+                
+                // Imprimir dados em duas colunas
+                pdf.setFontSize(9);
+                pdf.setFont('helvetica', 'normal');
+                dadosTextos.forEach((dado, index) => {
+                    const x = (index % 2 === 0) ? margin + 5 : margin + contentWidth/2 + 5;
+                    if (index % 2 === 0 && index > 0) yPos += 4;
+                    pdf.text(dado, x, yPos);
+                });
+                
+                yPos += 25;
+                
+                // ===== HISTÓRICO DISCIPLINAR COMPLETO =====
+                const historicoContainer = document.getElementById('historicoMedidas');
+                pdf.setFillColor(255, 240, 240);
+                
+                let historicoHeight = 20;
+                let todasMedidas = [];
+                let notaDisciplinar = '10.0';
+                
+                // Extrair TODAS as medidas da ficha
+                if (historicoContainer) {
+                    const medidaElements = historicoContainer.querySelectorAll('.medida-item, li, p, div');
+                    medidaElements.forEach(element => {
+                        const texto = element.textContent?.trim();
+                        if (texto && texto.length > 10 && 
+                            !texto.includes('Nenhuma medida') && 
+                            !texto.includes('Comportamento exemplar') &&
+                            !texto.includes('Carregando')) {
+                            todasMedidas.push(texto);
                         }
                     });
                     
-                    console.log('Dados extraídos:', dadosAluno);
+                    // Se não encontrou nos elementos, tentar no texto completo
+                    if (todasMedidas.length === 0) {
+                        const textoCompleto = historicoContainer.textContent || '';
+                        // Dividir por linhas e filtrar medidas válidas
+                        const linhas = textoCompleto.split('\n').filter(linha => {
+                            const l = linha.trim();
+                            return l.length > 10 && 
+                                   !l.includes('Nenhuma medida') && 
+                                   !l.includes('Carregando') &&
+                                   (l.includes('Advertência') || l.includes('Suspensão') || 
+                                    l.includes('Orientação') || l.includes('/'));
+                        });
+                        todasMedidas = linhas;
+                    }
                 }
                 
-                // Layout em grid dos dados
-                const colWidth = (contentWidth - fotoSize - 20) / 2;
-                
-                pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(10);
-                pdf.text('Nome Completo:', margin + 5, yPos);
-                pdf.setFont('helvetica', 'normal');
-                pdf.setFontSize(10);
-                const nomeLines = pdf.splitTextToSize(dadosAluno.nome, colWidth * 1.8);
-                pdf.text(nomeLines[0], margin + 5, yPos + 4);
-                if (nomeLines[1]) pdf.text(nomeLines[1], margin + 5, yPos + 8);
-                
-                pdf.setFont('helvetica', 'bold');
-                pdf.text('Código:', margin + 5, yPos + 16);
-                pdf.setFont('helvetica', 'normal');
-                pdf.text(dadosAluno.codigo, margin + 5, yPos + 20);
-                
-                pdf.setFont('helvetica', 'bold');
-                pdf.text('Turma:', margin + 5 + colWidth, yPos + 16);
-                pdf.setFont('helvetica', 'normal');
-                pdf.text(dadosAluno.turma, margin + 5 + colWidth, yPos + 20);
-                
-                pdf.setFont('helvetica', 'bold');
-                pdf.text('Status:', margin + 5 + colWidth, yPos + 28);
-                pdf.setFont('helvetica', 'normal');
-                pdf.text(dadosAluno.status, margin + 5 + colWidth, yPos + 32);
-                
-                pdf.setFont('helvetica', 'bold');
-                pdf.text('Responsável:', margin + 5, yPos + 28);
-                pdf.setFont('helvetica', 'normal');
-                const respLines = pdf.splitTextToSize(dadosAluno.responsavel, colWidth * 1.8);
-                pdf.text(respLines[0], margin + 5, yPos + 32);
-                
-                yPos += 65;
-                
-                // ===== HISTÓRICO DISCIPLINAR =====
-                const historicoContainer = document.getElementById('historicoMedidas');
-                const resumoEstatisticoContainer = document.getElementById('resumoEstatistico');
-                
-                // Calcular altura dinâmica baseada no conteúdo
-                let historicoHeight = 25; // altura mínima para título
-                let numMedidas = 0;
-                
-                if (historicoContainer && historicoContainer.children.length > 0) {
-                    const medidasValidas = Array.from(historicoContainer.children).filter(medida => {
-                        const texto = medida.textContent?.trim();
-                        return texto && !texto.includes('Nenhuma medida') && !texto.includes('Comportamento exemplar');
-                    });
-                    numMedidas = medidasValidas.length;
-                    historicoHeight += Math.max(numMedidas * 5 + 15, 35); // espaço para medidas + nota
-                } else {
-                    historicoHeight = 40; // altura para mensagem "sem medidas"
+                // Buscar nota disciplinar na ficha
+                const resumoContainer = document.getElementById('resumoEstatistico');
+                if (resumoContainer) {
+                    const resumoTexto = resumoContainer.textContent || '';
+                    const notaMatch = resumoTexto.match(/([0-9]+(?:\.[0-9]+)?)/);
+                    if (notaMatch) notaDisciplinar = notaMatch[1];
                 }
                 
-                pdf.setFillColor(255, 243, 243);
+                historicoHeight += todasMedidas.length * 5 + 15;
                 pdf.rect(margin, yPos, contentWidth, historicoHeight, 'F');
-                pdf.setDrawColor(220, 53, 69);
-                pdf.rect(margin, yPos, contentWidth, historicoHeight, 'S');
                 
                 pdf.setTextColor(220, 53, 69);
-                pdf.setFontSize(14);
+                pdf.setFontSize(12);
                 pdf.setFont('helvetica', 'bold');
-                pdf.text('HISTORICO DISCIPLINAR', margin + 5, yPos + 8);
+                pdf.text('HISTORICO DISCIPLINAR', margin + 5, yPos + 7);
                 
-                yPos += 15;
+                yPos += 12;
                 
-                if (numMedidas > 0) {
-                    pdf.setTextColor(70, 70, 70);
-                    pdf.setFontSize(9);
+                if (todasMedidas.length > 0) {
+                    pdf.setTextColor(0, 0, 0);
+                    pdf.setFontSize(8);
                     pdf.setFont('helvetica', 'normal');
                     
-                    // Listar TODAS as medidas disciplinares
-                    const todasMedidas = Array.from(historicoContainer.children);
-                    let medidaCount = 0;
-                    
-                    todasMedidas.forEach((medida) => {
-                        const texto = medida.textContent?.trim();
-                        if (texto && !texto.includes('Nenhuma medida') && !texto.includes('Comportamento exemplar')) {
-                            // Extrair informações da medida
-                            const linhas = texto.split('\n').filter(linha => linha.trim());
-                            const dataMatch = texto.match(/(\d{2}\/\d{2}\/\d{4})/);
-                            const tipoMatch = texto.match(/(Advertência|Suspensão|Expulsão|Repreensão|Orientação)/i);
-                            
-                            let medidaTexto = '';
-                            if (dataMatch && tipoMatch) {
-                                medidaTexto = `${dataMatch[1]} - ${tipoMatch[1]}`;
-                            } else {
-                                medidaTexto = texto.length > 70 ? texto.substring(0, 70) + '...' : texto;
-                            }
-                            
-                            pdf.text(`${medidaCount + 1}. ${medidaTexto}`, margin + 5, yPos);
-                            yPos += 4;
-                            medidaCount++;
+                    todasMedidas.forEach((medida, index) => {
+                        // Verificar se precisa de nova página
+                        if (yPos > pageHeight - 30) {
+                            pdf.addPage();
+                            yPos = margin;
                         }
+                        
+                        const medidaLimpa = medida.substring(0, 90) + (medida.length > 90 ? '...' : '');
+                        pdf.text(`${index + 1}. ${medidaLimpa}`, margin + 5, yPos);
+                        yPos += 4;
                     });
-                    
-                    // Adicionar nota disciplinar como subtítulo
-                    yPos += 3;
-                    pdf.setFont('helvetica', 'bold');
-                    pdf.setFontSize(10);
-                    pdf.setTextColor(220, 53, 69);
-                    
-                    // Buscar nota disciplinar no resumo estatístico
-                    let notaDisciplinar = 'N/A';
-                    if (resumoEstatisticoContainer) {
-                        const statsTexto = resumoEstatisticoContainer.textContent || '';
-                        const notaMatch = statsTexto.match(/Nota disciplinar[:\s]*([0-9]+(?:\.[0-9]+)?)/i);
-                        if (notaMatch) {
-                            notaDisciplinar = notaMatch[1];
-                        }
-                    }
-                    
-                    pdf.text(`Nota Disciplinar: ${notaDisciplinar}`, margin + 5, yPos);
                 } else {
                     pdf.setTextColor(40, 167, 69);
-                    pdf.setFont('helvetica', 'italic');
-                    pdf.setFontSize(10);
-                    pdf.text('Nenhuma ocorrencia disciplinar registrada', margin + 5, yPos);
-                    
-                    yPos += 8;
-                    pdf.setFont('helvetica', 'bold');
-                    pdf.setTextColor(40, 167, 69);
-                    pdf.text('Nota Disciplinar: 10.0', margin + 5, yPos);
+                    pdf.setFontSize(9);
+                    pdf.text('Nenhuma medida disciplinar registrada - Comportamento exemplar!', margin + 5, yPos);
+                    yPos += 6;
                 }
                 
-                yPos += 45;
+                // Nota disciplinar
+                pdf.setTextColor(220, 53, 69);
+                pdf.setFontSize(10);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text(`Nota Disciplinar: ${notaDisciplinar}`, margin + 5, yPos + 5);
                 
-                // ===== FREQUÊNCIA ESCOLAR =====
+                yPos += 20;
+                
+                // ===== FREQUÊNCIA COMPLETA =====
                 const frequenciaContainer = document.getElementById('frequenciaEscolar');
+                pdf.setFillColor(240, 255, 240);
                 
-                // Calcular altura dinâmica para frequência
-                let freqHeight = 25; // altura mínima
-                let faltas = [];
-                let porcentagemFreq = 'N/A';
+                let todasFaltas = [];
+                let porcentagemFreq = '100%';
                 
-                if (frequenciaContainer && !frequenciaContainer.textContent.includes('Carregando')) {
-                    // Extrair faltas e porcentagem
+                // Extrair TODAS as faltas da ficha
+                if (frequenciaContainer) {
                     const freqTexto = frequenciaContainer.textContent || '';
                     
-                    // Buscar porcentagem de frequência
+                    // Buscar porcentagem
                     const percMatch = freqTexto.match(/([0-9]+(?:\.[0-9]+)?%)/);
-                    if (percMatch) {
-                        porcentagemFreq = percMatch[1];
-                    }
+                    if (percMatch) porcentagemFreq = percMatch[1];
                     
-                    // Buscar datas de faltas (formato dd/mm/yyyy)
-                    const faltasMatch = freqTexto.match(/(\d{2}\/\d{2}\/\d{4})/g);
-                    if (faltasMatch) {
-                        faltas = faltasMatch;
-                    }
+                    // Buscar TODAS as datas de falta
+                    const datasMatch = freqTexto.match(/\d{2}\/\d{2}\/\d{4}/g);
+                    if (datasMatch) todasFaltas = [...new Set(datasMatch)]; // remover duplicadas
                     
-                    // Ajustar altura baseada no número de faltas
-                    freqHeight += Math.max(faltas.length * 4 + 15, 35);
-                } else {
-                    freqHeight = 40;
+                    // Se não encontrou por regex, buscar em elementos
+                    if (todasFaltas.length === 0) {
+                        const elementos = frequenciaContainer.querySelectorAll('*');
+                        elementos.forEach(el => {
+                            const texto = el.textContent || '';
+                            const datas = texto.match(/\d{2}\/\d{2}\/\d{4}/g);
+                            if (datas) todasFaltas.push(...datas);
+                        });
+                        todasFaltas = [...new Set(todasFaltas)];
+                    }
                 }
                 
-                pdf.setFillColor(243, 251, 243);
+                let freqHeight = 20 + todasFaltas.length * 4 + 15;
                 pdf.rect(margin, yPos, contentWidth, freqHeight, 'F');
-                pdf.setDrawColor(40, 167, 69);
-                pdf.rect(margin, yPos, contentWidth, freqHeight, 'S');
                 
                 pdf.setTextColor(40, 167, 69);
-                pdf.setFontSize(14);
+                pdf.setFontSize(12);
                 pdf.setFont('helvetica', 'bold');
-                pdf.text('FREQUENCIA ESCOLAR', margin + 5, yPos + 8);
+                pdf.text('FREQUENCIA ESCOLAR', margin + 5, yPos + 7);
                 
-                yPos += 15;
+                yPos += 12;
                 
-                if (faltas.length > 0) {
-                    pdf.setTextColor(70, 70, 70);
-                    pdf.setFontSize(9);
+                if (todasFaltas.length > 0) {
+                    pdf.setTextColor(0, 0, 0);
+                    pdf.setFontSize(8);
                     pdf.setFont('helvetica', 'normal');
-                    
-                    // Listar TODAS as faltas registradas
                     pdf.text('Faltas registradas:', margin + 5, yPos);
                     yPos += 5;
                     
-                    faltas.forEach((dataFalta, index) => {
-                        pdf.text(`${index + 1}. ${dataFalta}`, margin + 10, yPos);
+                    todasFaltas.forEach((falta, index) => {
+                        // Verificar se precisa de nova página
+                        if (yPos > pageHeight - 30) {
+                            pdf.addPage();
+                            yPos = margin;
+                        }
+                        
+                        pdf.text(`${index + 1}. ${falta}`, margin + 10, yPos);
                         yPos += 4;
                     });
-                    
-                    // Adicionar porcentagem como subtítulo
-                    yPos += 3;
-                    pdf.setFont('helvetica', 'bold');
-                    pdf.setFontSize(10);
-                    pdf.setTextColor(40, 167, 69);
-                    pdf.text(`Percentual de Frequencia: ${porcentagemFreq}`, margin + 5, yPos);
                 } else {
-                    // Se não há faltas, mostrar mensagem positiva
                     pdf.setTextColor(40, 167, 69);
-                    pdf.setFont('helvetica', 'italic');
-                    pdf.setFontSize(10);
-                    pdf.text('Nenhuma falta registrada - Frequencia exemplar!', margin + 5, yPos);
-                    
-                    yPos += 8;
-                    pdf.setFont('helvetica', 'bold');
-                    pdf.setTextColor(40, 167, 69);
-                    pdf.text(`Percentual de Frequencia: ${porcentagemFreq || '100%'}`, margin + 5, yPos);
+                    pdf.setFontSize(9);
+                    pdf.text('Nenhuma falta registrada - Frequência exemplar!', margin + 5, yPos);
+                    yPos += 6;
                 }
                 
-                yPos += 30;
+                // Porcentagem
+                pdf.setTextColor(40, 167, 69);
+                pdf.setFontSize(10);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text(`Percentual de Frequencia: ${porcentagemFreq}`, margin + 5, yPos + 5);
                 
-                // ===== RESUMO ESTATÍSTICO =====
-                const resumoContainer = document.getElementById('resumoEstatistico');
+                yPos += 20;
                 
-                // Calcular altura baseada nos cards de estatísticas
-                let estatisticas = [];
-                let resumoHeight = 25; // altura mínima
+                // ===== RESUMO ESTATÍSTICO COMPLETO =====
+                pdf.setFillColor(255, 250, 240);
                 
-                if (resumoContainer && resumoContainer.children.length > 0) {
-                    // Extrair estatísticas de cada card
-                    Array.from(resumoContainer.children).forEach(card => {
+                let todasStats = [];
+                
+                // Extrair TODAS as estatísticas da ficha
+                if (resumoContainer) {
+                    const statCards = resumoContainer.querySelectorAll('.stat-card, .card, .estatistica-item, div');
+                    
+                    statCards.forEach(card => {
                         const texto = card.textContent?.trim();
-                        if (texto) {
-                            // Tentar extrair título e valor dos cards
-                            const linhas = texto.split('\n').filter(l => l.trim());
-                            if (linhas.length >= 2) {
-                                const titulo = linhas[0].trim();
-                                const valor = linhas[1].trim();
-                                estatisticas.push({ titulo, valor });
-                            } else {
-                                // Fallback: usar texto completo
-                                estatisticas.push({ titulo: 'Estatística', valor: texto });
+                        if (texto && texto.length > 3 && texto.length < 100) {
+                            // Tentar extrair número + descrição
+                            const match = texto.match(/([0-9]+(?:\.[0-9]+)?)\s*(.+)|(.+):\s*([0-9]+(?:\.[0-9]+)?)/);
+                            if (match) {
+                                todasStats.push(texto);
                             }
                         }
                     });
                     
-                    resumoHeight += estatisticas.length * 8 + 10;
-                } else {
-                    resumoHeight = 35;
+                    // Fallback: dividir texto em linhas
+                    if (todasStats.length === 0) {
+                        const linhas = resumoContainer.textContent.split('\n').filter(l => {
+                            const linha = l.trim();
+                            return linha.length > 3 && linha.length < 50 && 
+                                   (linha.includes('%') || linha.match(/[0-9]+/));
+                        });
+                        todasStats = linhas.slice(0, 8); // máximo 8 estatísticas
+                    }
                 }
                 
-                pdf.setFillColor(255, 248, 225);
-                pdf.rect(margin, yPos, contentWidth, resumoHeight, 'F');
-                pdf.setDrawColor(255, 193, 7);
-                pdf.rect(margin, yPos, contentWidth, resumoHeight, 'S');
+                // Estatísticas calculadas se não encontrou
+                if (todasStats.length === 0) {
+                    todasStats = [
+                        `Total de Medidas: ${todasMedidas.length}`,
+                        `Faltas: ${todasFaltas.length}`,
+                        `Frequencia: ${porcentagemFreq}`,
+                        `Nota Disciplinar: ${notaDisciplinar}`
+                    ];
+                }
+                
+                let statsHeight = 15 + todasStats.length * 5;
+                
+                // Verificar se precisa de nova página
+                if (yPos + statsHeight > pageHeight - 30) {
+                    pdf.addPage();
+                    yPos = margin;
+                }
+                
+                pdf.rect(margin, yPos, contentWidth, statsHeight, 'F');
                 
                 pdf.setTextColor(255, 193, 7);
-                pdf.setFontSize(14);
+                pdf.setFontSize(12);
                 pdf.setFont('helvetica', 'bold');
-                pdf.text('RESUMO ESTATISTICO', margin + 5, yPos + 8);
+                pdf.text('RESUMO ESTATISTICO', margin + 5, yPos + 7);
                 
-                yPos += 15;
+                yPos += 12;
                 
-                if (estatisticas.length > 0) {
-                    // Mostrar cards de estatísticas organizados
-                    estatisticas.forEach((stat, index) => {
-                        // Título do card
-                        pdf.setTextColor(255, 193, 7);
-                        pdf.setFontSize(9);
-                        pdf.setFont('helvetica', 'bold');
-                        pdf.text(`${stat.titulo}:`, margin + 5, yPos);
-                        
-                        // Valor do card
-                        pdf.setTextColor(70, 70, 70);
-                        pdf.setFont('helvetica', 'normal');
-                        pdf.text(stat.valor, margin + 70, yPos);
-                        
-                        yPos += 6;
-                    });
-                } else {
-                    // Estatísticas padrão se não houver dados
-                    const statsDefault = [
-                        { titulo: 'Total de Medidas', valor: numMedidas.toString() },
-                        { titulo: 'Faltas Registradas', valor: faltas.length.toString() },
-                        { titulo: 'Frequencia', valor: porcentagemFreq },
-                        { titulo: 'Nota Disciplinar', valor: notaDisciplinar }
-                    ];
-                    
-                    statsDefault.forEach(stat => {
-                        pdf.setTextColor(255, 193, 7);
-                        pdf.setFontSize(9);
-                        pdf.setFont('helvetica', 'bold');
-                        pdf.text(`${stat.titulo}:`, margin + 5, yPos);
-                        
-                        pdf.setTextColor(70, 70, 70);
-                        pdf.setFont('helvetica', 'normal');
-                        pdf.text(stat.valor, margin + 70, yPos);
-                        
-                        yPos += 6;
-                    });
-                }
-                
-                // ===== RODAPÉ OFICIAL =====
-                yPos = pageHeight - 25;
-                
-                // Linha divisória
-                pdf.setDrawColor(0, 123, 255);
-                pdf.setLineWidth(1);
-                pdf.line(margin, yPos, pageWidth - margin, yPos);
-                
-                yPos += 8;
-                
-                // Informações do documento
-                pdf.setTextColor(100, 100, 100);
+                pdf.setTextColor(0, 0, 0);
                 pdf.setFontSize(9);
                 pdf.setFont('helvetica', 'normal');
-                pdf.text('Escola Estadual Civico-Militar Jupiara - Sistema de Gestao Disciplinar', pageWidth / 2, yPos, { align: 'center' });
                 
-                yPos += 4;
-                pdf.setFontSize(8);
-                pdf.text(`Documento gerado em ${new Date().toLocaleString('pt-BR')} | Código: ${codigoAluno}`, pageWidth / 2, yPos, { align: 'center' });
+                todasStats.forEach((stat, index) => {
+                    pdf.text(`• ${stat}`, margin + 5, yPos);
+                    yPos += 5;
+                });
                 
-                // Salvar o PDF
-                const nomeArquivo = `ficha_disciplinar_${codigoAluno}_${dadosAluno.nome.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20)}.pdf`;
+                // ===== RODAPÉ =====
+                const ultimaPagina = pdf.getNumberOfPages();
+                for (let i = 1; i <= ultimaPagina; i++) {
+                    pdf.setPage(i);
+                    pdf.setTextColor(100, 100, 100);
+                    pdf.setFontSize(8);
+                    pdf.text('Escola Estadual Civico-Militar Jupiara - Sistema Disciplinar', 
+                             pageWidth / 2, pageHeight - 10, { align: 'center' });
+                    pdf.text(`Página ${i} de ${ultimaPagina} | Código: ${codigoAluno}`, 
+                             pageWidth / 2, pageHeight - 5, { align: 'center' });
+                }
+                
+                // Salvar
+                const nomeArquivo = `ficha_disciplinar_${codigoAluno}_completa.pdf`;
                 pdf.save(nomeArquivo);
                 
-                console.log('✅ PDF gerado com sucesso:', nomeArquivo);
-                alert('✅ PDF profissional gerado com sucesso!');
+                console.log('✅ PDF COMPLETO gerado com sucesso:', nomeArquivo);
+                alert('✅ PDF completo gerado com TODAS as informações!');
                 
             } catch (error) {
                 console.error('❌ Erro ao gerar PDF:', error);
                 alert('❌ Erro ao gerar PDF: ' + error.message);
             } finally {
-                // Restaurar botão
                 btnExportar.disabled = false;
                 btnExportar.innerHTML = textoOriginal;
             }
