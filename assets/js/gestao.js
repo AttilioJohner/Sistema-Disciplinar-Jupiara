@@ -313,7 +313,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       console.log('💾 SALVAMENTO CONCLUÍDO!');
       resetForm();
       // Recarregar dados após operação
-      await recarregarAlunos();
+      await startLiveList();
     } catch (err) {
       console.error('💾 ERRO NO onSubmitForm:', err);
       toast(err.message || 'Falha ao salvar aluno.', 'erro');
@@ -466,7 +466,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       if (editingId === id) resetForm();
       debugLog('DELETE ok', { id: id });
       // Recarregar dados após exclusão
-      await recarregarAlunos();
+      await startLiveList();
     } catch (err) {
       console.error(err);
       toast('Falha ao excluir aluno.', 'erro');
@@ -880,44 +880,11 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   
   window.visualizarFoto = async function(alunoId) {
     try {
-      console.log('📸 Carregando aluno no formulário:', alunoId);
-      console.log('🔍 Cache atual:', alunosCache.length, 'alunos');
-      console.log('🔍 Procurando por ID:', alunoId, typeof alunoId);
+      console.log('📸 Visualizando foto para aluno:', alunoId);
       
-      // Debug: mostrar os primeiros alunos do cache
-      if (alunosCache.length > 0) {
-        console.log('🔍 Primeiro aluno do cache:', alunosCache[0]);
-        console.log('🔍 Campos disponíveis:', Object.keys(alunosCache[0]));
-      }
-      
-      // Tentar diferentes campos para encontrar o aluno
+      // Buscar aluno (usa conversão numérica que funcionou)
       const numId = parseInt(alunoId);
-      let aluno = alunosCache.find(a => a.id === alunoId);
-      if (!aluno) {
-        aluno = alunosCache.find(a => a.id === String(alunoId));
-      }
-      if (!aluno) {
-        aluno = alunosCache.find(a => a.id === numId);
-      }
-      if (!aluno) {
-        aluno = alunosCache.find(a => a.codigo === alunoId);
-      }
-      if (!aluno) {
-        aluno = alunosCache.find(a => a.codigo === String(alunoId));
-      }
-      if (!aluno) {
-        aluno = alunosCache.find(a => a.codigo === numId);
-      }
-      
-      console.log('🔍 Tentativas de busca:');
-      console.log('  Por a.id === alunoId:', alunosCache.some(a => a.id === alunoId));
-      console.log('  Por a.id === String(alunoId):', alunosCache.some(a => a.id === String(alunoId)));
-      console.log('  Por a.id === numId:', alunosCache.some(a => a.id === numId));
-      console.log('  Por a.codigo === alunoId:', alunosCache.some(a => a.codigo === alunoId));
-      console.log('  Por a.codigo === String(alunoId):', alunosCache.some(a => a.codigo === String(alunoId)));
-      console.log('  Por a.codigo === numId:', alunosCache.some(a => a.codigo === numId));
-      
-      console.log('🔍 Aluno encontrado:', !!aluno);
+      const aluno = alunosCache.find(a => a.id === numId) || alunosCache.find(a => a.codigo === numId);
       
       if (!aluno) {
         console.error('❌ Aluno não encontrado com ID:', alunoId);
