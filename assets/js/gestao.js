@@ -70,8 +70,8 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       mapElements();
       bindEvents();
       initPhotoPreview();
-      // Carregar alunos automaticamente (como antes) mas SEM fotos
-      await startLiveList();
+      // NÃO carregar alunos automaticamente - aguardar clique do usuário
+      setTimeout(() => adicionarBotaoCarregamento(), 100);
       
       // Única atualização de estatísticas
       setTimeout(() => {
@@ -894,7 +894,160 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     }
   }
 
-  // Funções removidas - volta ao sistema original
+  // =====================
+  // CARREGAMENTO MANUAL COM FILTRO DE TURMA
+  // =====================
+  
+  function adicionarBotaoCarregamento() {
+    if (!els.tbody) {
+      console.error('❌ tbody não encontrado para adicionar botão');
+      return;
+    }
+    
+    // HTML do botão com seletor de turma
+    els.tbody.innerHTML = `
+      <tr>
+        <td colspan="9" style="text-align: center; padding: 30px;">
+          <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 10px 0;">
+            <h4 style="margin: 0 0 20px 0; color: #333;">📚 Carregar Lista de Alunos</h4>
+            
+            <div style="margin-bottom: 15px;">
+              <label for="seletorTurma" style="display: block; margin-bottom: 8px; font-weight: bold; color: #555;">
+                🏫 Selecionar Turma:
+              </label>
+              <select id="seletorTurma" style="padding: 8px 12px; border-radius: 4px; border: 1px solid #ddd; font-size: 14px;">
+                <option value="todos">📋 Todas as Turmas</option>
+                <option value="6A">6º A</option>
+                <option value="6B">6º B</option>
+                <option value="7A">7º A</option>
+                <option value="7B">7º B</option>
+                <option value="8A">8º A</option>
+                <option value="8B">8º B</option>
+                <option value="9A">9º A</option>
+                <option value="9B">9º B</option>
+              </select>
+            </div>
+            
+            <button 
+              type="button" 
+              class="btn btn-primary" 
+              onclick="carregarAlunosPorTurma()" 
+              style="padding: 12px 24px; font-size: 16px; border-radius: 6px; background: #007bff; border: none; color: white; cursor: pointer;">
+              🚀 Carregar Alunos
+            </button>
+            
+            <p style="margin: 15px 0 0 0; color: #666; font-size: 14px;">
+              💡 Escolha uma turma específica ou todas para melhor performance
+            </p>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+  
+  window.carregarAlunosPorTurma = async function() {
+    try {
+      const seletor = document.getElementById('seletorTurma');
+      const turmaSelecionada = seletor ? seletor.value : 'todos';
+      
+      console.log('🚀 Carregando alunos para turma:', turmaSelecionada);
+      
+      // Mostrar loading
+      if (els.tbody) {
+        els.tbody.innerHTML = `
+          <tr>
+            <td colspan="9" style="text-align: center; padding: 40px;">
+              <div class="loading">
+                ⏳ Carregando ${turmaSelecionada === 'todos' ? 'todas as turmas' : 'turma ' + turmaSelecionada}...
+              </div>
+            </td>
+          </tr>
+        `;
+      }
+      
+      // Aguardar um pouco para mostrar o loading
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Carregar dados
+      await startLiveList();
+      
+      // Se não for "todos", filtrar por turma específica
+      if (turmaSelecionada !== 'todos') {
+        // Aplicar filtro após carregamento
+        setTimeout(() => {
+          if (els.filtroTurma) {
+            els.filtroTurma.value = turmaSelecionada;
+            renderTable();
+          }
+        }, 100);
+      }
+      
+      // Adicionar botão "Limpar Lista" no cabeçalho da tabela
+      adicionarBotaoLimpar();
+      
+      console.log(`✅ Alunos carregados com sucesso para: ${turmaSelecionada}`);
+      
+    } catch (error) {
+      console.error('❌ Erro ao carregar alunos:', error);
+      if (els.tbody) {
+        els.tbody.innerHTML = `
+          <tr>
+            <td colspan="9" style="text-align: center; padding: 30px; color: red;">
+              ❌ Erro ao carregar alunos. 
+              <br><br>
+              <button onclick="adicionarBotaoCarregamento()" class="btn btn-secondary">
+                🔄 Tentar Novamente
+              </button>
+            </td>
+          </tr>
+        `;
+      }
+    }
+  }
+  
+  function adicionarBotaoLimpar() {
+    // Adicionar botão na área de ações da tabela
+    const tableActions = document.querySelector('.table-actions');
+    if (tableActions) {
+      // Remover botão existente se houver
+      const botaoExistente = document.getElementById('btnLimparLista');
+      if (botaoExistente) botaoExistente.remove();
+      
+      // Criar novo botão
+      const botaoLimpar = document.createElement('button');
+      botaoLimpar.id = 'btnLimparLista';
+      botaoLimpar.innerHTML = '🗑️ Limpar Lista';
+      botaoLimpar.className = 'btn btn-secondary';
+      botaoLimpar.style.cssText = 'margin-left: 10px; padding: 6px 12px; font-size: 14px;';
+      botaoLimpar.onclick = limparListaAlunos;
+      
+      tableActions.appendChild(botaoLimpar);
+    }
+  }
+  
+  window.limparListaAlunos = function() {
+    // Limpar cache de alunos
+    alunosCache = [];
+    
+    // Resetar filtro de turma
+    if (els.filtroTurma) {
+      els.filtroTurma.value = 'todos';
+    }
+    
+    // Remover botão limpar
+    const botaoLimpar = document.getElementById('btnLimparLista');
+    if (botaoLimpar) botaoLimpar.remove();
+    
+    // Mostrar novamente o botão de carregamento
+    adicionarBotaoCarregamento();
+    
+    // Resetar total
+    if (els.total) {
+      els.total.textContent = '0';
+    }
+    
+    console.log('🗑️ Lista de alunos limpa');
+  }
 
   // =====================
   // UTILITÁRIOS
