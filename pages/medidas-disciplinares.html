@@ -3461,7 +3461,7 @@
             document.getElementById('areaFrequenciaAluno').style.display = 'none';
         }
 
-        // ======= FUNÇÃO DE EXPORTAÇÃO PARA PDF =======
+        // ======= FUNÇÃO DE EXPORTAÇÃO PARA PDF - LAYOUT ORGANIZADO =======
         async function exportarFichaPDF() {
             console.log('📄 Iniciando exportação para PDF...');
             const btnExportar = document.getElementById('btnExportarPDF');
@@ -3592,33 +3592,50 @@
                 let todasMedidas = [];
                 let notaDisciplinar = '10.0';
                 
-                // Extrair TODAS as medidas da ficha
+                // Extrair e formatar medidas disciplinares de forma limpa
                 if (historicoContainer) {
-                    const medidaElements = historicoContainer.querySelectorAll('.medida-item, li, p, div');
-                    medidaElements.forEach(element => {
+                    const medidaElements = historicoContainer.querySelectorAll('.medida-item');
+                    medidaElements.forEach((element, index) => {
                         const texto = element.textContent?.trim();
-                        if (texto && texto.length > 10 && 
-                            !texto.includes('Nenhuma medida') && 
-                            !texto.includes('Comportamento exemplar') &&
-                            !texto.includes('Carregando')) {
-                            todasMedidas.push(texto);
+                        if (texto && !texto.includes('Nenhuma medida') && !texto.includes('Carregando')) {
+                            // Extrair informações principais de forma organizada
+                            const linhas = texto.split('\n').filter(l => l.trim());
+                            
+                            let dataOcorrencia = '';
+                            let tipoMedida = '';
+                            let especificacao = '';
+                            let observacoes = '';
+                            let pontuacao = '';
+                            
+                            linhas.forEach(linha => {
+                                const l = linha.trim();
+                                if (l.match(/\d{2}\/\d{2}\/\d{4}/)) {
+                                    dataOcorrencia = l.match(/\d{2}\/\d{2}\/\d{4}/)[0];
+                                } else if (l.includes('Advertência') || l.includes('Suspensão') || l.includes('Fato Observado')) {
+                                    tipoMedida = l;
+                                } else if (l.includes('Especificação:')) {
+                                    especificacao = l.replace('Especificação:', '').trim();
+                                } else if (l.includes('Observações:')) {
+                                    observacoes = l.replace('Observações:', '').trim();
+                                } else if (l.match(/-?\d+\.?\d*/)) {
+                                    const ponto = l.match(/-?\d+\.?\d*/);
+                                    if (ponto) pontuacao = `(${ponto[0]})`;
+                                }
+                            });
+                            
+                            // Montar medida formatada
+                            let medidaFormatada = '';
+                            if (dataOcorrencia) medidaFormatada += `${dataOcorrencia} - `;
+                            if (tipoMedida) medidaFormatada += tipoMedida;
+                            if (pontuacao) medidaFormatada += ` ${pontuacao}`;
+                            if (especificacao) medidaFormatada += ` - ${especificacao.substring(0, 40)}`;
+                            if (observacoes) medidaFormatada += ` (${observacoes.substring(0, 20)})`;
+                            
+                            if (medidaFormatada.length > 5) {
+                                todasMedidas.push(medidaFormatada);
+                            }
                         }
                     });
-                    
-                    // Se não encontrou nos elementos, tentar no texto completo
-                    if (todasMedidas.length === 0) {
-                        const textoCompleto = historicoContainer.textContent || '';
-                        // Dividir por linhas e filtrar medidas válidas
-                        const linhas = textoCompleto.split('\n').filter(linha => {
-                            const l = linha.trim();
-                            return l.length > 10 && 
-                                   !l.includes('Nenhuma medida') && 
-                                   !l.includes('Carregando') &&
-                                   (l.includes('Advertência') || l.includes('Suspensão') || 
-                                    l.includes('Orientação') || l.includes('/'));
-                        });
-                        todasMedidas = linhas;
-                    }
                 }
                 
                 // Buscar nota disciplinar na ficha
@@ -3677,27 +3694,24 @@
                 let todasFaltas = [];
                 let porcentagemFreq = '100%';
                 
-                // Extrair TODAS as faltas da ficha
+                // Extrair faltas de forma organizada
                 if (frequenciaContainer) {
                     const freqTexto = frequenciaContainer.textContent || '';
                     
-                    // Buscar porcentagem
-                    const percMatch = freqTexto.match(/([0-9]+(?:\.[0-9]+)?%)/);
+                    // Buscar porcentagem de frequência
+                    const percMatch = freqTexto.match(/([0-9]+\.?[0-9]*%)/);
                     if (percMatch) porcentagemFreq = percMatch[1];
                     
-                    // Buscar TODAS as datas de falta
+                    // Buscar todas as datas de falta únicas e ordená-las
                     const datasMatch = freqTexto.match(/\d{2}\/\d{2}\/\d{4}/g);
-                    if (datasMatch) todasFaltas = [...new Set(datasMatch)]; // remover duplicadas
-                    
-                    // Se não encontrou por regex, buscar em elementos
-                    if (todasFaltas.length === 0) {
-                        const elementos = frequenciaContainer.querySelectorAll('*');
-                        elementos.forEach(el => {
-                            const texto = el.textContent || '';
-                            const datas = texto.match(/\d{2}\/\d{2}\/\d{4}/g);
-                            if (datas) todasFaltas.push(...datas);
+                    if (datasMatch) {
+                        // Remover duplicadas e ordenar por data (mais recentes primeiro)
+                        const datasUnicas = [...new Set(datasMatch)];
+                        todasFaltas = datasUnicas.sort((a, b) => {
+                            const dateA = new Date(a.split('/').reverse().join('-'));
+                            const dateB = new Date(b.split('/').reverse().join('-'));
+                            return dateB - dateA;
                         });
-                        todasFaltas = [...new Set(todasFaltas)];
                     }
                 }
                 
@@ -3725,7 +3739,7 @@
                             yPos = margin;
                         }
                         
-                        pdf.text(`${index + 1}. ${falta}`, margin + 10, yPos);
+                        pdf.text(`${index + 1}- Falta registrada em ${falta}`, margin + 5, yPos);
                         yPos += 4;
                     });
                 } else {
@@ -3748,30 +3762,30 @@
                 
                 let todasStats = [];
                 
-                // Extrair TODAS as estatísticas da ficha
+                // Extrair estatísticas sem duplicações
                 if (resumoContainer) {
-                    const statCards = resumoContainer.querySelectorAll('.stat-card, .card, .estatistica-item, div');
+                    const statsTexto = resumoContainer.textContent || '';
+                    const linhasUnicas = new Set();
                     
-                    statCards.forEach(card => {
-                        const texto = card.textContent?.trim();
-                        if (texto && texto.length > 3 && texto.length < 100) {
-                            // Tentar extrair número + descrição
-                            const match = texto.match(/([0-9]+(?:\.[0-9]+)?)\s*(.+)|(.+):\s*([0-9]+(?:\.[0-9]+)?)/);
-                            if (match) {
-                                todasStats.push(texto);
-                            }
+                    // Buscar estatísticas principais
+                    const linhas = statsTexto.split('\n').filter(l => {
+                        const linha = l.trim();
+                        return linha.length > 2 && linha.length < 60 && 
+                               (linha.match(/[0-9]+/) || linha.includes('%')) &&
+                               !linha.includes('Total de Medidas Total') &&
+                               !linha.includes('Últimos 30 dias Últimos');
+                    });
+                    
+                    // Filtrar duplicações e manter apenas relevantes
+                    linhas.forEach(linha => {
+                        const linhaNormalizada = linha.trim();
+                        if (!linhasUnicas.has(linhaNormalizada) && 
+                            (linhaNormalizada.match(/^[0-9]/) || linhaNormalizada.includes(':'))) {
+                            linhasUnicas.add(linhaNormalizada);
                         }
                     });
                     
-                    // Fallback: dividir texto em linhas
-                    if (todasStats.length === 0) {
-                        const linhas = resumoContainer.textContent.split('\n').filter(l => {
-                            const linha = l.trim();
-                            return linha.length > 3 && linha.length < 50 && 
-                                   (linha.includes('%') || linha.match(/[0-9]+/));
-                        });
-                        todasStats = linhas.slice(0, 8); // máximo 8 estatísticas
-                    }
+                    todasStats = Array.from(linhasUnicas).slice(0, 6);
                 }
                 
                 // Estatísticas calculadas se não encontrou
