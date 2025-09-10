@@ -959,7 +959,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       // 1. TOTAL ALUNOS ATIVOS (apenas contagem)
       const { count: totalAtivos, error: erroAtivos } = await window.supabaseClient
         .from('alunos')
-        .select('id', { count: 'exact', head: true })
+        .select('codigo', { count: 'exact', head: true })
         .eq('status', 'ativo');
         
       if (!erroAtivos && totalAtivos !== null) {
@@ -981,7 +981,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       const hoje = new Date().toISOString().split('T')[0];
       const { count: cadastrosHoje, error: erroCadastros } = await window.supabaseClient
         .from('alunos')
-        .select('id', { count: 'exact', head: true })
+        .select('codigo', { count: 'exact', head: true })
         .gte('created_at', hoje);
         
       if (!erroCadastros && cadastrosHoje !== null) {
@@ -991,8 +991,8 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       // 4. DADOS INCOMPLETOS (alunos sem telefone ou responsável)
       const { count: dadosIncompletos, error: erroIncompletos } = await window.supabaseClient
         .from('alunos')
-        .select('id', { count: 'exact', head: true })
-        .or('telefone1.is.null,responsavel.is.null');
+        .select('codigo', { count: 'exact', head: true })
+        .or('"Telefone do responsável".is.null,responsável.is.null');
         
       if (!erroIncompletos && dadosIncompletos !== null) {
         document.getElementById('dadosIncompletos').textContent = dadosIncompletos;
@@ -1025,8 +1025,8 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       // Query otimizada - apenas 4 campos essenciais
       const { data: alunos, error } = await window.supabaseClient
         .from('alunos')
-        .select('id, codigo, nome_completo, turma, status')
-        .order('nome_completo');
+        .select('codigo, "Nome completo", turma, status')
+        .order('"Nome completo"');
         
       if (error) throw error;
       
@@ -1058,13 +1058,13 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         const statusIcon = aluno.status === 'ativo' ? '✅' : '❌';
         
         return `
-          <tr data-id="${escapeHtml(aluno.id)}">
-            <td>${escapeHtml(aluno.codigo || aluno.id || '')}</td>
-            <td>${escapeHtml(aluno.nome_completo || aluno.nome || '')}</td>
+          <tr data-codigo="${escapeHtml(aluno.codigo)}">
+            <td>${escapeHtml(aluno.codigo || '')}</td>
+            <td>${escapeHtml(aluno['Nome completo'] || aluno.nome || '')}</td>
             <td>${escapeHtml(aluno.turma || '')}</td>
             <td class="${statusClass}">${statusIcon} ${escapeHtml(aluno.status || 'ativo')}</td>
             <td style="white-space:nowrap">
-              <button type="button" class="btn btn-small" onclick="verInformacoesCompletas('${encodeURIComponent(aluno.id)}')">
+              <button type="button" class="btn btn-small" onclick="verInformacoesCompletas('${encodeURIComponent(aluno.codigo)}')">
                 👁️ Ver Informações
               </button>
             </td>
@@ -1095,7 +1095,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       const { data: aluno, error } = await window.supabaseClient
         .from('alunos')
         .select('*')
-        .eq('id', alunoId)
+        .eq('codigo', parseInt(alunoId))
         .single();
         
       if (error) throw error;
@@ -1133,16 +1133,16 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
           <div>
             <h4 style="color: #0066cc; margin: 0 0 15px 0;">Dados Básicos</h4>
             <p><strong>Código:</strong> ${aluno.codigo || 'N/A'}</p>
-            <p><strong>Nome:</strong> ${aluno.nome_completo || aluno.nome || 'N/A'}</p>
+            <p><strong>Nome:</strong> ${aluno['Nome completo'] || aluno.nome || 'N/A'}</p>
             <p><strong>Turma:</strong> ${aluno.turma || 'N/A'}</p>
             <p><strong>Status:</strong> ${aluno.status || 'ativo'}</p>
           </div>
           
           <div>
             <h4 style="color: #0066cc; margin: 0 0 15px 0;">Contatos</h4>
-            <p><strong>Responsável:</strong> ${aluno.responsavel || aluno.responsável || 'N/A'}</p>
-            <p><strong>Telefone 1:</strong> ${aluno.telefone1 || aluno.telefone || 'N/A'}</p>
-            <p><strong>Telefone 2:</strong> ${aluno.telefone2 || 'N/A'}</p>
+            <p><strong>Responsável:</strong> ${aluno.responsavel || aluno['responsável'] || 'N/A'}</p>
+            <p><strong>Telefone 1:</strong> ${aluno['Telefone do responsável'] || aluno.telefone1 || 'N/A'}</p>
+            <p><strong>Telefone 2:</strong> ${aluno['Telefone do responsável 2'] || aluno.telefone2 || 'N/A'}</p>
           </div>
         </div>
         
@@ -1154,7 +1154,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         ` : ''}
         
         <div style="margin-top: 30px; text-align: center;">
-          <button onclick="editarAluno('${encodeURIComponent(aluno.id)}')" style="background: #28a745; color: white; border: none; border-radius: 6px; padding: 12px 24px; margin-right: 10px; cursor: pointer;">
+          <button onclick="editarAluno('${encodeURIComponent(aluno.codigo)}')" style="background: #28a745; color: white; border: none; border-radius: 6px; padding: 12px 24px; margin-right: 10px; cursor: pointer;">
             ✏️ Editar Aluno
           </button>
           <button onclick="fecharModalInformacoes()" style="background: #6c757d; color: white; border: none; border-radius: 6px; padding: 12px 24px; cursor: pointer;">
