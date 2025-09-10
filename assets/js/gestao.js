@@ -70,7 +70,8 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       mapElements();
       bindEvents();
       initPhotoPreview();
-      await startLiveList();
+      // Não carregar alunos automaticamente - aguardar clique do usuário
+      adicionarBotaoCarregarAlunos();
       
       // Única atualização de estatísticas
       setTimeout(() => {
@@ -291,7 +292,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       console.log('💾 SALVAMENTO CONCLUÍDO!');
       resetForm();
       // Recarregar dados após operação
-      await startLiveList();
+      await recarregarAlunos();
     } catch (err) {
       console.error('💾 ERRO NO onSubmitForm:', err);
       toast(err.message || 'Falha ao salvar aluno.', 'erro');
@@ -444,7 +445,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       if (editingId === id) resetForm();
       debugLog('DELETE ok', { id: id });
       // Recarregar dados após exclusão
-      await startLiveList();
+      await recarregarAlunos();
     } catch (err) {
       console.error(err);
       toast('Falha ao excluir aluno.', 'erro');
@@ -515,7 +516,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
               '<td>' + escapeHtml(a.responsavel || '') + '</td>' +
               '<td>' + escapeHtml(a.telefone1 || '') + '</td>' +
               '<td>' + escapeHtml(a.telefone2 || '') + '</td>' +
-              '<td>' + (a.foto_url ? '<img src="' + escapeHtml(a.foto_url) + '" alt="Foto" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px;">' : '<span style="color: #999;">-</span>') + '</td>' +
+              '<td><button type="button" class="btn btn-small" onclick="visualizarFoto(\"' + encodeURIComponent(a.id) + '\")" ' + (a.foto_url ? '' : 'disabled style="opacity:0.5"') + '>📷 Ver Foto</button></td>' +
               '<td style="white-space:nowrap">' +
                 '<button type="button" class="btn btn-small" data-action="edit" data-id="' + encodeURIComponent(a.id) + '">Editar</button>' +
                 deleteButton +
@@ -853,6 +854,85 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       throw error;
     }
   };
+
+  // =====================
+  // NOVAS FUNÇÕES - CARREGAMENTO SOB DEMANDA
+  // =====================
+  
+  function adicionarBotaoCarregarAlunos() {
+    const tabela = document.querySelector('#tabela-alunos tbody');
+    if (tabela) {
+      tabela.innerHTML = `
+        <tr>
+          <td colspan="9" style="text-align: center; padding: 20px;">
+            <button type="button" class="btn btn-primary" onclick="carregarAlunosManual()" style="padding: 10px 20px;">
+              📚 Carregar Lista de Alunos
+            </button>
+            <p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">
+              Clique para carregar os alunos (economia de dados)
+            </p>
+          </td>
+        </tr>
+      `;
+    }
+  }
+  
+  window.carregarAlunosManual = async function() {
+    const tabela = document.querySelector('#tabela-alunos tbody');
+    if (tabela) {
+      tabela.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px;"><div class="loading">Carregando alunos...</div></td></tr>';
+    }
+    await startLiveList();
+  }
+  
+  async function recarregarAlunos() {
+    if (alunosCache.length > 0) {
+      await startLiveList();
+    }
+  }
+  
+  window.visualizarFoto = async function(alunoId) {
+    try {
+      console.log('📸 Carregando foto para aluno:', alunoId);
+      
+      // Buscar dados do aluno específico com foto
+      const { data: aluno, error } = await db
+        .from('alunos')
+        .select('foto_url, nome_completo')
+        .eq('id', alunoId)
+        .single();
+        
+      if (error) throw error;
+      
+      if (!aluno || !aluno.foto_url) {
+        alert('Foto não disponível para este aluno');
+        return;
+      }
+      
+      // Criar modal para exibir a foto
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8); display: flex; align-items: center;
+        justify-content: center; z-index: 10000; cursor: pointer;
+      `;
+      
+      modal.innerHTML = `
+        <div style="background: white; padding: 20px; border-radius: 8px; max-width: 400px; text-align: center;">
+          <h3 style="margin: 0 0 15px 0;">${aluno.nome_completo}</h3>
+          <img src="${aluno.foto_url}" alt="Foto do aluno" style="max-width: 300px; max-height: 400px; border-radius: 4px;">
+          <p style="margin: 15px 0 0 0; color: #666;">Clique para fechar</p>
+        </div>
+      `;
+      
+      modal.onclick = () => document.body.removeChild(modal);
+      document.body.appendChild(modal);
+      
+    } catch (error) {
+      console.error('Erro ao carregar foto:', error);
+      alert('Erro ao carregar foto do aluno');
+    }
+  }
 
   // =====================
   // UTILITÁRIOS

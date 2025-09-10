@@ -1481,7 +1481,7 @@
                 console.log('🔄 Carregando alunos do Supabase...');
                 const { data: alunosData, error } = await window.supabaseClient
                     .from('alunos')
-                    .select('codigo, "Nome completo", turma, foto_url')
+                    .select('codigo, "Nome completo", turma')
                     .order('"Nome completo"');
 
                 if (error) throw error;
@@ -1614,7 +1614,7 @@
                 // Buscar dados do aluno do Supabase
                 const { data: dadosAluno, error: alunoError } = await window.supabaseClient
                     .from('alunos')
-                    .select('codigo, "Nome completo", turma, foto_url')
+                    .select('codigo, "Nome completo", turma')
                     .eq('codigo', parseInt(alunoId))
                     .single();
                     
@@ -2383,7 +2383,7 @@
                 // Carregar diretamente do Supabase
                 const { data: alunosData, error } = await window.supabaseClient
                     .from('alunos')
-                    .select('codigo, "Nome completo", turma, foto_url');
+                    .select('codigo, "Nome completo", turma');
                     
                 if (error) throw error;
                 
@@ -2577,7 +2577,7 @@
                     try {
                         const { data: dadosSupabase, error } = await window.supabaseClient
                             .from('alunos')
-                            .select('turma, "Nome completo", foto_url')
+                            .select('turma, "Nome completo"')
                             .eq('codigo', parseInt(selectAluno.value))
                             .single();
                             
@@ -2800,7 +2800,7 @@
                 try {
                     const { data: fotoCheck, error } = await window.supabaseClient
                         .from('alunos')
-                        .select('codigo, "Nome completo", foto_url')
+                        .select('codigo, "Nome completo"')
                         .eq('codigo', parseInt(aluno.codigo))
                         .single();
                     console.log('🖼️ [DEBUG-FOTO] Dados direto do banco:', fotoCheck);

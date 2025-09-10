@@ -1591,7 +1591,7 @@
                 // 1. TOTAL DE ALUNOS DA ESCOLA (não apenas os filhos)
                 const { count: totalAlunosEscola, error: countError } = await window.supabaseClient
                     .from('alunos')
-                    .select('*', { count: 'exact', head: true });
+                    .select('id', { count: 'exact', head: true });
                 
                 if (!countError && totalAlunosEscola !== null) {
                     document.getElementById('totalAlunos').textContent = totalAlunosEscola;
@@ -1650,7 +1650,7 @@
                     // Fallback: calcular baseado em medidas recentes
                     const { count: totalMedidas } = await window.supabaseClient
                         .from('medidas')
-                        .select('*', { count: 'exact', head: true });
+                        .select('id', { count: 'exact', head: true });
                     
                     // Estimar nota baseada na quantidade de medidas
                     const medidasPorAluno = totalAlunosEscola > 0 ? totalMedidas / totalAlunosEscola : 0;
