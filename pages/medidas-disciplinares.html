@@ -1100,6 +1100,78 @@
                 margin-right: 0;
             }
         }
+        
+        /* Estilos para alertas de prazo */
+        .alerta-prazo {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        
+        .insight-content {
+            flex: 1;
+            margin-right: 15px;
+        }
+        
+        .insight-detalhes {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        
+        .insight-prazo {
+            font-size: 0.8em;
+            color: #007bff;
+            font-weight: bold;
+            margin-top: 3px;
+        }
+        
+        .insight-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+        
+        .btn-marcar-entregue {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            white-space: nowrap;
+        }
+        
+        .btn-marcar-entregue:hover {
+            background: #218838;
+        }
+        
+        .btn-marcar-entregue:active {
+            transform: translateY(1px);
+        }
+        
+        /* Responsividade para alertas */
+        @media (max-width: 768px) {
+            .alerta-prazo {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .insight-content {
+                margin-right: 0;
+            }
+            
+            .insight-actions {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
     </style>
 </head>
 
@@ -1835,6 +1907,7 @@
             const motivo = document.getElementById('motivoMedida').value;
             let acoes = document.getElementById('acoesMedida').value;
             const diasSuspensao = document.getElementById('diasSuspensao').value;
+            const prazoAssinatura = document.getElementById('prazoAssinatura')?.value || null;
             
             if (!alunoId) {
                 alert('Selecione um aluno');
@@ -1906,6 +1979,8 @@
                         especificacao: especificacao,
                         observacao: acoes,
                         tipo_medida: tipoMedida,
+                        prazo_assinatura: prazoAssinatura,
+                        prazo_status: prazoAssinatura ? 'pendente' : null,
                         criado_em: new Date().toISOString()
                     }]);
                 
@@ -1932,6 +2007,9 @@
                 
                 // Recarregar estatísticas
                 await carregarEstatisticasMedidas();
+                
+                // Recarregar alertas de prazo
+                await carregarAlertasPrazo();
                 
                 // Se a ficha do aluno estiver aberta, recarregar
                 if (window.dadosAlunoAtual && window.dadosAlunoAtual.id === alunoId) {
@@ -2194,9 +2272,7 @@
                 window.loadingManager.updateProgress(85, 'Configurando alertas...');
                 
                 // Carregar alertas em background
-                if (typeof carregarAlertas === 'function') {
-                    await carregarAlertas();
-                }
+                await carregarAlertasPrazo();
                 
                 window.loadingManager.updateProgress(95, 'Finalizando interface...');
                 
@@ -2269,9 +2345,8 @@
                         await carregarRegistrosRecentes();
                         
                         // Carregar alertas em background
-                        if (typeof carregarAlertas === 'function') {
-                            await carregarAlertas();
-                        }
+                        // Carregar alertas de prazo
+                        await carregarAlertasPrazo();
                         
                         console.log('✅ Carregamento completo finalizado');
                     } catch (error) {
@@ -2441,6 +2516,207 @@
         function destacarAluno(alunoId) {
             console.log('Destacando aluno:', alunoId);
             showMessage(`Aluno ${alunoId} selecionado`, 'info');
+        }
+
+        // Carregar alertas de prazos de assinatura
+        async function carregarAlertasPrazo() {
+            try {
+                // Aguardar supabaseClient estar disponível
+                if (!window.supabaseClient) {
+                    await new Promise(resolve => {
+                        const check = setInterval(() => {
+                            if (window.supabaseClient) {
+                                clearInterval(check);
+                                resolve();
+                            }
+                        }, 100);
+                    });
+                }
+
+                const hoje = new Date();
+                hoje.setHours(0, 0, 0, 0);
+
+                // Buscar medidas com prazo de assinatura pendente
+                const { data: medidasComPrazo, error } = await window.supabaseClient
+                    .from('medidas')
+                    .select('id, codigo_matricula, nome_completo, tipo_medida, especificacao, prazo_assinatura, prazo_status, data')
+                    .not('prazo_assinatura', 'is', null)
+                    .neq('prazo_status', 'entregue')
+                    .order('prazo_assinatura', { ascending: true });
+
+                if (error) {
+                    console.warn('Erro ao buscar prazos:', error);
+                    return;
+                }
+
+                const alertasPrazo = [];
+
+                // Processar cada medida com prazo
+                medidasComPrazo?.forEach(medida => {
+                    const dataPrazo = new Date(medida.prazo_assinatura);
+                    dataPrazo.setHours(0, 0, 0, 0);
+                    
+                    const diffTime = dataPrazo - hoje;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    let statusTexto, statusIcon, prioridade;
+                    
+                    if (diffDays < 0) {
+                        // Vencido
+                        statusTexto = `Prazo vencido há ${Math.abs(diffDays)} dia(s)`;
+                        statusIcon = '🔴';
+                        prioridade = 'danger';
+                    } else if (diffDays === 0) {
+                        // Vence hoje
+                        statusTexto = 'Prazo vence hoje!';
+                        statusIcon = '🟡';
+                        prioridade = 'warning';
+                    } else if (diffDays <= 2) {
+                        // Vence em 1-2 dias
+                        statusTexto = `Prazo em ${diffDays} dia(s)`;
+                        statusIcon = '🟠';
+                        prioridade = 'warning';
+                    } else {
+                        // Em prazo normal
+                        statusTexto = `Prazo em ${diffDays} dia(s)`;
+                        statusIcon = '🟢';
+                        prioridade = 'info';
+                    }
+                    
+                    alertasPrazo.push({
+                        id: medida.id,
+                        tipo: prioridade,
+                        icone: statusIcon,
+                        texto: `${medida.nome_completo} - ${medida.tipo_medida}: ${statusTexto}`,
+                        detalhes: medida.especificacao,
+                        diasRestantes: diffDays,
+                        alunoId: medida.codigo_matricula,
+                        prazoData: medida.prazo_assinatura
+                    });
+                });
+
+                // Ordenar por prioridade (vencidos primeiro, depois por proximidade)
+                alertasPrazo.sort((a, b) => {
+                    if (a.diasRestantes < 0 && b.diasRestantes >= 0) return -1;
+                    if (b.diasRestantes < 0 && a.diasRestantes >= 0) return 1;
+                    return a.diasRestantes - b.diasRestantes;
+                });
+
+                // Atualizar container de alertas com os prazos
+                await atualizarContainerAlertas(alertasPrazo);
+
+            } catch (error) {
+                console.error('Erro ao carregar alertas de prazo:', error);
+            }
+        }
+        
+        // Atualizar container de alertas incluindo prazos e outros alertas
+        async function atualizarContainerAlertas(alertasPrazo = []) {
+            const container = document.getElementById('alertasContainer');
+            
+            try {
+                // Carregar outros alertas existentes (da função original)
+                const outrosAlertas = await obterOutrosAlertas();
+                
+                // Combinar todos os alertas
+                const todosAlertas = [...alertasPrazo, ...outrosAlertas];
+                
+                if (todosAlertas.length === 0) {
+                    container.innerHTML = `
+                        <div class="insight-item">
+                            <div class="insight-text">✅ Nenhum alerta no momento - situação sob controle</div>
+                            <span class="trend-indicator trend-down">📉 Positivo</span>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = todosAlertas.map(alerta => {
+                        const botaoEntregue = alerta.id ? 
+                            `<button class="btn-marcar-entregue" onclick="marcarPrazoEntregue(${alerta.id})" title="Marcar como entregue">
+                                ✅ Entregue
+                            </button>` : '';
+                        
+                        return `
+                            <div class="insight-item alerta-prazo" ${alerta.alunoId ? `style="cursor: pointer;" onclick="destacarAluno('${alerta.alunoId}')"` : ''}>
+                                <div class="insight-content">
+                                    <div class="insight-text">${alerta.icone} ${alerta.texto}</div>
+                                    ${alerta.detalhes ? `<div class="insight-detalhes">${alerta.detalhes}</div>` : ''}
+                                    ${alerta.prazoData ? `<div class="insight-prazo">Prazo: ${new Date(alerta.prazoData).toLocaleDateString('pt-BR')}</div>` : ''}
+                                </div>
+                                <div class="insight-actions">
+                                    <span class="trend-indicator trend-${alerta.tipo === 'danger' ? 'up' : alerta.tipo === 'warning' ? 'stable' : 'down'}">
+                                        ${alerta.tipo === 'danger' ? '🚨 Crítico' : alerta.tipo === 'warning' ? '⚠️ Atenção' : 'ℹ️ Info'}
+                                    </span>
+                                    ${botaoEntregue}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+                
+                console.log(`📋 ${todosAlertas.length} alerta(s) carregado(s) (${alertasPrazo.length} de prazos)`);
+                
+            } catch (error) {
+                console.error('Erro ao atualizar container de alertas:', error);
+                container.innerHTML = `
+                    <div class="insight-item">
+                        <div class="insight-text">⚠️ Erro ao carregar alertas</div>
+                        <span class="trend-indicator trend-up">❌ Erro</span>
+                    </div>
+                `;
+            }
+        }
+        
+        // Obter outros alertas (da função original)
+        async function obterOutrosAlertas() {
+            const alertas = [];
+            
+            try {
+                // Verificar alunos com nota baixa
+                const { data: alunosRisco, error } = await window.supabaseClient
+                    .from('v_nota_disciplinar_atual')
+                    .select('*')
+                    .lt('nota_atual', 7.0)
+                    .limit(5);
+
+                if (!error && alunosRisco?.length > 0) {
+                    alunosRisco.forEach(aluno => {
+                        alertas.push({
+                            tipo: 'warning',
+                            icone: '⚠️',
+                            texto: `${aluno.nome_aluno} (${aluno.turma}) - Nota disciplinar baixa: ${aluno.nota_atual?.toFixed(1)}`,
+                            alunoId: aluno.codigo_aluno
+                        });
+                    });
+                }
+            } catch (error) {
+                console.warn('Erro ao obter alertas de nota:', error);
+            }
+            
+            return alertas;
+        }
+        
+        // Marcar prazo como entregue
+        async function marcarPrazoEntregue(medidaId) {
+            try {
+                const { error } = await window.supabaseClient
+                    .from('medidas')
+                    .update({ 
+                        prazo_status: 'entregue',
+                        prazo_entregue_em: new Date().toISOString()
+                    })
+                    .eq('id', medidaId);
+
+                if (error) throw error;
+
+                showMessage('✅ Prazo marcado como entregue!', 'success');
+                
+                // Recarregar alertas
+                await carregarAlertasPrazo();
+                
+            } catch (error) {
+                console.error('Erro ao marcar prazo como entregue:', error);
+                alert('Erro ao marcar prazo como entregue: ' + error.message);
+            }
         }
 
         // Carregar estatísticas de medidas disciplinares
