@@ -1449,7 +1449,7 @@
                                     class="form-input"
                                     title="Data limite para o responsável devolver o documento assinado"
                                 >
-                                <small class="form-help">Data limite para devolução do documento assinado pelo responsável</small>
+                                <small class="form-help">🤖 <strong>Automático:</strong> 3 dias úteis a partir da data de ocorrência (ajustável se necessário)</small>
                             </div>
                             
                             <div class="form-group" id="diasRestantesInfo" style="display: none;">
@@ -2731,11 +2731,16 @@
 
                 if (!error && alunosRisco?.length > 0) {
                     alunosRisco.forEach(aluno => {
+                        // Detectar o nome correto (pode variar entre campos)
+                        const nomeAluno = aluno.nome_aluno || aluno.nome_completo || aluno['Nome completo'] || 'Nome não encontrado';
+                        const turmaAluno = aluno.turma || 'Turma não informada';
+                        const codigoAluno = aluno.codigo_aluno || aluno.codigo_matricula || aluno.codigo;
+                        
                         alertas.push({
                             tipo: 'warning',
                             icone: '⚠️',
-                            texto: `${aluno.nome_aluno} (${aluno.turma}) - Nota disciplinar baixa: ${aluno.nota_atual?.toFixed(1)}`,
-                            alunoId: aluno.codigo_aluno
+                            texto: `${nomeAluno} (${turmaAluno}) - Nota disciplinar baixa: ${aluno.nota_atual?.toFixed(1)}`,
+                            alunoId: codigoAluno
                         });
                     });
                 }
@@ -5152,23 +5157,66 @@
             }
         }
         
+        // Função para calcular dias úteis (exclui sábados e domingos)
+        function adicionarDiasUteis(data, diasUteis) {
+            const resultado = new Date(data);
+            let diasAdicionados = 0;
+            
+            while (diasAdicionados < diasUteis) {
+                resultado.setDate(resultado.getDate() + 1);
+                
+                // Verificar se não é sábado (6) nem domingo (0)
+                if (resultado.getDay() !== 0 && resultado.getDay() !== 6) {
+                    diasAdicionados++;
+                }
+            }
+            
+            return resultado;
+        }
+        
         // MISSÃO 1.3: Sistema de controle de prazos
         function inicializarSistemaPrazos() {
             const prazoInput = document.getElementById('prazoAssinatura');
             if (prazoInput) {
                 prazoInput.addEventListener('change', calcularStatusPrazo);
                 
-                // Definir data mínima como hoje
-                const hoje = new Date().toISOString().split('T')[0];
-                prazoInput.min = hoje;
-                
-                // Sugerir prazo padrão de 7 dias
-                const sugestao = new Date();
-                sugestao.setDate(sugestao.getDate() + 7);
-                prazoInput.value = sugestao.toISOString().split('T')[0];
-                
-                calcularStatusPrazo();
+                // Calcular prazo automático baseado na data da medida
+                const dataOcorrencia = document.getElementById('dataMedida').value;
+                if (dataOcorrencia) {
+                    calcularPrazoAutomatico(dataOcorrencia);
+                } else {
+                    // Fallback: usar data de hoje se não houver data definida
+                    calcularPrazoAutomatico(new Date().toISOString().split('T')[0]);
+                }
             }
+            
+            // Atualizar prazo quando a data da medida mudar
+            const dataMedidaInput = document.getElementById('dataMedida');
+            if (dataMedidaInput) {
+                dataMedidaInput.addEventListener('change', function() {
+                    calcularPrazoAutomatico(this.value);
+                });
+            }
+        }
+        
+        function calcularPrazoAutomatico(dataOcorrencia) {
+            const prazoInput = document.getElementById('prazoAssinatura');
+            if (!prazoInput || !dataOcorrencia) return;
+            
+            // Calcular 3 dias úteis a partir da data de ocorrência
+            const dataBase = new Date(dataOcorrencia);
+            const prazoCalculado = adicionarDiasUteis(dataBase, 3);
+            
+            // Definir o prazo calculado
+            prazoInput.value = prazoCalculado.toISOString().split('T')[0];
+            
+            // Definir data mínima como a data da ocorrência
+            prazoInput.min = dataOcorrencia;
+            
+            // Recalcular status
+            calcularStatusPrazo();
+            
+            console.log(`📅 Prazo automático: ${dataOcorrencia} + 3 dias úteis = ${prazoInput.value}`);
         }
         
         function calcularStatusPrazo() {
