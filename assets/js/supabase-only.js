@@ -195,7 +195,7 @@ const alunosDB = {
         
         const { data, error } = await supabase
             .from('alunos')
-            .select('*')
+            .select('codigo, "código (matrícula)", "Nome completo", turma, responsável, "Telefone do responsável", "Telefone do responsável 2"')
             .order('"Nome completo"');
         
         if (error) throw error;
@@ -255,7 +255,7 @@ const alunosDB = {
         // Buscar todos e filtrar no cliente para evitar problemas de encoding
         const { data: allData, error } = await supabase
             .from('alunos')
-            .select('*');
+            .select('codigo, "código (matrícula)", "Nome completo", turma, responsável, "Telefone do responsável", "Telefone do responsável 2"');
         
         if (error) throw error;
         
@@ -284,7 +284,7 @@ const alunosDB = {
         // Buscar primeiro para obter registro completo
         const { data: allData } = await supabase
             .from('alunos')
-            .select('*');
+            .select('codigo, "código (matrícula)", "Nome completo", turma, responsável, "Telefone do responsável", "Telefone do responsável 2"');
         
         // Dados carregados do Supabase
         
@@ -340,7 +340,7 @@ const alunosDB = {
         // Buscar primeiro para verificar existência
         const { data: allData } = await supabase
             .from('alunos')
-            .select('*');
+            .select('codigo, "código (matrícula)", "Nome completo", turma, responsável, "Telefone do responsável", "Telefone do responsável 2"');
         
         const existing = allData?.find(item => 
             item['código (matrícula)'] === codigo
@@ -382,10 +382,10 @@ const alunosDB = {
                         return { id, exists: false, data: () => ({}) };
                     }
                     
-                    // Buscar pelo código usando estratégia segura (busca geral + filtro)
+                    // Buscar pelo código usando estratégia segura (busca geral + filtro) - incluindo foto_url para função doc().get()
                     const { data: allData, error } = await supabase
                         .from('alunos')
-                        .select('*');
+                        .select('codigo, "código (matrícula)", "Nome completo", turma, responsável, "Telefone do responsável", "Telefone do responsável 2", foto_url');
                     
                     let data = null;
                     if (!error && allData) {
@@ -482,7 +482,7 @@ const alunosDB = {
                 // Buscar o registro primeiro para obter o ID interno
                 const { data: allData } = await supabase
                     .from('alunos')
-                    .select('*');
+                    .select('codigo, "código (matrícula)", "Nome completo", turma, responsável, "Telefone do responsável", "Telefone do responsável 2"');
                 
                 const record = allData?.find(item => 
                     item['código (matrícula)'] === parseInt(id) ||
@@ -517,7 +517,7 @@ const alunosDB = {
                 // Buscar o registro primeiro para verificar se existe
                 const { data, error: fetchError } = await supabase
                     .from('alunos')
-                    .select('*')
+                    .select('codigo, "código (matrícula)", "Nome completo", turma, responsável, "Telefone do responsável", "Telefone do responsável 2"')
                     .eq('codigo', parseInt(id))
                     .single();
                 
@@ -552,7 +552,7 @@ const alunosDB = {
                 
                 const { data, error } = await supabase
                     .from('alunos')
-                    .select('*')
+                    .select('codigo, "código (matrícula)", "Nome completo", turma, responsável, "Telefone do responsável", "Telefone do responsável 2"')
                     .limit(count);
                 
                 if (error) throw error;

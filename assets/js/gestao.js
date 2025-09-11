@@ -537,7 +537,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
               '<td>' + escapeHtml(a.responsavel || '') + '</td>' +
               '<td>' + escapeHtml(a.telefone1 || '') + '</td>' +
               '<td>' + escapeHtml(a.telefone2 || '') + '</td>' +
-              '<td id="foto-cell-' + escapeHtml(a.id) + '"><button type="button" class="btn btn-small btn-foto" data-aluno-id="' + escapeHtml(a.id) + '" ' + (a.foto_url ? '' : 'disabled style="opacity:0.5"') + '>Ver Foto</button></td>' +
+              '<td id="foto-cell-' + escapeHtml(a.id) + '"><button type="button" class="btn btn-small btn-foto" data-aluno-id="' + escapeHtml(a.id) + '">Ver Foto</button></td>' +
               '<td style="white-space:nowrap">' +
                 '<button type="button" class="btn btn-small" data-action="edit" data-id="' + encodeURIComponent(a.id) + '">Editar</button>' +
                 deleteButton +
@@ -882,18 +882,19 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     try {
       console.log('📸 Visualizando foto para aluno:', alunoId);
       
-      // Buscar aluno (usa conversão numérica que funcionou)
-      const numId = parseInt(alunoId);
-      const aluno = alunosCache.find(a => a.id === numId) || alunosCache.find(a => a.codigo === numId);
+      // Buscar aluno completo com foto do Supabase
+      const alunoCompleto = await window.supabaseSystem.db.alunos.doc(alunoId).get();
       
-      if (!aluno) {
+      if (!alunoCompleto.exists) {
         console.error('❌ Aluno não encontrado com ID:', alunoId);
         toast('Aluno não encontrado', 'erro');
         return;
       }
       
+      const dadosAluno = alunoCompleto.data();
+      
       // Se não tem foto, informar
-      if (!aluno.foto_url) {
+      if (!dadosAluno.foto_url) {
         toast('Este aluno não possui foto cadastrada', 'info');
         return;
       }
@@ -903,12 +904,12 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       if (fotoCell) {
         fotoCell.innerHTML = `
           <div style="text-align: center;">
-            <img src="${aluno.foto_url}" alt="Foto do aluno" style="width: 60px; height: 80px; object-fit: cover; border-radius: 4px; margin-bottom: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+            <img src="${dadosAluno.foto_url}" alt="Foto do aluno" style="width: 60px; height: 80px; object-fit: cover; border-radius: 4px; margin-bottom: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
             <br>
             <button type="button" class="btn btn-small btn-ocultar-foto" data-aluno-id="${alunoId}" style="font-size: 11px; padding: 2px 6px;">Ocultar</button>
           </div>
         `;
-        toast('Foto exibida', 'ok');
+        toast('Foto carregada individualmente', 'ok');
       } else {
         toast('Erro ao exibir foto', 'erro');
       }
@@ -922,12 +923,8 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   window.ocultarFoto = function(alunoId) {
     const fotoCell = document.getElementById('foto-cell-' + alunoId);
     if (fotoCell) {
-      // Buscar aluno para verificar se tem foto
-      const numId = parseInt(alunoId);
-      const aluno = alunosCache.find(a => a.id === numId) || alunosCache.find(a => a.codigo === numId);
-      
       fotoCell.innerHTML = `
-        <button type="button" class="btn btn-small btn-foto" data-aluno-id="${alunoId}" ${aluno && aluno.foto_url ? '' : 'disabled style="opacity:0.5"'}>Ver Foto</button>
+        <button type="button" class="btn btn-small btn-foto" data-aluno-id="${alunoId}">Ver Foto</button>
       `;
       toast('Foto ocultada', 'ok');
     }
