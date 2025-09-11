@@ -144,11 +144,11 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     if (els.busca) {
       els.busca.addEventListener('input', () => {
         clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => { renderTable().catch(console.error); }, 300);
+        searchTimeout = setTimeout(() => renderTable(), 300);
       });
     }
     if (els.filtroTurma) {
-      els.filtroTurma.addEventListener('change', () => { renderTable().catch(console.error); });
+      els.filtroTurma.addEventListener('change', () => renderTable());
     }
     
     console.log('✅ Listeners reativados com throttling');
@@ -244,7 +244,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       });
       debugLog('Alunos carregados:', snap.size);
       updateClassFilter();
-      await renderTable();
+      renderTable();
       
       // Aguardar um pouco para garantir que os elementos existam
       setTimeout(() => {
@@ -371,7 +371,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     } else {
       editingRows.add(id);
     }
-    await renderTable();
+    renderTable();
   }
   
   function updateClassFilter() {
@@ -399,7 +399,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   
   // Função global para ser chamada pelo HTML
   window.filtrarAlunosPorTurma = function() {
-    renderTable().catch(console.error);
+    renderTable();
   };
   
   function getTurnoByTurma(turma) {
@@ -476,7 +476,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   // =====================
   // RENDER
   // =====================
-  async function renderTable() {
+  function renderTable() {
     console.log('🔄 renderTable chamada', {
       tbody: !!els.tbody,
       cacheSize: alunosCache.length
@@ -518,17 +518,8 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       els.tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #666;">Nenhum aluno encontrado</td></tr>';
       console.log('⚠️ Nenhum aluno na lista filtrada');
     } else {
-      // Verificar quais alunos possuem foto (em paralelo)
-      const photoPromises = lista.map(a => 
-        window.supabaseSystem?.db?.alunos?.hasPhoto ? 
-          window.supabaseSystem.db.alunos.hasPhoto(a.codigo || a.id) : 
-          Promise.resolve(false)
-      );
-      
-      const photoResults = await Promise.all(photoPromises);
-      
       els.tbody.innerHTML = lista
-        .map((a, index) => {
+        .map((a) => {
           const isEditing = editingRows.has(a.id);
           const deleteButton = isEditing 
             ? '<button type="button" class="btn btn-small btn-danger" data-action="delete" data-id="' + encodeURIComponent(a.id) + '">Excluir</button>'
@@ -536,10 +527,6 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
           
           const statusClass = a.status === 'ativo' ? 'text-success' : 'text-muted';
           const statusIcon = a.status === 'ativo' ? '✓' : '✗';
-          
-          // Verificar se tem foto para aplicar opacidade
-          const hasPhoto = photoResults[index];
-          const fotoButtonStyle = hasPhoto ? '' : ' disabled style="opacity:0.5"';
           
           return (
             '<tr data-id="' + escapeHtml(a.id) + '">' +
@@ -550,7 +537,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
               '<td>' + escapeHtml(a.responsavel || '') + '</td>' +
               '<td>' + escapeHtml(a.telefone1 || '') + '</td>' +
               '<td>' + escapeHtml(a.telefone2 || '') + '</td>' +
-              '<td id="foto-cell-' + escapeHtml(a.id) + '"><button type="button" class="btn btn-small btn-foto" data-aluno-id="' + escapeHtml(a.id) + '"' + fotoButtonStyle + '>Ver Foto</button></td>' +
+              '<td id="foto-cell-' + escapeHtml(a.id) + '"><button type="button" class="btn btn-small btn-foto" data-aluno-id="' + escapeHtml(a.id) + '" data-checking="true">Ver Foto</button></td>' +
               '<td style="white-space:nowrap">' +
                 '<button type="button" class="btn btn-small" data-action="edit" data-id="' + encodeURIComponent(a.id) + '">Editar</button>' +
                 deleteButton +
@@ -559,10 +546,45 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
           );
         })
         .join('');
+        
+      // Verificar fotos de forma assíncrona após renderizar
+      verificarFotosAsync(lista);
     }
 
     if (els.total) {
       els.total.textContent = String(lista.length);
+    }
+  }
+
+  // Função para verificar fotos de forma assíncrona (não bloqueia a renderização)
+  async function verificarFotosAsync(lista) {
+    try {
+      for (const aluno of lista) {
+        const alunoId = aluno.id;
+        const codigo = aluno.codigo || aluno.id;
+        
+        // Verificar se aluno tem foto
+        const hasPhoto = window.supabaseSystem?.db?.alunos?.hasPhoto ? 
+          await window.supabaseSystem.db.alunos.hasPhoto(codigo) : false;
+        
+        // Atualizar botão na interface
+        const fotoCell = document.getElementById('foto-cell-' + alunoId);
+        if (fotoCell) {
+          const botao = fotoCell.querySelector('.btn-foto');
+          if (botao) {
+            if (hasPhoto) {
+              botao.removeAttribute('disabled');
+              botao.style.opacity = '1';
+            } else {
+              botao.setAttribute('disabled', 'true');
+              botao.style.opacity = '0.5';
+            }
+            botao.removeAttribute('data-checking');
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Erro ao verificar fotos:', error);
     }
   }
 
@@ -800,7 +822,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
           
           console.log('readOnce ->', limitedRows.length, 'doc(s)');
           alunosCache = limitedRows;
-          await renderTable();
+          renderTable();
           return limitedRows;
         } catch (e) {
           console.error('readOnce err:', e.code, e.message);
@@ -833,7 +855,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         else { stopLiveList(); console.log('listener desligado'); }
       },
       getCache: function() { return alunosCache.map(function(x){ return Object.assign({}, x); }); },
-      forceRender: function() { renderTable().catch(console.error); }
+      forceRender: function() { renderTable(); }
     };
     return api;
   }
@@ -1031,7 +1053,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         setTimeout(() => {
           if (els.filtroTurma) {
             els.filtroTurma.value = turmaSelecionada;
-            renderTable().catch(console.error);
+            renderTable();
           }
         }, 100);
       }
