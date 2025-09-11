@@ -1,0 +1,97 @@
+top, agora vamos arrumar a página de medidas:
+Vou te enviar esse txt, mas adicionei ele na pasta do arquivo, com o nome de missão, se necessário, faça a leitura.
+
+NOSSA MISSÃO É:
+Arrumar a página de Medidas Disciplinares!
+
+Leia todo esse txt, o código da página, funções, e o que mais é necessário para o entendimento completo da funcionalidade da página.
+
+Como um programador sênior você já deve saber o que estudar e verificar como funciona. Em suma a página já está funcionando normalmente, aqui são só algumas melhorias e adaptações.
+
+Fracione as missões (1 a 4) e pode começar pela missão número 1, vou ir almoçar e retorno depois, você tem total autonomia para edit, ler, salvar, exec, faça a correção e teste, faça o deploy e me de um feedback. depois seguimos para a missão 2.
+
+Informações:
+
+CONSOLE: 
+env-config.js:11 📦 Carregando variáveis do build do Netlify
+supabase-only.js:2 🎯 Carregando sistema APENAS Supabase...
+supabase-only.js:749 ✅ Sistema Supabase carregado
+Refused to connect to 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js.map' because it violates the following Content Security Policy directive: "connect-src 'self' https://*.supabase.co https://raw.githubusercontent.com".
+
+gestao.js:46 📋 Versão do app: 20250911-001 (atual)
+gestao.js:54 🔥 CARREGANDO gestao.js ÚNICA VEZ
+notas-disciplinares.js:261 ✅ Serviços de notas disciplinares carregados (usando views do Supabase)
+frequencia.js:715 ✅ Camada de dados de frequência carregada
+medidas-disciplinares:1457 📋 Página de Medidas Disciplinares carregada
+medidas-disciplinares:4372 🛑 RequireAuth DESABILITADO temporariamente - corrigindo loops
+main.js:285 🚀 Sistema Dashboard Disciplinar carregado
+main.js:303 📚 Dashboard Disciplinar v1.0
+main.js:304 🎯 Desenvolvido para gestão escolar eficiente
+gestao.js:102 🔄 DOMContentLoaded executado 1x
+gestao.js:112 ✅ Iniciando gestão (ÚNICA VEZ)
+gestao.js:139 🔧 Configurando DB (versão simples)
+gestao.js:144 ✅ Supabase DB configurado: object
+gestao.js:199 ✅ Listeners reativados com throttling
+gestao.js:129 ✅ gestao.js inicializado DEFINITIVAMENTE
+supabase-only.js:745 🚀 Inicializando sistema Supabase...
+supabase-only.js:61 ✅ Supabase inicializado
+gestao.js:927 
+debugGestao disponível. Funções úteis:
+
+debugGestao.info()               -> resumo do ambiente DOM/Sistema Local
+debugGestao.setVerbose(true)     -> liga logs verbosos
+debugGestao.checkLocalDb()      -> testa leitura/escrita básicas
+debugGestao.readOnce()           -> lê uma vez (sem listener) e mostra documentos
+debugGestao.test.writeSample()   -> grava aluno DEBUG_SAMPLE
+debugGestao.test.clearSample()   -> apaga aluno DEBUG_SAMPLE
+debugGestao.toggleLive(false)    -> desliga listener em tempo real
+debugGestao.toggleLive(true)     -> religa listener em tempo real
+debugGestao.getCache()           -> retorna array alunoCache atual
+debugGestao.forceRender()        -> força re-render da tabela
+
+gestao.js:1151 ❌ tbody não encontrado para adicionar botão
+adicionarBotaoCarregamento @ gestao.js:1151
+(anônimo) @ gestao.js:119
+setTimeout
+(anônimo) @ gestao.js:119
+medidas-disciplinares:1481 🔄 Carregando alunos do Supabase...
+medidas-disciplinares:2379 🔄 Carregando alunos do Supabase...
+medidas-disciplinares:2402 ✅ Supabase direto: 342 alunos carregados
+medidas-disciplinares:2468 ✅ Carregados: 12 turmas, 342 alunos
+medidas-disciplinares:1517 ✅ 342 alunos carregados nos selects
+medidas-disciplinares:2157 📊 Carregando estatísticas de medidas...
+medidas-disciplinares:2228 📊 Notas calculadas via view: 342 alunos processados
+medidas-disciplinares:2253 📊 Estatísticas: 281 total, 49 mês, 8 semana, 134 alunos, média escola: 7.90
+medidas-disciplinares:2281 📋 Carregando registros recentes...
+medidas-disciplinares:2327 📋 10 registros recentes carregados
+medidas-disciplinares:2073 🚨 0 alerta(s) carregado(s)
+medidas-disciplinares:2379 🔄 Carregando alunos do Supabase...
+medidas-disciplinares:2402 ✅ Supabase direto: 342 alunos carregados
+medidas-disciplinares:2468 ✅ Carregados: 12 turmas, 342 alunos
+medidas-disciplinares:1910 ✅ Sistema de medidas disciplinares inicializado com sucesso
+
+LINK: 
+https://eecmjupiara.com.br/pages/medidas-disciplinares
+
+
+MISSÕES: 
+
+1 - Registrar medida disciplinar: 
+1.1: Quero que os container possuam uma setinha para expandir/ocultar a seção. Po exemplo "Registrar Medida Disciplinar" e no outro lado uma seta para baixo para abrir as opção do container, e se aberto, uma seta para cima para fechar.
+1.2: Deve ser possível a seleção de mais de um campo em Selecionar falta Específica, de forma que quando eu clique na falta (seja leve, média ou grave) ela apareça em baixo e não na própria caixa de seleção.
+1.3: Deve ser adicionado um campo "Prazo para entrega de Assinatura" onde eu possa colocar uma data e verificar qual o dia que o aluno deve devolver.
+
+2- campo de consultar ficha disciplinar.
+2.1 Primeiramente nesta função verifique o que está acontecendo pois ao selecionar a turma, a lista de alunos não carrega. Por mais que eu selecione uma turma aparece: "Por favor, selecione uma turma específica".
+2.2: Remova os botões desnecessários (Debug Notas, Debug Frequencia, Analisar Tipo de Medidas e Ver frequência do Aluno)
+2.3: Hoje o sistema funciona assim: eu seleciono a turma, e depois o aluno, e ele já busca automaticamente a ficha do aluno, vamos criar um botão para pesquisar a ficha e não ser automático.
+2.4 verifique se a opção de exportar PDF está correta.
+
+3. Registros recentes está Ok
+3.1 Você poderia trocar o CSS dos tipos de medidas, por exemplo, sem que for algo negativo (Amarelo/Vermelho), diferenciar o FO da advertência, etc...
+
+4- Container Alertas e Prioridades: 
+4.1 Deve aparecer os prazos que adicionamos na missão 1.3 e com uma opção de marcar "Entregue"
+4.2 Além dos prazos, demais insights relevantes
+
+Relembrando, todas os containers, menos os cards no inicio da página devem ter a "setinha" para expandir ou ocultar a seção.

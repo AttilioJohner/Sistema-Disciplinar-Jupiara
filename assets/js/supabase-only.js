@@ -84,7 +84,7 @@ async function logout() {
     if (error) throw error;
     
     currentUser = null;
-    window.location.href = 'pages/login.html';
+    window.location.href = '/pages/login.html';
 }
 
 // Verificar se está logado (sistema simples)
@@ -105,7 +105,7 @@ function requireAuth() {
     // Se não está logado, redirecionar
     const currentPath = window.location.pathname;
     if (!currentPath.includes('login.html')) {
-        window.location.href = 'pages/login.html';
+        window.location.href = '/pages/login.html';
     }
     return false;
 }

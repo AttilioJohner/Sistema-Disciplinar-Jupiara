@@ -6,19 +6,19 @@
   <title>Gestão de Alunos - Dashboard Disciplinar</title>
 
   <!-- CSS do seu projeto -->
-  <link rel="stylesheet" href="../assets/css/style.css?v=20250911">
-  <link rel="stylesheet" href="../assets/css/components.css?v=20250911">
-  <link rel="stylesheet" href="../assets/css/dashboard.css?v=20250911">
+  <link rel="stylesheet" href="/assets/css/style.css?v=20250911">
+  <link rel="stylesheet" href="/assets/css/components.css?v=20250911">
+  <link rel="stylesheet" href="/assets/css/dashboard.css?v=20250911">
 
   <!-- SISTEMA DE AUTENTICAÇÃO UNIFICADO -->
-  <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
-  <script src="../assets/js/env-config.js?v=20250911"></script>
+  <script src="/netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
+  <script src="/assets/js/env-config.js?v=20250911"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script src="../assets/js/unified-auth.js?v=20250911"></script>
-  <script src="../assets/js/supabase-only.js?v=20250911"></script>
+  <script src="/assets/js/unified-auth.js?v=20250911"></script>
+  <script src="/assets/js/supabase-only.js?v=20250911"></script>
 
   <!-- CRUD de Alunos (integra com Supabase) -->
-  <script defer src="../assets/js/gestao.js?v=20250911"></script>
+  <script defer src="/assets/js/gestao.js?v=20250911"></script>
 </head>
 
 <body>
@@ -47,19 +47,19 @@
     <div class="sidebar">
       <div class="sidebar-section">
         <div class="sidebar-title">Módulos Principais</div>
-        <a href="../index.html" class="sidebar-item"><span class="sidebar-icon">🏠</span><span class="sidebar-text">Dashboard</span></a>
-        <a href="gestao-alunos.html" class="sidebar-item active"><span class="sidebar-icon">👥</span><span class="sidebar-text">Gestão de Alunos</span></a>
-        <a href="medidas-disciplinares.html" class="sidebar-item"><span class="sidebar-icon">📋</span><span class="sidebar-text">Medidas Disciplinares</span></a>
-        <a href="frequencia.html" class="sidebar-item"><span class="sidebar-icon">📅</span><span class="sidebar-text">Controle de Frequência</span></a>
-        <a href="relatorios.html" class="sidebar-item"><span class="sidebar-icon">📊</span><span class="sidebar-text">Relatórios</span></a>
-        <a href="analises.html" class="sidebar-item"><span class="sidebar-icon">📈</span><span class="sidebar-text">Análises</span></a>
+        <a href="/index.html" class="sidebar-item"><span class="sidebar-icon">🏠</span><span class="sidebar-text">Dashboard</span></a>
+        <a href="/pages/gestao-alunos.html" class="sidebar-item active"><span class="sidebar-icon">👥</span><span class="sidebar-text">Gestão de Alunos</span></a>
+        <a href="/pages/medidas-disciplinares.html" class="sidebar-item"><span class="sidebar-icon">📋</span><span class="sidebar-text">Medidas Disciplinares</span></a>
+        <a href="/pages/frequencia.html" class="sidebar-item"><span class="sidebar-icon">📅</span><span class="sidebar-text">Controle de Frequência</span></a>
+        <a href="/pages/relatorios.html" class="sidebar-item"><span class="sidebar-icon">📊</span><span class="sidebar-text">Relatórios</span></a>
+        <a href="/pages/analises.html" class="sidebar-item"><span class="sidebar-icon">📈</span><span class="sidebar-text">Análises</span></a>
       </div>
 
       <div class="sidebar-section">
         <div class="sidebar-title">Ferramentas</div>
-        <a href="configuracoes.html" class="sidebar-item"><span class="sidebar-icon">⚙️</span><span class="sidebar-text">Configurações</span></a>
-        <a href="comunicacao.html" class="sidebar-item"><span class="sidebar-icon">📱</span><span class="sidebar-text">Comunicação</span></a>
-        <a href="login.html" class="sidebar-item"><span class="sidebar-icon">🔐</span><span class="sidebar-text">Login/Logout</span></a>
+        <a href="/pages/configuracoes.html" class="sidebar-item"><span class="sidebar-icon">⚙️</span><span class="sidebar-text">Configurações</span></a>
+        <a href="/pages/comunicacao.html" class="sidebar-item"><span class="sidebar-icon">📱</span><span class="sidebar-text">Comunicação</span></a>
+        <a href="/pages/login.html" class="sidebar-item"><span class="sidebar-icon">🔐</span><span class="sidebar-text">Login/Logout</span></a>
       </div>
     </div>
 
@@ -69,12 +69,6 @@
         <!-- TÍTULO -->
         <div class="module-title">👥 Gestão de Alunos</div>
         
-        <!-- BOTÕES DE AÇÃO -->
-        <div style="margin: 20px 0; text-align: right;">
-          <button onclick="window.location.href='importacao-dados.html'" class="btn btn-primary" style="background: linear-gradient(135deg, #28a745, #20c997); border: none; padding: 12px 20px; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
-            📊 Importar Dados do Excel
-          </button>
-        </div>
 
         <!-- CADASTRO / EDIÇÃO -->
         <div class="management-section">
@@ -280,16 +274,53 @@
 
   <!-- Guard de Autenticação TEMPORARIAMENTE DESABILITADO -->
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      console.log('🛑 Guard de autenticação DESABILITADO - testando redirecionamento');
-      // TEMPORARIAMENTE desabilitado para testar loop de redirecionamento
-      requireAuth({
-        loginPath: 'login.html',
-        onAuth: (user) => {
-          console.log('Usuário logado:', user.email || user.id);
-          // A listagem em tempo real é automática via gestao.js
-        }
-      });
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('🔐 Iniciando guard de autenticação robusto...');
+      
+      try {
+        // Aguardar sistemas ficarem prontos com timeout
+        const timeout = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout de inicialização')), 5000)
+        );
+        
+        const waitForAuth = async () => {
+          // Aguardar sistema estar pronto
+          if (window.unifiedAuth) {
+            await window.unifiedAuth.waitForReady();
+          }
+          
+          // Verificar múltiplas fontes de autenticação
+          const isLoggedViaUnified = window.unifiedAuth && window.unifiedAuth.isAuthenticated();
+          const authData = localStorage.getItem('supabase_auth') || localStorage.getItem('auth_session');
+          const hasValidSession = authData && JSON.parse(authData)?.user;
+          
+          console.log('🔍 Status de autenticação:', {
+            unifiedAuth: isLoggedViaUnified,
+            hasSession: !!hasValidSession,
+            currentUser: window.unifiedAuth?.getCurrentUser()?.email
+          });
+          
+          if (isLoggedViaUnified || hasValidSession) {
+            console.log('✅ Usuário autenticado, carregando página...');
+            const user = window.unifiedAuth?.getCurrentUser() || JSON.parse(authData)?.user;
+            if (user) {
+              console.log('👤 Usuário:', user.email || user.id);
+            }
+            return true;
+          } else {
+            console.log('🔒 Usuário não autenticado, redirecionando...');
+            window.location.href = '/pages/login.html';
+            return false;
+          }
+        };
+        
+        await Promise.race([waitForAuth(), timeout]);
+        
+      } catch (error) {
+        console.error('❌ Erro no guard de autenticação:', error);
+        // Em caso de erro, permitir acesso (modo degradado)
+        console.log('⚠️ Modo degradado - permitindo acesso');
+      }
     });
   </script>
 

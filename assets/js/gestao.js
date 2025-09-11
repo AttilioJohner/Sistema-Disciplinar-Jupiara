@@ -25,8 +25,11 @@ function checkAppVersion() {
     
     // Mostrar notificação ao usuário
     setTimeout(() => {
-      if (window.toast) {
+      // Usar toast se disponível, senão console.log
+      if (typeof window.toast === 'function') {
         window.toast('🚀 Sistema atualizado para nova versão!', 'ok');
+      } else {
+        console.log('🚀 Sistema atualizado para nova versão!');
       }
     }, 1000);
     
@@ -256,11 +259,90 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   }
 
   // =====================
+  // SISTEMA DE CACHE INTELIGENTE (2 minutos)
+  // =====================
+  const CACHE_DURATION = 2 * 60 * 1000; // 2 minutos em ms
+  
+  function getCacheKey(type, identifier) {
+    return `cache_${type}_${identifier}`;
+  }
+  
+  function setCache(key, data) {
+    const cacheData = {
+      data: data,
+      timestamp: Date.now(),
+      version: APP_VERSION
+    };
+    try {
+      localStorage.setItem(key, JSON.stringify(cacheData));
+      console.log('💾 Cache salvo:', key, '(' + data.length + ' registros)');
+    } catch (error) {
+      console.warn('⚠️ Erro ao salvar cache:', error);
+    }
+  }
+  
+  function getCache(key) {
+    try {
+      const cached = localStorage.getItem(key);
+      if (!cached) return null;
+      
+      const cacheData = JSON.parse(cached);
+      
+      // Verificar se é da versão atual
+      if (cacheData.version !== APP_VERSION) {
+        localStorage.removeItem(key);
+        console.log('🧹 Cache inválido removido (versão diferente):', key);
+        return null;
+      }
+      
+      // Verificar se não expirou
+      const age = Date.now() - cacheData.timestamp;
+      if (age > CACHE_DURATION) {
+        localStorage.removeItem(key);
+        console.log('⏰ Cache expirado removido:', key, '(idade:', Math.round(age/1000) + 's)');
+        return null;
+      }
+      
+      console.log('⚡ Cache válido encontrado:', key, '(idade:', Math.round(age/1000) + 's)');
+      return cacheData.data;
+    } catch (error) {
+      console.warn('⚠️ Erro ao ler cache:', error);
+      return null;
+    }
+  }
+  
+  function clearCache(pattern) {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.includes(pattern)) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    if (keysToRemove.length > 0) {
+      console.log('🧹 Caches limpos:', keysToRemove);
+    }
+  }
+
+  // =====================
   // CARREGAMENTO FILTRADO POR TURMA
   // =====================
-  async function carregarAlunosFiltrados(turma) {
+  async function carregarAlunosFiltrados(turma, forceRefresh = false) {
     try {
-      console.log('📡 Fazendo query filtrada para turma:', turma);
+      const cacheKey = getCacheKey('turma', turma);
+      
+      // Verificar cache primeiro (se não for refresh forçado)
+      if (!forceRefresh) {
+        const cachedData = getCache(cacheKey);
+        if (cachedData) {
+          console.log('⚡ Usando dados do cache para turma:', turma);
+          processarDadosTurma(cachedData, turma);
+          return;
+        }
+      }
+      
+      console.log('📡 Fazendo query filtrada para turma:', turma, forceRefresh ? '(REFRESH FORÇADO)' : '');
       
       if (!db) {
         console.error('❌ db não está disponível');
@@ -274,40 +356,52 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         total: data.length
       });
       
-      // Processar dados no formato esperado
-      alunosCache = data.map((item) => {
-        const turmaAluno = item.turma || '';
-        const turno = getTurnoByTurma(turmaAluno);
-        const status = 'ativo'; // Padrão ativo
-        
-        return {
-          id: item['código (matrícula)'] || item.codigo,
-          codigo: item['código (matrícula)'] || item.codigo,
-          nome: item['Nome completo'] || '',
-          nome_completo: item['Nome completo'] || '',
-          turma: turmaAluno,
-          turno: turno,
-          status: status,
-          responsavel: item.responsável || '',
-          telefone1: item['Telefone do responsável'] || '',
-          telefone2: item['Telefone do responsável 2'] || '',
-          ...item // Manter campos originais também
-        };
-      });
+      // Salvar no cache
+      setCache(cacheKey, data);
       
-      window.alunosCache = alunosCache.slice();
-      console.log('✅ Alunos processados para turma', turma, ':', {
-        total: alunosCache.length,
-        primeiros3: alunosCache.slice(0, 3).map(a => ({ codigo: a.codigo, nome: a.nome }))
-      });
-      
-      renderTable();
-      updateStatistics();
+          // Processar dados
+      processarDadosTurma(data, turma);
       
     } catch (err) {
       console.error('Erro ao carregar alunos filtrados:', err);
       toast('Erro ao carregar alunos da turma ' + turma, 'erro');
     }
+  }
+  
+  // Função para processar dados da turma (evita duplicação de código)
+  function processarDadosTurma(data, turma) {
+    console.log('📊 Processando dados da turma:', turma, '(' + data.length + ' alunos)');
+    
+    // Mapear dados para o formato esperado
+    alunosCache = data.map(item => {
+      // Estrutura vinda do Supabase otimizado
+      return {
+        id: item['código (matrícula)'] || item.codigo || '',
+        codigo: item['código (matrícula)'] || item.codigo || '',
+        nome: item['Nome completo'] || item.nome_completo || item.nome || '',
+        nome_completo: item['Nome completo'] || item.nome_completo || item.nome || '',
+        turma: item.turma || '',
+        status: item.status || 'ativo',
+        responsavel: item.responsavel || '',
+        telefone1: item.telefone1 || item.telefone_responsavel || item.telefone || '',
+        telefone2: item.telefone2 || '',
+        createdAt: item.created_at || item.createdAt,
+        updatedAt: item.updated_at || item.updatedAt
+      };
+    });
+    
+    // Atualizar interface
+    renderTable();
+    updateStatistics();
+    
+    console.log('✅ Turma processada:', {
+      turma: turma,
+      total: alunosCache.length,
+      primeiros: alunosCache.slice(0, 3).map(a => ({ codigo: a.codigo, nome: a.nome }))
+    });
+    
+    // Mostrar resumo para o usuário
+    toast(`Turma ${turma}: ${alunosCache.length} alunos carregados`, 'ok');
   }
 
   // =====================
@@ -1171,6 +1265,22 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       const botaoExistente = document.getElementById('btnLimparLista');
       if (botaoExistente) botaoExistente.remove();
       
+      // Criar botão de atualizar dados
+      const botaoAtualizar = document.createElement('button');
+      botaoAtualizar.id = 'btnAtualizarDados';
+      botaoAtualizar.innerHTML = '🔄 Atualizar';
+      botaoAtualizar.className = 'btn btn-info';
+      botaoAtualizar.style.cssText = 'margin-left: 10px; padding: 8px 16px; font-size: 14px;';
+      botaoAtualizar.onclick = function() {
+        const turmaSelecionada = els.filtroTurma ? els.filtroTurma.value : '';
+        if (turmaSelecionada && turmaSelecionada !== '') {
+          toast('Atualizando dados da turma ' + turmaSelecionada + '...', 'ok');
+          carregarAlunosFiltrados(turmaSelecionada, true); // forçar refresh
+        } else {
+          toast('Selecione uma turma para atualizar', 'erro');
+        }
+      };
+      
       // Criar novo botão limpar
       const botaoLimpar = document.createElement('button');
       botaoLimpar.id = 'btnLimparLista';
@@ -1179,6 +1289,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       botaoLimpar.style.cssText = 'margin-left: 10px; padding: 8px 16px; font-size: 14px;';
       botaoLimpar.onclick = limparListaAlunos;
       
+      tableActions.appendChild(botaoAtualizar);
       tableActions.appendChild(botaoLimpar);
     }
   }
@@ -1193,9 +1304,11 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       els.filtroTurma.value = 'todos';
     }
     
-    // Remover botão limpar
+    // Remover botões de ação
     const botaoLimpar = document.getElementById('btnLimparLista');
     if (botaoLimpar) botaoLimpar.remove();
+    const botaoAtualizar = document.getElementById('btnAtualizarDados');
+    if (botaoAtualizar) botaoAtualizar.remove();
     
     // Mostrar novamente o botão de carregamento
     adicionarBotaoCarregamento();
@@ -1222,9 +1335,27 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         container.style.display = 'block';
         btn.style.display = 'none';
         
+        // Adicionar botão de atualizar na consulta se ainda não existe
+        const consultaActions = container.querySelector('.table-actions');
+        if (consultaActions && !document.getElementById('btnAtualizarConsulta')) {
+          const botaoAtualizarConsulta = document.createElement('button');
+          botaoAtualizarConsulta.id = 'btnAtualizarConsulta';
+          botaoAtualizarConsulta.innerHTML = '🔄 Atualizar';
+          botaoAtualizarConsulta.className = 'btn btn-info';
+          botaoAtualizarConsulta.style.cssText = 'margin-left: 10px; padding: 8px 16px; font-size: 14px;';
+          botaoAtualizarConsulta.onclick = function() {
+            toast('Atualizando lista geral de alunos...', 'ok');
+            carregarConsultaGeral(true); // forçar refresh
+          };
+          
+          consultaActions.appendChild(botaoAtualizarConsulta);
+        }
+        
         // Carregar dados básicos se ainda não carregou
         if (consultaCache.length === 0) {
           await carregarConsultaGeral();
+        } else {
+          renderConsultaTable(); // Apenas renderizar se já tem cache
         }
       }
     } catch (error) {
@@ -1233,12 +1364,27 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     }
   };
   
-  async function carregarConsultaGeral() {
+  async function carregarConsultaGeral(forceRefresh = false) {
     try {
+      const cacheKey = getCacheKey('consulta', 'todos');
+      
+      // Verificar cache primeiro (se não for refresh forçado)
+      if (!forceRefresh) {
+        const cachedData = getCache(cacheKey);
+        if (cachedData) {
+          console.log('⚡ Usando dados do cache para consulta geral');
+          consultaCache = cachedData;
+          renderConsultaTable();
+          return;
+        }
+      }
+      
       const tbody = document.getElementById('consultaTableBody');
       if (tbody) {
         tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px;">⏳ Carregando todos os alunos...</td></tr>';
       }
+      
+      console.log('📡 Fazendo query para consulta geral', forceRefresh ? '(REFRESH FORÇADO)' : '');
       
       // Buscar dados básicos otimizados
       const data = await window.supabaseSystem.db.alunos.getAllBasic();
@@ -1248,6 +1394,9 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         nome: item['Nome completo'] || '',
         turma: item.turma || ''
       }));
+      
+      // Salvar no cache
+      setCache(cacheKey, consultaCache);
       
       renderConsultaTable();
       console.log('✅ Consulta geral carregada:', consultaCache.length, 'alunos');
@@ -1297,6 +1446,12 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     if (container && btn) {
       container.style.display = 'none';
       btn.style.display = 'block';
+      
+      // Remover botão de atualizar da consulta
+      const botaoAtualizarConsulta = document.getElementById('btnAtualizarConsulta');
+      if (botaoAtualizarConsulta) {
+        botaoAtualizarConsulta.remove();
+      }
     }
   };
 

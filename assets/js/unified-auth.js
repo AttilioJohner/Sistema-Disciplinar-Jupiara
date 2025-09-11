@@ -254,9 +254,8 @@ async function logout(redirectTo = null) {
     if (redirectTo) {
         window.location.href = redirectTo;
     } else {
-        // Redirecionamento inteligente baseado na localização atual
-        const isInSubPage = window.location.pathname.includes('/pages/');
-        window.location.href = isInSubPage ? 'login.html' : 'pages/login.html';
+        // Redirecionamento sempre para caminho absoluto
+        window.location.href = '/pages/login.html';
     }
 }
 
