@@ -1,5 +1,47 @@
 // gestao.js — CRUD de Alunos com Sistema Local + Modo Debug
 
+// ===== CONTROLE DE VERSÃO PARA EVITAR CACHE AGRESSIVO =====
+const APP_VERSION = '20250911-001';
+
+function checkAppVersion() {
+  const lastVersion = localStorage.getItem('app_version');
+  
+  if (lastVersion && lastVersion !== APP_VERSION) {
+    console.log('🔄 Nova versão detectada:', APP_VERSION, '(anterior:', lastVersion + ')');
+    console.log('🧹 Limpando cache antigo e recarregando...');
+    
+    // Limpar dados antigos que podem causar conflito
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('supabase') || key.startsWith('alunos_') || key.startsWith('turma_'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // Salvar nova versão
+    localStorage.setItem('app_version', APP_VERSION);
+    
+    // Mostrar notificação ao usuário
+    setTimeout(() => {
+      if (window.toast) {
+        window.toast('🚀 Sistema atualizado para nova versão!', 'ok');
+      }
+    }, 1000);
+    
+    return true; // Versão foi atualizada
+  } else {
+    // Primeira vez ou mesma versão
+    localStorage.setItem('app_version', APP_VERSION);
+    return false;
+  }
+}
+
+// Executar verificação de versão
+const wasUpdated = checkAppVersion();
+console.log('📋 Versão do app:', APP_VERSION, wasUpdated ? '(ATUALIZADO)' : '(atual)');
+
 // ===== PROTEÇÃO TOTAL CONTRA RECARREGAMENTO =====
 if (window.GESTAO_SCRIPT_LOADED) {
   console.log('🛑 GESTAO.JS JÁ CARREGADO - ABORTAR EXECUÇÃO');

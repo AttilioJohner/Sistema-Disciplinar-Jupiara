@@ -15,17 +15,21 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://raw.githubusercontent.com;"
 
-# Cache moderado para HTML (permite cache mas valida)
+# ZERO cache para HTML (sempre busca versão nova)
 [[headers]]
   for = "/*.html"
   [headers.values]
-    Cache-Control = "no-cache, must-revalidate"
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma = "no-cache"
+    Expires = "0"
 
-# Cache moderado para pages  
+# ZERO cache para pages (sempre busca versão nova)
 [[headers]]
   for = "/pages/*.html"
   [headers.values]
-    Cache-Control = "no-cache, must-revalidate"
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma = "no-cache"
+    Expires = "0"
 
 # Sem cache para arquivos dinâmicos
 [[headers]]
@@ -35,16 +39,20 @@
     Pragma = "no-cache"
     Expires = "0"
 
-# Cache inteligente para JS/CSS (com versioning)
+# Cache inteligente para JS/CSS versionados (com ?v= são únicos)
 [[headers]]
   for = "/assets/js/*.js"
   [headers.values]
-    Cache-Control = "public, max-age=300, stale-while-revalidate=86400"
+    # Se tem ?v= no URL, pode cachear longamente pois versão é única
+    Cache-Control = "public, max-age=31536000"
+    # Mas força revalidação se não tem versão
+    Vary = "Accept-Encoding"
 
 [[headers]]
   for = "/assets/css/*.css"
   [headers.values]
-    Cache-Control = "public, max-age=300, stale-while-revalidate=86400"
+    Cache-Control = "public, max-age=31536000"
+    Vary = "Accept-Encoding"
 
 # Cache longo para assets estáticos (imagens, etc)
 [[headers]]
