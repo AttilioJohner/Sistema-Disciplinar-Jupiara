@@ -26,6 +26,209 @@
     
     <!-- Estilos específicos para ficha disciplinar -->
     <style>
+        /* Sistema de expansão/colapso de seções */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .section-header:hover {
+            background: rgba(0,0,0,0.05);
+            border-radius: 8px;
+            padding: 8px;
+            margin: -8px;
+        }
+        
+        .section-toggle {
+            font-size: 1.2em;
+            color: #007bff;
+            transition: transform 0.3s ease;
+            user-select: none;
+        }
+        
+        .section-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+        
+        .section-content {
+            transition: all 0.4s ease;
+            overflow: hidden;
+        }
+        
+        .section-content.collapsed {
+            max-height: 0 !important;
+            opacity: 0;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        .management-title {
+            margin: 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        /* Sistema de seleção múltipla de faltas */
+        .faltas-multi-container {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+        }
+        
+        .falta-option {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        
+        .falta-option:hover {
+            background: #f8f9fa;
+        }
+        
+        .falta-option:last-child {
+            border-bottom: none;
+        }
+        
+        .falta-checkbox {
+            margin-right: 8px;
+        }
+        
+        .faltas-selecionadas {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .faltas-selecionadas-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #495057;
+        }
+        
+        .falta-tag {
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            margin: 2px 4px 2px 0;
+            cursor: pointer;
+        }
+        
+        .falta-tag:hover {
+            background: #dc3545;
+        }
+        
+        .falta-tag::after {
+            content: ' ✕';
+            margin-left: 4px;
+        }
+        
+        /* Status do prazo */
+        .status-prazo {
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .status-prazo.em-prazo {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-prazo.atencao {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .status-prazo.vencido {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .form-help {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 4px;
+            display: block;
+        }
+        
+        /* Sistema de categorias múltiplas */
+        .categorias-container {
+            display: flex;
+            gap: 15px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        
+        .categoria-group {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .categoria-group:hover {
+            border-color: #007bff;
+            background: #f8f9fa;
+        }
+        
+        .categoria-group.selected {
+            border-color: #007bff;
+            background: #e7f3ff;
+        }
+        
+        .categoria-checkbox {
+            margin-right: 8px;
+        }
+        
+        .categoria-group label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        /* Seções de faltas por categoria */
+        .categoria-secao {
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .categoria-header {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .categoria-faltas {
+            padding: 10px;
+        }
+
         /* Dados pessoais */
         .dados-grid {
             display: grid;
@@ -1034,10 +1237,13 @@
 
                 <!-- PAINEL DE ALERTAS -->
                 <div class="management-section" id="painelAlertas">
-                    <div class="management-title">
-                        🚨 Alertas e Prioridades
+                    <div class="section-header" onclick="toggleSection('alertas')">
+                        <div class="management-title">
+                            🚨 Alertas e Prioridades
+                        </div>
+                        <span class="section-toggle" id="alertas-toggle">🔽</span>
                     </div>
-                    <div id="alertasContainer">
+                    <div id="alertasContainer" class="section-content" id="alertas-content">
                         <div class="loading-state">
                             <div class="loading-spinner"></div>
                             <p>Carregando alertas...</p>
@@ -1047,11 +1253,15 @@
 
                 <!-- SEÇÃO: MEDIDAS DISCIPLINARES -->
                 <div class="management-section">
-                    <div class="management-title">
-                        ⚖️ Registrar Medida Disciplinar
+                    <div class="section-header" onclick="toggleSection('medidas')">
+                        <div class="management-title">
+                            ⚖️ Registrar Medida Disciplinar
+                        </div>
+                        <span class="section-toggle" id="medidas-toggle">🔽</span>
                     </div>
                     
-                    <form id="formMedida" onsubmit="salvarMedida(event)">
+                    <div class="section-content" id="medidas-content">
+                        <form id="formMedida" onsubmit="salvarMedida(event)">
                         <div class="form-grid">
                             <div class="form-group">
                                 <label class="form-label">Turma *</label>
@@ -1103,21 +1313,38 @@
                             </div>
                             
                             <!-- Campos de categoria de faltas - inicialmente ocultos -->
-                            <div class="form-group" id="campoCategoriaMedida" style="display: none;">
-                                <label class="form-label">Categoria da Falta *</label>
-                                <select id="categoriaMedida" class="form-select" onchange="carregarFaltasPorCategoria()" required>
-                                    <option value="">Selecione a categoria...</option>
-                                    <option value="leves">Faltas Leves (1-26)</option>
-                                    <option value="medias">Faltas Médias (27-62)</option>
-                                    <option value="graves">Faltas Graves (63-91)</option>
-                                </select>
+                            <div class="form-group form-group-full" id="campoCategoriaMedida" style="display: none;">
+                                <label class="form-label">Categorias de Faltas</label>
+                                <div class="categorias-container">
+                                    <div class="categoria-group" onclick="toggleCategoria('leves')">
+                                        <input type="checkbox" id="cat_leves" class="categoria-checkbox" />
+                                        <label for="cat_leves">📗 Faltas Leves (1-26)</label>
+                                    </div>
+                                    <div class="categoria-group" onclick="toggleCategoria('medias')">
+                                        <input type="checkbox" id="cat_medias" class="categoria-checkbox" />
+                                        <label for="cat_medias">📙 Faltas Médias (27-62)</label>
+                                    </div>
+                                    <div class="categoria-group" onclick="toggleCategoria('graves')">
+                                        <input type="checkbox" id="cat_graves" class="categoria-checkbox" />
+                                        <label for="cat_graves">📕 Faltas Graves (63-91)</label>
+                                    </div>
+                                </div>
+                                <small class="form-help">Você pode selecionar múltiplas categorias para o mesmo incidente</small>
                             </div>
                             
                             <div class="form-group form-group-full" id="campoSelecaoFalta" style="display: none;">
-                                <label class="form-label">Selecionar Falta Específica *</label>
-                                <select id="faltaEspecifica" class="form-select" required>
-                                    <option value="">Primeiro selecione uma categoria...</option>
-                                </select>
+                                <label class="form-label">Selecionar Faltas Específicas *</label>
+                                <div id="faltasMultiContainer" class="faltas-multi-container">
+                                    <div style="padding: 20px; text-align: center; color: #666;">
+                                        Primeiro selecione uma categoria...
+                                    </div>
+                                </div>
+                                <div id="faltasSelecionadas" class="faltas-selecionadas" style="display: none;">
+                                    <div class="faltas-selecionadas-title">Faltas selecionadas:</div>
+                                    <div id="faltasTagsContainer"></div>
+                                </div>
+                                <!-- Hidden input para armazenar as faltas selecionadas -->
+                                <input type="hidden" id="faltaEspecifica" name="faltasEspecificas" />
                             </div>
                             
                             <div class="form-group" id="campoSuspensao" style="display: none;">
@@ -1143,6 +1370,24 @@
                                 ></textarea>
                             </div>
                             
+                            <div class="form-group">
+                                <label class="form-label">Prazo para entrega de Assinatura</label>
+                                <input 
+                                    type="date" 
+                                    id="prazoAssinatura" 
+                                    class="form-input"
+                                    title="Data limite para o responsável devolver o documento assinado"
+                                >
+                                <small class="form-help">Data limite para devolução do documento assinado pelo responsável</small>
+                            </div>
+                            
+                            <div class="form-group" id="diasRestantesInfo" style="display: none;">
+                                <label class="form-label">Status do Prazo</label>
+                                <div id="statusPrazo" class="status-prazo">
+                                    <!-- Será preenchido automaticamente -->
+                                </div>
+                            </div>
+                            
                             <div class="form-group form-group-full">
                                 <label class="form-label">Ações Tomadas</label>
                                 <textarea 
@@ -1162,16 +1407,21 @@
                                 ⚠️ Salvar Medida
                             </button>
                         </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
 
                 <!-- SEÇÃO: FICHA DISCIPLINAR DO ALUNO -->
                 <div class="management-section">
-                    <div class="management-title">
-                        🔍 Consultar Ficha Disciplinar do Aluno
+                    <div class="section-header" onclick="toggleSection('consulta')">
+                        <div class="management-title">
+                            🔍 Consultar Ficha Disciplinar do Aluno
+                        </div>
+                        <span class="section-toggle" id="consulta-toggle">🔽</span>
                     </div>
                     
-                    <div class="form-grid">
+                    <div class="section-content" id="consulta-content">
+                        <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Selecionar Turma *</label>
                             <select id="turmaConsulta" class="form-select" onchange="carregarAlunosPorTurma()" required>
@@ -1258,15 +1508,21 @@
                             <h3 class="ficha-section-title">📊 Resumo Estatístico</h3>
                             <div id="resumoEstatistico" class="resumo-stats"></div>
                         </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- SEÇÃO: REGISTROS RECENTES -->
                 <div class="table-container">
                     <div class="table-header">
-                        <div class="table-title">
-                            📋 Registros Recentes
+                        <div class="section-header" onclick="toggleSection('registros')">
+                            <div class="table-title">
+                                📋 Registros Recentes
+                            </div>
+                            <span class="section-toggle" id="registros-toggle">🔽</span>
                         </div>
+                    </div>
+                    <div class="section-content" id="registros-content">
                         <div class="table-actions">
                             <button class="btn btn-info btn-small" onclick="carregarRegistrosRecentes()">
                                 🔄 Atualizar
@@ -1282,10 +1538,11 @@
                         </div>
                     </div>
                     
-                    <div id="registrosRecentes" class="table-content">
-                        <div class="loading-state">
-                            <div class="loading-spinner"></div>
-                            <p>Carregando registros recentes...</p>
+                        <div id="registrosRecentes" class="table-content">
+                            <div class="loading-state">
+                                <div class="loading-spinner"></div>
+                                <p>Carregando registros recentes...</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1721,43 +1978,47 @@
             ];
             
             if (medidasComCategoria.includes(tipoMedida)) {
-                // Mostrar campos de categoria para medidas disciplinares
+                // Mostrar campos de categoria para medidas disciplinares (MÚLTIPLAS CATEGORIAS)
                 campoCategoria.style.display = 'block';
                 campoSelecaoFalta.style.display = 'block';
                 campoMotivoOriginal.style.display = 'none';
-                selectCategoria.required = true;
+                selectCategoria.required = false; // Não usar o select antigo
                 selectFalta.required = true;
                 textareaMotivo.required = false;
                 
-                // Restaurar opções originais para medidas disciplinares
-                selectCategoria.innerHTML = `
-                    <option value="">Selecione a categoria...</option>
-                    <option value="leves">Faltas Leves (1-26)</option>
-                    <option value="medias">Faltas Médias (27-62)</option>
-                    <option value="graves">Faltas Graves (63-91)</option>
-                `;
+                // Esconder o select antigo de categoria (mantendo para compatibilidade)
+                if (selectCategoria) {
+                    selectCategoria.style.display = 'none';
+                }
                 
-                // Limpar seleções anteriores
-                selectCategoria.value = '';
-                selectFalta.innerHTML = '<option value="">Primeiro selecione uma categoria...</option>';
+                // Limpar seleções múltiplas anteriores
+                limparSelecoesCategorias();
                 
             } else if (medidasPositivas.includes(tipoMedida)) {
-                // Para medidas positivas, mostrar campo de categoria mas com opções diferentes
-                campoCategoria.style.display = 'block';
+                // Para medidas positivas, esconder seleção de categorias múltiplas e usar select tradicional
+                campoCategoria.style.display = 'none';
                 campoSelecaoFalta.style.display = 'block';
                 campoMotivoOriginal.style.display = 'none';
                 
-                // Modificar as opções para medidas positivas
-                selectCategoria.innerHTML = `
-                    <option value="">Selecione a categoria...</option>
-                    <option value="comportamento">Comportamento Exemplar</option>
-                    <option value="academico">Desempenho Acadêmico</option>
-                    <option value="cidadania">Cidadania e Respeito</option>
-                `;
+                // Mostrar select antigo para medidas positivas
+                if (selectCategoria) {
+                    selectCategoria.style.display = 'block';
+                    // Modificar as opções para medidas positivas
+                    selectCategoria.innerHTML = `
+                        <option value="">Selecione a categoria...</option>
+                        <option value="comportamento">Comportamento Exemplar</option>
+                        <option value="academico">Desempenho Acadêmico</option>
+                        <option value="cidadania">Cidadania e Respeito</option>
+                        <option value="lideranca">Liderança</option>
+                    `;
+                }
                 
                 selectCategoria.required = false;
                 selectFalta.required = false;
                 textareaMotivo.required = true;
+                
+                // Limpar seleções múltiplas
+                limparSelecoesCategorias();
                 
             } else {
                 // Para outras medidas, usar campo de texto tradicional
@@ -1767,6 +2028,14 @@
                 selectCategoria.required = false;
                 selectFalta.required = false;
                 textareaMotivo.required = true;
+                
+                // Mostrar select normal se estiver escondido
+                if (selectCategoria) {
+                    selectCategoria.style.display = 'block';
+                }
+                
+                // Limpar seleções múltiplas
+                limparSelecoesCategorias();
             }
             
             // Gerenciar campo de suspensão
@@ -1783,17 +2052,44 @@
         }
         
         function carregarFaltasPorCategoria() {
+            console.log('🎯 carregarFaltasPorCategoria() chamada');
             const categoria = document.getElementById('categoriaMedida').value;
             const selectFalta = document.getElementById('faltaEspecifica');
             const tipoMedida = document.getElementById('tipoMedida').value;
+            const campoSelecaoFalta = document.getElementById('campoSelecaoFalta');
             
             if (!categoria) {
-                selectFalta.innerHTML = '<option value="">Primeiro selecione uma categoria...</option>';
+                // Limpar sistema de seleção múltipla
+                const container = document.getElementById('faltasMultiContainer');
+                if (container) {
+                    container.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Primeiro selecione uma categoria...</div>';
+                }
+                faltasSelecionadas = [];
+                atualizarTagsFaltas();
                 return;
             }
             
-            // Para medidas positivas, criar opções específicas
+            console.log('Tipo de medida:', tipoMedida, 'Categoria:', categoria);
+            
+            // Mostrar campo de seleção
+            if (campoSelecaoFalta) {
+                campoSelecaoFalta.style.display = 'block';
+            }
+            
+            // Para medidas positivas, usar sistema de seleção múltipla
             if (['Elogio Individual', 'Elogio Coletivo', 'Fato Observado Positivo'].includes(tipoMedida)) {
+                carregarOpcoesPositivas(categoria, tipoMedida);
+                return; // Sai da função aqui para evitar código duplicado
+            }
+            
+            // Para medidas disciplinares (negativas), usar seleção múltipla de faltas
+            if (['Fato Observado Negativo', 'Advertência Verbal', 'Advertência Escrita', 'Suspensão', 'Ação Educativa'].includes(tipoMedida)) {
+                carregarFaltasMultiplas(categoria);
+                return; // Sai da função aqui
+            }
+            
+            // CÓDIGO ORIGINAL PRESERVADO PARA COMPATIBILIDADE:
+            if (['Elogio Individual - ORIGINAL', 'Elogio Coletivo - ORIGINAL', 'Fato Observado Positivo - ORIGINAL'].includes(tipoMedida)) {
                 let opcoes = '';
                 
                 if (categoria === 'comportamento') {
@@ -4386,6 +4682,366 @@
             //     }
             // }, 100);
         });
+        
+        // MISSÃO 1.1: Sistema de expansão/colapso de seções
+        function toggleSection(sectionId) {
+            const content = document.getElementById(sectionId + '-content');
+            const toggle = document.getElementById(sectionId + '-toggle');
+            
+            if (!content || !toggle) {
+                console.warn('Elementos não encontrados para seção:', sectionId);
+                return;
+            }
+            
+            // Toggle da classe collapsed
+            const isCollapsed = content.classList.contains('collapsed');
+            
+            if (isCollapsed) {
+                // Expandir
+                content.classList.remove('collapsed');
+                content.style.maxHeight = content.scrollHeight + 'px';
+                toggle.classList.remove('collapsed');
+                toggle.textContent = '🔽';
+                
+                // Após a animação, remover maxHeight para permitir conteúdo dinâmico
+                setTimeout(() => {
+                    if (!content.classList.contains('collapsed')) {
+                        content.style.maxHeight = 'none';
+                    }
+                }, 400);
+            } else {
+                // Colapsar
+                content.style.maxHeight = content.scrollHeight + 'px';
+                content.offsetHeight; // Force reflow
+                content.style.maxHeight = '0px';
+                content.classList.add('collapsed');
+                toggle.classList.add('collapsed');
+                toggle.textContent = '🔼';
+            }
+        }
+        
+        // Inicializar seções expandidas por padrão
+        document.addEventListener('DOMContentLoaded', function() {
+            const sections = ['alertas', 'medidas', 'consulta', 'registros'];
+            sections.forEach(sectionId => {
+                const content = document.getElementById(sectionId + '-content');
+                if (content) {
+                    content.style.maxHeight = 'none';
+                }
+            });
+            
+            // Inicializar sistema de prazos
+            inicializarSistemaPrazos();
+        });
+        
+        // MISSÃO 1.2: Sistema de seleção múltipla de faltas
+        let faltasSelecionadas = [];
+        let categoriasSelecionadas = [];
+        
+        function carregarFaltasMultiplas(categoria) {
+            const container = document.getElementById('faltasMultiContainer');
+            const faltasTagsContainer = document.getElementById('faltasTagsContainer');
+            const faltasSelecionadasDiv = document.getElementById('faltasSelecionadas');
+            
+            if (!container) return;
+            
+            // Limpar seleções anteriores ao mudar categoria
+            faltasSelecionadas = [];
+            atualizarTagsFaltas();
+            
+            if (window.MEDIDAS_DISCIPLINARES && window.MEDIDAS_DISCIPLINARES[categoria]) {
+                const medidas = window.MEDIDAS_DISCIPLINARES[categoria];
+                
+                container.innerHTML = medidas.map(medida => `
+                    <div class="falta-option" onclick="toggleFalta('${medida}')">
+                        <input type="checkbox" class="falta-checkbox" id="falta_${medida.replace(/\s+/g, '_')}" />
+                        <label for="falta_${medida.replace(/\s+/g, '_')}">${medida}</label>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Faltas não encontradas para esta categoria</div>';
+            }
+        }
+        
+        function toggleFalta(falta) {
+            const checkbox = document.getElementById(`falta_${falta.replace(/\s+/g, '_')}`);
+            
+            if (faltasSelecionadas.includes(falta)) {
+                // Remover da seleção
+                faltasSelecionadas = faltasSelecionadas.filter(f => f !== falta);
+                checkbox.checked = false;
+            } else {
+                // Adicionar à seleção
+                faltasSelecionadas.push(falta);
+                checkbox.checked = true;
+            }
+            
+            atualizarTagsFaltas();
+        }
+        
+        function removerFalta(falta) {
+            faltasSelecionadas = faltasSelecionadas.filter(f => f !== falta);
+            
+            // Desmarcar checkbox se existir
+            const checkbox = document.getElementById(`falta_${falta.replace(/\s+/g, '_')}`);
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+            
+            atualizarTagsFaltas();
+        }
+        
+        function atualizarTagsFaltas() {
+            const tagsContainer = document.getElementById('faltasTagsContainer');
+            const faltasSelecionadasDiv = document.getElementById('faltasSelecionadas');
+            const hiddenInput = document.getElementById('faltaEspecifica');
+            
+            if (faltasSelecionadas.length > 0) {
+                tagsContainer.innerHTML = faltasSelecionadas.map(falta => 
+                    `<span class="falta-tag" onclick="removerFalta('${falta}')">${falta}</span>`
+                ).join('');
+                
+                faltasSelecionadasDiv.style.display = 'block';
+                
+                // Atualizar campo hidden para submissão do formulário
+                hiddenInput.value = faltasSelecionadas.join('; ');
+            } else {
+                faltasSelecionadasDiv.style.display = 'none';
+                hiddenInput.value = '';
+            }
+        }
+        
+        // MISSÃO 1.3: Sistema de controle de prazos
+        function inicializarSistemaPrazos() {
+            const prazoInput = document.getElementById('prazoAssinatura');
+            if (prazoInput) {
+                prazoInput.addEventListener('change', calcularStatusPrazo);
+                
+                // Definir data mínima como hoje
+                const hoje = new Date().toISOString().split('T')[0];
+                prazoInput.min = hoje;
+                
+                // Sugerir prazo padrão de 7 dias
+                const sugestao = new Date();
+                sugestao.setDate(sugestao.getDate() + 7);
+                prazoInput.value = sugestao.toISOString().split('T')[0];
+                
+                calcularStatusPrazo();
+            }
+        }
+        
+        function calcularStatusPrazo() {
+            const prazoInput = document.getElementById('prazoAssinatura');
+            const statusDiv = document.getElementById('statusPrazo');
+            const infoDiv = document.getElementById('diasRestantesInfo');
+            
+            if (!prazoInput.value) {
+                infoDiv.style.display = 'none';
+                return;
+            }
+            
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+            
+            const dataPrazo = new Date(prazoInput.value);
+            dataPrazo.setHours(0, 0, 0, 0);
+            
+            const diffTime = dataPrazo - hoje;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            let statusClass, statusTexto, statusIcon;
+            
+            if (diffDays < 0) {
+                statusClass = 'vencido';
+                statusTexto = `Prazo vencido há ${Math.abs(diffDays)} dia(s)`;
+                statusIcon = '🔴';
+            } else if (diffDays === 0) {
+                statusClass = 'atencao';
+                statusTexto = 'Vence hoje!';
+                statusIcon = '🟡';
+            } else if (diffDays <= 2) {
+                statusClass = 'atencao';
+                statusTexto = `${diffDays} dia(s) restante(s)`;
+                statusIcon = '🟡';
+            } else {
+                statusClass = 'em-prazo';
+                statusTexto = `${diffDays} dia(s) restante(s)`;
+                statusIcon = '🟢';
+            }
+            
+            statusDiv.className = `status-prazo ${statusClass}`;
+            statusDiv.innerHTML = `${statusIcon} ${statusTexto}`;
+            infoDiv.style.display = 'block';
+        }
+        
+        // Integração com função original - seleção múltipla inteligente
+        function carregarFaltasCategorizadas(categoria) {
+            console.log('🎯 Carregando faltas categorizadas para:', categoria);
+            
+            if (!categoria) {
+                categoria = document.getElementById('categoriaMedida').value;
+            }
+            
+            const campoSelecaoFalta = document.getElementById('campoSelecaoFalta');
+            const tipoMedida = document.getElementById('tipoMedida').value;
+            
+            console.log('Tipo de medida:', tipoMedida, 'Categoria:', categoria);
+            
+            if (categoria && categoria !== '') {
+                campoSelecaoFalta.style.display = 'block';
+                
+                // Verificar se é medida positiva ou negativa
+                if (['Elogio Individual', 'Elogio Coletivo', 'Fato Observado Positivo'].includes(tipoMedida)) {
+                    // Para medidas positivas, usar sistema de opções específicas
+                    carregarOpcoesPositivas(categoria, tipoMedida);
+                } else {
+                    // Para medidas disciplinares (negativas), usar seleção múltipla
+                    carregarFaltasMultiplas(categoria);
+                }
+            } else {
+                campoSelecaoFalta.style.display = 'none';
+                faltasSelecionadas = [];
+                atualizarTagsFaltas();
+            }
+        }
+        
+        function carregarOpcoesPositivas(categoria, tipoMedida) {
+            const container = document.getElementById('faltasMultiContainer');
+            let opcoes = [];
+            
+            if (categoria === 'comportamento') {
+                opcoes = [
+                    'Demonstrou excelência em disciplina e respeito',
+                    'Auxiliou colegas e demonstrou solidariedade',
+                    'Apresentou-se impecavelmente uniformizado',
+                    'Liderou atividades com responsabilidade',
+                    'Manteve postura exemplar em formação'
+                ];
+            } else if (categoria === 'academico') {
+                opcoes = [
+                    'Excelente desempenho em avaliações',
+                    'Participação ativa e construtiva em aula',
+                    'Entrega pontual de todas as atividades',
+                    'Demonstrou evolução significativa no aprendizado'
+                ];
+            } else if (categoria === 'cidadania') {
+                opcoes = [
+                    'Demonstrou valores de cidadania exemplares',
+                    'Participou ativamente em projetos comunitários',
+                    'Respeitou diversidade e inclusão',
+                    'Demonstrou responsabilidade social'
+                ];
+            } else if (categoria === 'lideranca') {
+                opcoes = [
+                    'Exerceu liderança positiva e inspiradora',
+                    'Mobilizou grupo para objetivos comuns',
+                    'Demonstrou iniciativa e proatividade',
+                    'Resolveu conflitos de forma madura'
+                ];
+            }
+            
+            if (opcoes.length > 0) {
+                // Limpar seleções anteriores
+                faltasSelecionadas = [];
+                atualizarTagsFaltas();
+                
+                container.innerHTML = opcoes.map(opcao => `
+                    <div class="falta-option" onclick="toggleFalta('${opcao}')">
+                        <input type="checkbox" class="falta-checkbox" id="falta_${opcao.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')}" />
+                        <label for="falta_${opcao.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')}">${opcao}</label>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Opções não encontradas para esta categoria</div>';
+            }
+        }
+        
+        // Sistema de categorias múltiplas
+        function toggleCategoria(categoria) {
+            const checkbox = document.getElementById(`cat_${categoria}`);
+            const group = checkbox.parentElement;
+            
+            if (categoriasSelecionadas.includes(categoria)) {
+                // Remover categoria
+                categoriasSelecionadas = categoriasSelecionadas.filter(c => c !== categoria);
+                checkbox.checked = false;
+                group.classList.remove('selected');
+            } else {
+                // Adicionar categoria
+                categoriasSelecionadas.push(categoria);
+                checkbox.checked = true;
+                group.classList.add('selected');
+            }
+            
+            // Recarregar faltas de todas as categorias selecionadas
+            carregarFaltasMultiplasCategorias();
+        }
+        
+        function carregarFaltasMultiplasCategorias() {
+            const container = document.getElementById('faltasMultiContainer');
+            
+            if (categoriasSelecionadas.length === 0) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Selecione pelo menos uma categoria acima...</div>';
+                return;
+            }
+            
+            let htmlContent = '';
+            
+            categoriasSelecionadas.forEach(categoria => {
+                if (window.MEDIDAS_DISCIPLINARES && window.MEDIDAS_DISCIPLINARES[categoria]) {
+                    const medidas = window.MEDIDAS_DISCIPLINARES[categoria];
+                    const categoriaLabel = categoria === 'leves' ? 'Faltas Leves' : 
+                                         categoria === 'medias' ? 'Faltas Médias' : 
+                                         'Faltas Graves';
+                    
+                    htmlContent += `
+                        <div class="categoria-secao">
+                            <div class="categoria-header">
+                                ${categoriaLabel} (${medidas.length} opções)
+                            </div>
+                            <div class="categoria-faltas">
+                                ${medidas.map(medida => `
+                                    <div class="falta-option" onclick="toggleFalta('${medida}')">
+                                        <input type="checkbox" class="falta-checkbox" id="falta_${medida.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')}" ${faltasSelecionadas.includes(medida) ? 'checked' : ''} />
+                                        <label for="falta_${medida.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')}">${medida}</label>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            if (htmlContent) {
+                container.innerHTML = htmlContent;
+            } else {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Nenhuma falta encontrada para as categorias selecionadas</div>';
+            }
+        }
+        
+        // Limpar todas as seleções quando mudar o tipo de medida
+        function limparSelecoesCategorias() {
+            categoriasSelecionadas = [];
+            faltasSelecionadas = [];
+            
+            // Desmarcar checkboxes de categorias
+            ['leves', 'medias', 'graves'].forEach(cat => {
+                const checkbox = document.getElementById(`cat_${cat}`);
+                const group = checkbox?.parentElement;
+                if (checkbox) {
+                    checkbox.checked = false;
+                    group?.classList.remove('selected');
+                }
+            });
+            
+            // Limpar container de faltas
+            const container = document.getElementById('faltasMultiContainer');
+            if (container) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Selecione uma ou mais categorias acima...</div>';
+            }
+            
+            atualizarTagsFaltas();
+        }
     </script>
 
 </body>
