@@ -195,7 +195,7 @@ const alunosDB = {
         
         const { data, error } = await supabase
             .from('alunos')
-            .select('codigo, "código (matrícula)", "Nome completo", turma, responsável, "Telefone do responsável", "Telefone do responsável 2"')
+            .select('codigo, "código (matrícula)", "Nome completo", turma, responsável, "Telefone do responsável", "Telefone do responsável 2", foto_url')
             .order('"Nome completo"');
         
         if (error) throw error;
@@ -265,35 +265,6 @@ const alunosDB = {
         
         if (error) throw error;
         return data;
-    },
-    
-    // Função otimizada para verificar apenas se aluno possui foto
-    async hasPhoto(codigo) {
-        if (!supabase) {
-            await initSupabase();
-        }
-        
-        if (!supabase) {
-            return false;
-        }
-        
-        try {
-            // Buscar todos e filtrar no cliente (mesma estratégia dos outros métodos)
-            const { data: allData, error } = await supabase
-                .from('alunos')
-                .select('codigo, "código (matrícula)", foto_url');
-            
-            if (error) return false;
-            
-            const aluno = allData?.find(item => 
-                item['código (matrícula)'] === parseInt(codigo) ||
-                item.codigo === parseInt(codigo)
-            );
-            
-            return !!(aluno && aluno.foto_url && aluno.foto_url.trim());
-        } catch (error) {
-            return false;
-        }
     },
     
     async create(aluno) {
