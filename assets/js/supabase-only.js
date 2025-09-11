@@ -267,6 +267,35 @@ const alunosDB = {
         return data;
     },
     
+    // Função otimizada para verificar apenas se aluno possui foto
+    async hasPhoto(codigo) {
+        if (!supabase) {
+            await initSupabase();
+        }
+        
+        if (!supabase) {
+            return false;
+        }
+        
+        try {
+            // Buscar todos e filtrar no cliente (mesma estratégia dos outros métodos)
+            const { data: allData, error } = await supabase
+                .from('alunos')
+                .select('codigo, "código (matrícula)", foto_url');
+            
+            if (error) return false;
+            
+            const aluno = allData?.find(item => 
+                item['código (matrícula)'] === parseInt(codigo) ||
+                item.codigo === parseInt(codigo)
+            );
+            
+            return !!(aluno && aluno.foto_url && aluno.foto_url.trim());
+        } catch (error) {
+            return false;
+        }
+    },
+    
     async create(aluno) {
         const { data, error } = await supabase
             .from('alunos')
