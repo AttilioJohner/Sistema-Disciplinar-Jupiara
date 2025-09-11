@@ -195,7 +195,7 @@ const alunosDB = {
         
         const { data, error } = await supabase
             .from('alunos')
-            .select('codigo, "código (matrícula)", "Nome completo", turma, responsável, "Telefone do responsável", "Telefone do responsável 2", foto_url')
+            .select('codigo, "código (matrícula)", "Nome completo", turma, responsável, "Telefone do responsável", "Telefone do responsável 2"')
             .order('"Nome completo"');
         
         if (error) throw error;

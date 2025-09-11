@@ -235,7 +235,6 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
           telefone1: data.telefone1 || data.telefone_responsavel || data.telefone || '',
           telefone2: data.telefone2 || '',
           email: data.email || '',
-          foto_url: data.foto_url || '', // Incluir foto_url no cache
           ...data // Manter campos originais também
         };
       });
@@ -531,10 +530,6 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
           const statusClass = a.status === 'ativo' ? 'text-success' : 'text-muted';
           const statusIcon = a.status === 'ativo' ? '✓' : '✗';
           
-          // Verificar se tem foto (simples - direto do cache)
-          const hasPhoto = !!(a.foto_url && a.foto_url.trim());
-          const fotoButtonStyle = hasPhoto ? '' : ' disabled style="opacity:0.5"';
-          
           return (
             '<tr data-id="' + escapeHtml(a.id) + '">' +
               '<td>' + escapeHtml(a.codigo || a.id || '') + '</td>' +
@@ -544,7 +539,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
               '<td>' + escapeHtml(a.responsavel || '') + '</td>' +
               '<td>' + escapeHtml(a.telefone1 || '') + '</td>' +
               '<td>' + escapeHtml(a.telefone2 || '') + '</td>' +
-              '<td id="foto-cell-' + escapeHtml(a.id) + '"><button type="button" class="btn btn-small btn-foto" data-aluno-id="' + escapeHtml(a.id) + '"' + fotoButtonStyle + '>Ver Foto</button></td>' +
+              '<td id="foto-cell-' + escapeHtml(a.id) + '"><button type="button" class="btn btn-small btn-foto" data-aluno-id="' + escapeHtml(a.id) + '">Ver Foto</button></td>' +
               '<td style="white-space:nowrap">' +
                 '<button type="button" class="btn btn-small" data-action="edit" data-id="' + encodeURIComponent(a.id) + '">Editar</button>' +
                 deleteButton +
@@ -930,14 +925,8 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   window.ocultarFoto = function(alunoId) {
     const fotoCell = document.getElementById('foto-cell-' + alunoId);
     if (fotoCell) {
-      // Buscar aluno no cache para verificar se tem foto
-      const numId = parseInt(alunoId);
-      const aluno = alunosCache.find(a => a.id === numId) || alunosCache.find(a => a.codigo === numId);
-      const hasPhoto = !!(aluno && aluno.foto_url && aluno.foto_url.trim());
-      const fotoButtonStyle = hasPhoto ? '' : ' disabled style="opacity:0.5"';
-      
       fotoCell.innerHTML = `
-        <button type="button" class="btn btn-small btn-foto" data-aluno-id="${alunoId}"${fotoButtonStyle}>Ver Foto</button>
+        <button type="button" class="btn btn-small btn-foto" data-aluno-id="${alunoId}">Ver Foto</button>
       `;
       toast('Foto ocultada', 'ok');
     }
