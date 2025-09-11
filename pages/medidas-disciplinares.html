@@ -1364,7 +1364,6 @@
                                 <textarea 
                                     id="motivoMedida" 
                                     class="form-textarea" 
-                                    required 
                                     placeholder="Descreva detalhadamente o motivo da medida disciplinar..." 
                                     rows="4"
                                 ></textarea>
@@ -1979,12 +1978,15 @@
             
             if (medidasComCategoria.includes(tipoMedida)) {
                 // Mostrar campos de categoria para medidas disciplinares (MÚLTIPLAS CATEGORIAS)
-                campoCategoria.style.display = 'block';
-                campoSelecaoFalta.style.display = 'block';
-                campoMotivoOriginal.style.display = 'none';
-                selectCategoria.required = false; // Não usar o select antigo
-                selectFalta.required = true;
-                textareaMotivo.required = false;
+                if (campoCategoria) campoCategoria.style.display = 'block';
+                if (campoSelecaoFalta) campoSelecaoFalta.style.display = 'block';
+                if (campoMotivoOriginal) campoMotivoOriginal.style.display = 'none';
+                if (selectCategoria) selectCategoria.required = false; // Não usar o select antigo
+                if (selectFalta) selectFalta.required = true;
+                if (textareaMotivo) {
+                    textareaMotivo.required = false;
+                    textareaMotivo.removeAttribute('required');
+                }
                 
                 // Esconder o select antigo de categoria (mantendo para compatibilidade)
                 if (selectCategoria) {
@@ -1996,9 +1998,9 @@
                 
             } else if (medidasPositivas.includes(tipoMedida)) {
                 // Para medidas positivas, esconder seleção de categorias múltiplas e usar select tradicional
-                campoCategoria.style.display = 'none';
-                campoSelecaoFalta.style.display = 'block';
-                campoMotivoOriginal.style.display = 'none';
+                if (campoCategoria) campoCategoria.style.display = 'none';
+                if (campoSelecaoFalta) campoSelecaoFalta.style.display = 'block';
+                if (campoMotivoOriginal) campoMotivoOriginal.style.display = 'none';
                 
                 // Mostrar select antigo para medidas positivas
                 if (selectCategoria) {
@@ -2011,23 +2013,29 @@
                         <option value="cidadania">Cidadania e Respeito</option>
                         <option value="lideranca">Liderança</option>
                     `;
+                    selectCategoria.required = false;
                 }
                 
-                selectCategoria.required = false;
-                selectFalta.required = false;
-                textareaMotivo.required = true;
+                if (selectFalta) selectFalta.required = false;
+                if (textareaMotivo) {
+                    textareaMotivo.required = true;
+                    textareaMotivo.setAttribute('required', '');
+                }
                 
                 // Limpar seleções múltiplas
                 limparSelecoesCategorias();
                 
             } else {
                 // Para outras medidas, usar campo de texto tradicional
-                campoCategoria.style.display = 'none';
-                campoSelecaoFalta.style.display = 'none';
-                campoMotivoOriginal.style.display = 'block';
-                selectCategoria.required = false;
-                selectFalta.required = false;
-                textareaMotivo.required = true;
+                if (campoCategoria) campoCategoria.style.display = 'none';
+                if (campoSelecaoFalta) campoSelecaoFalta.style.display = 'none';
+                if (campoMotivoOriginal) campoMotivoOriginal.style.display = 'block';
+                if (selectCategoria) selectCategoria.required = false;
+                if (selectFalta) selectFalta.required = false;
+                if (textareaMotivo) {
+                    textareaMotivo.required = true;
+                    textareaMotivo.setAttribute('required', '');
+                }
                 
                 // Mostrar select normal se estiver escondido
                 if (selectCategoria) {
@@ -4764,7 +4772,13 @@
         }
         
         function toggleFalta(falta) {
-            const checkbox = document.getElementById(`falta_${falta.replace(/\s+/g, '_')}`);
+            // Usar o mesmo padrão de ID que é usado na criação dos checkboxes
+            const checkbox = document.getElementById(`falta_${falta.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')}`);
+            
+            if (!checkbox) {
+                console.warn('Checkbox não encontrado para falta:', falta);
+                return;
+            }
             
             if (faltasSelecionadas.includes(falta)) {
                 // Remover da seleção
@@ -4782,8 +4796,8 @@
         function removerFalta(falta) {
             faltasSelecionadas = faltasSelecionadas.filter(f => f !== falta);
             
-            // Desmarcar checkbox se existir
-            const checkbox = document.getElementById(`falta_${falta.replace(/\s+/g, '_')}`);
+            // Desmarcar checkbox se existir - usar mesmo padrão de ID
+            const checkbox = document.getElementById(`falta_${falta.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')}`);
             if (checkbox) {
                 checkbox.checked = false;
             }
