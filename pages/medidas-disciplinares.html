@@ -1968,23 +1968,47 @@
                     }
                 }
                 
+                // Preparar dados base para salvar
+                const dadosBase = {
+                    codigo_matricula: dadosAluno.codigo.toString(),
+                    nome_completo: dadosAluno['Nome completo'],
+                    turma: dadosAluno.turma,
+                    data: data,
+                    especificacao: especificacao,
+                    observacao: acoes,
+                    tipo_medida: tipoMedida,
+                    criado_em: new Date().toISOString()
+                };
+                
+                // Tentar incluir campos de prazo (se existirem no banco)
+                if (prazoAssinatura) {
+                    dadosBase.prazo_assinatura = prazoAssinatura;
+                    dadosBase.prazo_status = 'pendente';
+                }
+                
                 // Salvar medida diretamente no Supabase
                 const { data: result, error: saveError } = await window.supabaseClient
                     .from('medidas')
-                    .insert([{
-                        codigo_matricula: dadosAluno.codigo.toString(),
-                        nome_completo: dadosAluno['Nome completo'],
-                        turma: dadosAluno.turma,
-                        data: data,
-                        especificacao: especificacao,
-                        observacao: acoes,
-                        tipo_medida: tipoMedida,
-                        prazo_assinatura: prazoAssinatura,
-                        prazo_status: prazoAssinatura ? 'pendente' : null,
-                        criado_em: new Date().toISOString()
-                    }]);
+                    .insert([dadosBase]);
                 
-                if (saveError) throw saveError;
+                if (saveError) {
+                    // Se erro é por causa das colunas de prazo, tentar sem elas
+                    if (saveError.code === '42703' && prazoAssinatura) {
+                        console.warn('⚠️ Salvando sem campos de prazo (colunas não existem)');
+                        delete dadosBase.prazo_assinatura;
+                        delete dadosBase.prazo_status;
+                        
+                        const { data: result2, error: saveError2 } = await window.supabaseClient
+                            .from('medidas')
+                            .insert([dadosBase]);
+                            
+                        if (saveError2) throw saveError2;
+                        
+                        showMessage('⚠️ Medida salva (prazo será registrado após configuração do banco)', 'warning');
+                    } else {
+                        throw saveError;
+                    }
+                }
                 
                 // Atualizar nota disciplinar do aluno
                 if (typeof window.atualizarNotaDisciplinar === 'function') {
@@ -2537,15 +2561,42 @@
                 hoje.setHours(0, 0, 0, 0);
 
                 // Buscar medidas com prazo de assinatura pendente
-                const { data: medidasComPrazo, error } = await window.supabaseClient
-                    .from('medidas')
-                    .select('id, codigo_matricula, nome_completo, tipo_medida, especificacao, prazo_assinatura, prazo_status, data')
-                    .not('prazo_assinatura', 'is', null)
-                    .neq('prazo_status', 'entregue')
-                    .order('prazo_assinatura', { ascending: true });
+                let medidasComPrazo = [];
+                
+                try {
+                    const { data, error } = await window.supabaseClient
+                        .from('medidas')
+                        .select('id, codigo_matricula, nome_completo, tipo_medida, especificacao, prazo_assinatura, prazo_status, data')
+                        .not('prazo_assinatura', 'is', null)
+                        .neq('prazo_status', 'entregue')
+                        .order('prazo_assinatura', { ascending: true });
 
-                if (error) {
+                    if (error) {
+                        // Se as colunas não existem, mostrar alerta amigável
+                        if (error.code === '42703') {
+                            console.warn('⚠️ Colunas de prazo não encontradas no banco. Execute o SQL de criação de colunas.');
+                            await atualizarContainerAlertas([{
+                                tipo: 'warning',
+                                icone: '⚙️',
+                                texto: 'Sistema de prazos disponível após configuração do banco de dados',
+                                detalhes: 'Execute o SQL fornecido no Supabase Dashboard para ativar o controle de prazos'
+                            }]);
+                            return;
+                        }
+                        throw error;
+                    }
+                    
+                    medidasComPrazo = data || [];
+                    
+                } catch (error) {
                     console.warn('Erro ao buscar prazos:', error);
+                    // Mostrar mensagem amigável em caso de erro
+                    await atualizarContainerAlertas([{
+                        tipo: 'info',
+                        icone: 'ℹ️',
+                        texto: 'Sistema de alertas de prazo em configuração',
+                        detalhes: 'As funcionalidades de prazo estarão disponíveis após a configuração do banco'
+                    }]);
                     return;
                 }
 
