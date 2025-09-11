@@ -56,8 +56,15 @@
         }
         
         .section-content {
+            max-height: 0px;
+            opacity: 0;
             transition: all 0.4s ease;
             overflow: hidden;
+        }
+        
+        .section-content.expanded {
+            max-height: 2000px;
+            opacity: 1;
         }
         
         .section-content.collapsed {
@@ -1172,6 +1179,105 @@
                 align-items: center;
             }
         }
+        
+        /* Estilos para tabelas de histórico de medidas */
+        .historico-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .historico-table th,
+        .historico-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .historico-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+        }
+        
+        .historico-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .historico-table .checkbox-cell {
+            width: 40px;
+            text-align: center;
+        }
+        
+        .historico-table .codigo-cell {
+            width: 80px;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        
+        .historico-table .data-cell {
+            width: 90px;
+        }
+        
+        .historico-table .tipo-cell {
+            width: 120px;
+        }
+        
+        .historico-table .categoria-badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .categoria-badge.leve {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .categoria-badge.media {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .categoria-badge.grave {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .categoria-badge.positiva {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 15px;
+            cursor: pointer;
+        }
+        
+        .table-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        @media (max-width: 768px) {
+            .table-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .checkbox-label {
+                margin: 5px 0;
+            }
+        }
     </style>
 </head>
 
@@ -1614,6 +1720,70 @@
                                 <div class="loading-spinner"></div>
                                 <p>Carregando registros recentes...</p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SEÇÃO: HISTÓRICO DE MEDIDAS NEGATIVAS -->
+                <div class="management-section">
+                    <div class="section-header" onclick="toggleSection('medidasNegativas')">
+                        <div class="management-title">
+                            📊 Histórico de Medidas Disciplinares (Negativas)
+                        </div>
+                        <span class="section-toggle" id="medidasNegativas-toggle">🔼</span>
+                    </div>
+                    <div class="section-content" id="medidasNegativas-content">
+                        <div class="table-actions">
+                            <button class="btn btn-primary" onclick="carregarMedidasNegativas()">
+                                📋 Carregar Medidas Negativas
+                            </button>
+                            <select class="filter-select" id="filtroTurmaNegativas" onchange="filtrarMedidasNegativas()">
+                                <option value="todas">Todas as turmas</option>
+                            </select>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="selecionarTodasNegativas" onchange="selecionarTodasMedidasNegativas()">
+                                Selecionar Todas
+                            </label>
+                            <button class="btn btn-success" onclick="exportarMedidasSelecionadas('negativas')">
+                                📄 Exportar Selecionadas
+                            </button>
+                        </div>
+                        <div id="tableMedidasNegativas" class="table-content">
+                            <p style="text-align: center; padding: 40px; color: #666;">
+                                Clique em "📋 Carregar Medidas Negativas" para visualizar o histórico completo
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SEÇÃO: HISTÓRICO DE MEDIDAS POSITIVAS -->
+                <div class="management-section">
+                    <div class="section-header" onclick="toggleSection('medidasPositivas')">
+                        <div class="management-title">
+                            🌟 Histórico de Medidas Disciplinares (Positivas)
+                        </div>
+                        <span class="section-toggle" id="medidasPositivas-toggle">🔼</span>
+                    </div>
+                    <div class="section-content" id="medidasPositivas-content">
+                        <div class="table-actions">
+                            <button class="btn btn-success" onclick="carregarMedidasPositivas()">
+                                🌟 Carregar Medidas Positivas
+                            </button>
+                            <select class="filter-select" id="filtroTurmaPositivas" onchange="filtrarMedidasPositivas()">
+                                <option value="todas">Todas as turmas</option>
+                            </select>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="selecionarTodasPositivas" onchange="selecionarTodasMedidasPositivas()">
+                                Selecionar Todas
+                            </label>
+                            <button class="btn btn-warning" onclick="exportarMedidasSelecionadas('positivas')">
+                                📄 Exportar Selecionadas
+                            </button>
+                        </div>
+                        <div id="tableMedidasPositivas" class="table-content">
+                            <p style="text-align: center; padding: 40px; color: #666;">
+                                Clique em "🌟 Carregar Medidas Positivas" para visualizar o histórico completo
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -5033,40 +5203,35 @@
                 return;
             }
             
-            // Toggle da classe collapsed
-            const isCollapsed = content.classList.contains('collapsed');
+            // Verificar se está expandido ou colapsado
+            const isExpanded = content.classList.contains('expanded');
             
-            if (isCollapsed) {
-                // Expandir
-                content.classList.remove('collapsed');
-                content.style.maxHeight = content.scrollHeight + 'px';
-                toggle.classList.remove('collapsed');
-                toggle.textContent = '🔽';
-                
-                // Após a animação, remover maxHeight para permitir conteúdo dinâmico
-                setTimeout(() => {
-                    if (!content.classList.contains('collapsed')) {
-                        content.style.maxHeight = 'none';
-                    }
-                }, 400);
-            } else {
+            if (isExpanded) {
                 // Colapsar
-                content.style.maxHeight = content.scrollHeight + 'px';
-                content.offsetHeight; // Force reflow
-                content.style.maxHeight = '0px';
+                content.classList.remove('expanded');
                 content.classList.add('collapsed');
                 toggle.classList.add('collapsed');
                 toggle.textContent = '🔼';
+            } else {
+                // Expandir
+                content.classList.remove('collapsed');
+                content.classList.add('expanded');
+                toggle.classList.remove('collapsed');
+                toggle.textContent = '🔽';
             }
         }
         
-        // Inicializar seções expandidas por padrão
+        // Inicializar seções colapsadas por padrão
         document.addEventListener('DOMContentLoaded', function() {
-            const sections = ['alertas', 'medidas', 'consulta', 'registros'];
+            const sections = ['alertas', 'medidas', 'consulta', 'registros', 'medidasNegativas', 'medidasPositivas'];
             sections.forEach(sectionId => {
                 const content = document.getElementById(sectionId + '-content');
-                if (content) {
-                    content.style.maxHeight = 'none';
+                const toggle = document.getElementById(sectionId + '-toggle');
+                if (content && toggle) {
+                    // Começar colapsado
+                    content.classList.add('collapsed');
+                    toggle.classList.add('collapsed');
+                    toggle.textContent = '🔼';
                 }
             });
             
@@ -5430,6 +5595,316 @@
             }
             
             atualizarTagsFaltas();
+        }
+        
+        // NOVAS FUNCIONALIDADES: Sistema de Histórico de Medidas
+        
+        // Variáveis para controle das tabelas
+        let medidasNegativasData = [];
+        let medidasPositivasData = [];
+        let medidasNegativasFiltradas = [];
+        let medidasPositivasFiltradas = [];
+        
+        // Função para carregar medidas negativas
+        async function carregarMedidasNegativas() {
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '⏳ Carregando...';
+            
+            try {
+                // Aguardar supabaseClient estar disponível
+                if (!window.supabaseClient) {
+                    await new Promise(resolve => {
+                        const check = setInterval(() => {
+                            if (window.supabaseClient) {
+                                clearInterval(check);
+                                resolve();
+                            }
+                        }, 100);
+                    });
+                }
+                
+                // Tipos de medidas consideradas negativas
+                const tiposNegativos = [
+                    'Fato Observado Negativo',
+                    'Advertência Verbal',
+                    'Advertência Escrita',
+                    'Suspensão',
+                    'Ação Educativa'
+                ];
+                
+                const { data: medidas, error } = await window.supabaseClient
+                    .from('medidas')
+                    .select('*')
+                    .in('tipo_medida', tiposNegativos)
+                    .order('data', { ascending: false });
+                
+                if (error) throw error;
+                
+                medidasNegativasData = medidas || [];
+                medidasNegativasFiltradas = [...medidasNegativasData];
+                
+                // Carregar turmas para filtro
+                const turmas = [...new Set(medidasNegativasData.map(m => m.turma))].sort();
+                preencherFiltroTurmas('filtroTurmaNegativas', turmas);
+                
+                renderizarTabelaMedidasNegativas();
+                showMessage(`✅ ${medidasNegativasData.length} medidas negativas carregadas`, 'success');
+                
+            } catch (error) {
+                console.error('Erro ao carregar medidas negativas:', error);
+                showMessage('❌ Erro ao carregar medidas negativas: ' + error.message, 'error');
+            } finally {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        }
+        
+        // Função para carregar medidas positivas  
+        async function carregarMedidasPositivas() {
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '⏳ Carregando...';
+            
+            try {
+                // Aguardar supabaseClient estar disponível
+                if (!window.supabaseClient) {
+                    await new Promise(resolve => {
+                        const check = setInterval(() => {
+                            if (window.supabaseClient) {
+                                clearInterval(check);
+                                resolve();
+                            }
+                        }, 100);
+                    });
+                }
+                
+                // Tipos de medidas consideradas positivas
+                const tiposPositivos = [
+                    'Elogio Individual',
+                    'Elogio Coletivo',
+                    'Fato Observado Positivo'
+                ];
+                
+                const { data: medidas, error } = await window.supabaseClient
+                    .from('medidas')
+                    .select('*')
+                    .in('tipo_medida', tiposPositivos)
+                    .order('data', { ascending: false });
+                
+                if (error) throw error;
+                
+                medidasPositivasData = medidas || [];
+                medidasPositivasFiltradas = [...medidasPositivasData];
+                
+                // Carregar turmas para filtro
+                const turmas = [...new Set(medidasPositivasData.map(m => m.turma))].sort();
+                preencherFiltroTurmas('filtroTurmaPositivas', turmas);
+                
+                renderizarTabelaMedidasPositivas();
+                showMessage(`✅ ${medidasPositivasData.length} medidas positivas carregadas`, 'success');
+                
+            } catch (error) {
+                console.error('Erro ao carregar medidas positivas:', error);
+                showMessage('❌ Erro ao carregar medidas positivas: ' + error.message, 'error');
+            } finally {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        }
+        
+        // Função para preencher filtros de turma
+        function preencherFiltroTurmas(selectId, turmas) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            
+            // Manter primeira opção e adicionar turmas
+            select.innerHTML = '<option value="todas">Todas as turmas</option>';
+            turmas.forEach(turma => {
+                select.innerHTML += `<option value="${turma}">${turma}</option>`;
+            });
+        }
+        
+        // Função para detectar categoria da falta
+        function detectarCategoria(especificacao, observacao) {
+            const texto = (especificacao + ' ' + (observacao || '')).toLowerCase();
+            
+            if (texto.includes('[falta grave]') || texto.includes('grave')) return 'grave';
+            if (texto.includes('[falta média]') || texto.includes('media') || texto.includes('média')) return 'media';
+            if (texto.includes('[falta leve]') || texto.includes('leve')) return 'leve';
+            
+            return 'geral';
+        }
+        
+        // Função para renderizar tabela de medidas negativas
+        function renderizarTabelaMedidasNegativas() {
+            const container = document.getElementById('tableMedidasNegativas');
+            
+            if (medidasNegativasFiltradas.length === 0) {
+                container.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">Nenhuma medida negativa encontrada</p>';
+                return;
+            }
+            
+            const html = `
+                <table class="historico-table">
+                    <thead>
+                        <tr>
+                            <th class="checkbox-cell">
+                                <input type="checkbox" id="selectAllNegativas" onchange="selecionarTodasMedidasNegativas()">
+                            </th>
+                            <th class="codigo-cell">Código</th>
+                            <th>Nome</th>
+                            <th>Turma</th>
+                            <th class="data-cell">Data</th>
+                            <th class="tipo-cell">Tipo</th>
+                            <th>Categoria</th>
+                            <th>Falta/Especificação</th>
+                            <th>Ações Tomadas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${medidasNegativasFiltradas.map(medida => {
+                            const categoria = detectarCategoria(medida.especificacao, medida.observacao);
+                            return `
+                                <tr>
+                                    <td class="checkbox-cell">
+                                        <input type="checkbox" class="medida-checkbox-negativa" value="${medida.id}">
+                                    </td>
+                                    <td class="codigo-cell">${medida.codigo_matricula}</td>
+                                    <td>${medida.nome_completo}</td>
+                                    <td>${medida.turma}</td>
+                                    <td class="data-cell">${new Date(medida.data).toLocaleDateString('pt-BR')}</td>
+                                    <td class="tipo-cell">${medida.tipo_medida}</td>
+                                    <td><span class="categoria-badge ${categoria}">${categoria.toUpperCase()}</span></td>
+                                    <td>${medida.especificacao}</td>
+                                    <td>${medida.observacao || '-'}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+                <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                    <strong>Total:</strong> ${medidasNegativasFiltradas.length} medidas negativas
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+        
+        // Função para renderizar tabela de medidas positivas
+        function renderizarTabelaMedidasPositivas() {
+            const container = document.getElementById('tableMedidasPositivas');
+            
+            if (medidasPositivasFiltradas.length === 0) {
+                container.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">Nenhuma medida positiva encontrada</p>';
+                return;
+            }
+            
+            const html = `
+                <table class="historico-table">
+                    <thead>
+                        <tr>
+                            <th class="checkbox-cell">
+                                <input type="checkbox" id="selectAllPositivas" onchange="selecionarTodasMedidasPositivas()">
+                            </th>
+                            <th class="codigo-cell">Código</th>
+                            <th>Nome</th>
+                            <th>Turma</th>
+                            <th class="data-cell">Data</th>
+                            <th class="tipo-cell">Tipo</th>
+                            <th>Elogio/Especificação</th>
+                            <th>Observações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${medidasPositivasFiltradas.map(medida => `
+                            <tr>
+                                <td class="checkbox-cell">
+                                    <input type="checkbox" class="medida-checkbox-positiva" value="${medida.id}">
+                                </td>
+                                <td class="codigo-cell">${medida.codigo_matricula}</td>
+                                <td>${medida.nome_completo}</td>
+                                <td>${medida.turma}</td>
+                                <td class="data-cell">${new Date(medida.data).toLocaleDateString('pt-BR')}</td>
+                                <td class="tipo-cell">${medida.tipo_medida}</td>
+                                <td>${medida.especificacao}</td>
+                                <td>${medida.observacao || '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                    <strong>Total:</strong> ${medidasPositivasFiltradas.length} medidas positivas
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+        
+        // Funções de filtro
+        function filtrarMedidasNegativas() {
+            const turmaSelecionada = document.getElementById('filtroTurmaNegativas').value;
+            
+            if (turmaSelecionada === 'todas') {
+                medidasNegativasFiltradas = [...medidasNegativasData];
+            } else {
+                medidasNegativasFiltradas = medidasNegativasData.filter(m => m.turma === turmaSelecionada);
+            }
+            
+            renderizarTabelaMedidasNegativas();
+        }
+        
+        function filtrarMedidasPositivas() {
+            const turmaSelecionada = document.getElementById('filtroTurmaPositivas').value;
+            
+            if (turmaSelecionada === 'todas') {
+                medidasPositivasFiltradas = [...medidasPositivasData];
+            } else {
+                medidasPositivasFiltradas = medidasPositivasData.filter(m => m.turma === turmaSelecionada);
+            }
+            
+            renderizarTabelaMedidasPositivas();
+        }
+        
+        // Funções de seleção
+        function selecionarTodasMedidasNegativas() {
+            const mainCheckbox = document.getElementById('selectAllNegativas');
+            const checkboxes = document.querySelectorAll('.medida-checkbox-negativa');
+            
+            if (mainCheckbox && mainCheckbox.checked) {
+                checkboxes.forEach(cb => cb.checked = true);
+            } else {
+                checkboxes.forEach(cb => cb.checked = false);
+            }
+        }
+        
+        function selecionarTodasMedidasPositivas() {
+            const mainCheckbox = document.getElementById('selectAllPositivas');
+            const checkboxes = document.querySelectorAll('.medida-checkbox-positiva');
+            
+            if (mainCheckbox && mainCheckbox.checked) {
+                checkboxes.forEach(cb => cb.checked = true);
+            } else {
+                checkboxes.forEach(cb => cb.checked = false);
+            }
+        }
+        
+        // Função de exportação (placeholder)
+        function exportarMedidasSelecionadas(tipo) {
+            const checkboxes = document.querySelectorAll(`.medida-checkbox-${tipo}:checked`);
+            const selecionados = Array.from(checkboxes).map(cb => cb.value);
+            
+            if (selecionados.length === 0) {
+                showMessage('⚠️ Selecione pelo menos uma medida para exportar', 'warning');
+                return;
+            }
+            
+            showMessage(`📄 Exportando ${selecionados.length} medidas ${tipo}...`, 'info');
+            console.log(`Medidas ${tipo} selecionadas para exportação:`, selecionados);
+            
+            // TODO: Implementar exportação real (PDF, Excel, etc.)
         }
     </script>
 
