@@ -153,6 +153,25 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     
     console.log('✅ Listeners reativados com throttling');
 
+    // Listeners da tabela de consulta
+    const btnMostrarConsulta = document.getElementById('btnMostrarConsulta');
+    const btnOcultarConsulta = document.getElementById('btnOcultarConsulta');
+    const buscaConsulta = document.getElementById('buscaConsulta');
+    
+    if (btnMostrarConsulta) {
+      btnMostrarConsulta.addEventListener('click', mostrarConsultaGeral);
+    }
+    if (btnOcultarConsulta) {
+      btnOcultarConsulta.addEventListener('click', ocultarConsultaGeral);
+    }
+    if (buscaConsulta) {
+      let consultaTimeout;
+      buscaConsulta.addEventListener('input', () => {
+        clearTimeout(consultaTimeout);
+        consultaTimeout = setTimeout(() => renderConsultaTable(), 200);
+      });
+    }
+
     if (els.tbody) {
       // Delegação para Editar/Excluir/Foto
       els.tbody.addEventListener('click', async (e) => {
@@ -191,6 +210,61 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
           toggleRowEditMode(id);
         }
       });
+    }
+  }
+
+  // =====================
+  // CARREGAMENTO FILTRADO POR TURMA
+  // =====================
+  async function carregarAlunosFiltrados(turma) {
+    try {
+      console.log('📡 Fazendo query filtrada para turma:', turma);
+      
+      if (!db) {
+        console.error('❌ db não está disponível');
+        throw new Error('Sistema de banco não inicializado');
+      }
+      
+      // Usar função otimizada do Supabase
+      const data = await window.supabaseSystem.db.alunos.getByTurma(turma);
+      console.log('📊 Resultado da query filtrada:', {
+        turma: turma,
+        total: data.length
+      });
+      
+      // Processar dados no formato esperado
+      alunosCache = data.map((item) => {
+        const turmaAluno = item.turma || '';
+        const turno = getTurnoByTurma(turmaAluno);
+        const status = 'ativo'; // Padrão ativo
+        
+        return {
+          id: item['código (matrícula)'] || item.codigo,
+          codigo: item['código (matrícula)'] || item.codigo,
+          nome: item['Nome completo'] || '',
+          nome_completo: item['Nome completo'] || '',
+          turma: turmaAluno,
+          turno: turno,
+          status: status,
+          responsavel: item.responsável || '',
+          telefone1: item['Telefone do responsável'] || '',
+          telefone2: item['Telefone do responsável 2'] || '',
+          ...item // Manter campos originais também
+        };
+      });
+      
+      window.alunosCache = alunosCache.slice();
+      console.log('✅ Alunos processados para turma', turma, ':', {
+        total: alunosCache.length,
+        primeiros3: alunosCache.slice(0, 3).map(a => ({ codigo: a.codigo, nome: a.nome }))
+      });
+      
+      renderTable();
+      updateStatistics();
+      
+    } catch (err) {
+      console.error('Erro ao carregar alunos filtrados:', err);
+      toast('Erro ao carregar alunos da turma ' + turma, 'erro');
     }
   }
 
@@ -956,10 +1030,10 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       tableActions.appendChild(botaoCarregar);
     }
     
-    // Atualizar opções do filtro existente
+    // Atualizar opções do filtro existente (apenas turmas específicas)
     if (els.filtroTurma) {
       els.filtroTurma.innerHTML = `
-        <option value="todos">📋 Todas as Turmas</option>
+        <option value="">🎯 Selecione uma Turma</option>
         <option value="1B">1º B</option>
         <option value="1C">1º C</option>
         <option value="2A">2º A</option>
@@ -980,8 +1054,8 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       <tr>
         <td colspan="9" style="text-align: center; padding: 40px;">
           <div style="color: #666;">
-            <h4 style="margin: 0 0 15px 0;">👆 Use o filtro de turma acima</h4>
-            <p style="margin: 0;">Selecione uma turma ou "Todas as Turmas" e clique em <strong>"🚀 Carregar Alunos"</strong></p>
+            <h4 style="margin: 0 0 15px 0;">🎯 Selecione uma turma específica</h4>
+            <p style="margin: 0;">Escolha uma turma no filtro acima e clique em <strong>"🚀 Carregar Alunos"</strong></p>
           </div>
         </td>
       </tr>
@@ -991,7 +1065,13 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   window.carregarAlunosPorTurma = async function() {
     try {
       // Usar o filtro existente
-      const turmaSelecionada = els.filtroTurma ? els.filtroTurma.value : 'todos';
+      const turmaSelecionada = els.filtroTurma ? els.filtroTurma.value : '';
+      
+      // Validar se uma turma foi selecionada
+      if (!turmaSelecionada || turmaSelecionada === '') {
+        toast('Por favor, selecione uma turma específica', 'erro');
+        return;
+      }
       
       console.log('🚀 Carregando alunos para turma:', turmaSelecionada);
       
@@ -1001,7 +1081,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
           <tr>
             <td colspan="9" style="text-align: center; padding: 40px;">
               <div class="loading">
-                ⏳ Carregando ${turmaSelecionada === 'todos' ? 'todas as turmas' : 'turma ' + turmaSelecionada}...
+                ⏳ Carregando turma ${turmaSelecionada}...
               </div>
             </td>
           </tr>
@@ -1009,21 +1089,10 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       }
       
       // Aguardar um pouco para mostrar o loading
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Carregar dados
-      await startLiveList();
-      
-      // Se não for "todos", filtrar por turma específica
-      if (turmaSelecionada !== 'todos') {
-        // Aplicar filtro após carregamento
-        setTimeout(() => {
-          if (els.filtroTurma) {
-            els.filtroTurma.value = turmaSelecionada;
-            renderTable();
-          }
-        }, 100);
-      }
+      // Carregar dados FILTRADOS por turma
+      await carregarAlunosFiltrados(turmaSelecionada);
       
       // Adicionar botão "Limpar Lista" no cabeçalho da tabela
       adicionarBotaoLimpar();
@@ -1096,6 +1165,98 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     
     console.log('🗑️ Lista de alunos limpa');
   }
+
+  // =====================
+  // TABELA DE CONSULTA GERAL
+  // =====================
+  let consultaCache = [];
+  
+  window.mostrarConsultaGeral = async function() {
+    try {
+      const container = document.getElementById('consultaContainer');
+      const btn = document.getElementById('btnMostrarConsulta');
+      
+      if (container && btn) {
+        container.style.display = 'block';
+        btn.style.display = 'none';
+        
+        // Carregar dados básicos se ainda não carregou
+        if (consultaCache.length === 0) {
+          await carregarConsultaGeral();
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao mostrar consulta geral:', error);
+      toast('Erro ao carregar consulta geral', 'erro');
+    }
+  };
+  
+  async function carregarConsultaGeral() {
+    try {
+      const tbody = document.getElementById('consultaTableBody');
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px;">⏳ Carregando todos os alunos...</td></tr>';
+      }
+      
+      // Buscar dados básicos otimizados
+      const data = await window.supabaseSystem.db.alunos.getAllBasic();
+      
+      consultaCache = data.map(item => ({
+        codigo: item['código (matrícula)'] || item.codigo,
+        nome: item['Nome completo'] || '',
+        turma: item.turma || ''
+      }));
+      
+      renderConsultaTable();
+      console.log('✅ Consulta geral carregada:', consultaCache.length, 'alunos');
+      
+    } catch (error) {
+      console.error('Erro ao carregar consulta geral:', error);
+      const tbody = document.getElementById('consultaTableBody');
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px; color: red;">❌ Erro ao carregar dados</td></tr>';
+      }
+    }
+  }
+  
+  function renderConsultaTable() {
+    const tbody = document.getElementById('consultaTableBody');
+    const buscaConsulta = document.getElementById('buscaConsulta');
+    
+    if (!tbody) return;
+    
+    const termo = normalize((buscaConsulta && buscaConsulta.value) || '');
+    
+    let lista = consultaCache;
+    if (termo) {
+      lista = consultaCache.filter(a => {
+        const alvo = normalize([a.codigo, a.nome, a.turma].join(' '));
+        return alvo.includes(termo);
+      });
+    }
+    
+    if (lista.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px; color: #666;">Nenhum aluno encontrado</td></tr>';
+    } else {
+      tbody.innerHTML = lista.map(a => 
+        '<tr>' +
+          '<td>' + escapeHtml(a.codigo || '') + '</td>' +
+          '<td>' + escapeHtml(a.nome || '') + '</td>' +
+          '<td><strong>' + escapeHtml(a.turma || '') + '</strong></td>' +
+        '</tr>'
+      ).join('');
+    }
+  }
+  
+  window.ocultarConsultaGeral = function() {
+    const container = document.getElementById('consultaContainer');
+    const btn = document.getElementById('btnMostrarConsulta');
+    
+    if (container && btn) {
+      container.style.display = 'none';
+      btn.style.display = 'block';
+    }
+  };
 
   // =====================
   // UTILITÁRIOS

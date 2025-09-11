@@ -234,6 +234,43 @@
           </div>
         </div>
 
+        <!-- BOTÃO PARA MOSTRAR CONSULTA GERAL -->
+        <div style="text-align: center; margin: 30px 0;">
+          <button id="btnMostrarConsulta" class="btn btn-info" style="padding: 12px 24px; font-size: 16px;">
+            🔍 Não sabe a turma? Consultar Todos os Alunos
+          </button>
+        </div>
+
+        <!-- TABELA DE CONSULTA GERAL -->
+        <div class="table-container" id="consultaContainer" style="display: none; margin-top: 30px;">
+          <div class="table-header">
+            <div class="table-title">🔍 Consulta Geral - Buscar Aluno por Nome</div>
+            <div class="table-actions">
+              <input type="text" id="buscaConsulta" placeholder="Digite nome do aluno..." style="padding: 8px; margin-right: 10px; border: 1px solid #ddd; border-radius: 4px;">
+              <button id="btnOcultarConsulta" class="btn btn-secondary">❌ Ocultar</button>
+            </div>
+          </div>
+
+          <div class="table-content">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Nome Completo</th>
+                  <th>Turma</th>
+                </tr>
+              </thead>
+              <tbody id="consultaTableBody">
+                <tr>
+                  <td colspan="3" style="text-align: center; padding: 20px; color: #666;">
+                    Digite o nome do aluno para buscar...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>

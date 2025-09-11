@@ -267,6 +267,47 @@ const alunosDB = {
         return data;
     },
     
+    // Função otimizada para buscar apenas uma turma específica
+    async getByTurma(turma) {
+        if (!supabase) {
+            await initSupabase();
+        }
+        
+        if (!supabase) {
+            console.error('❌ Supabase não disponível em alunosDB.getByTurma()');
+            return [];
+        }
+        
+        const { data, error } = await supabase
+            .from('alunos')
+            .select('codigo, "código (matrícula)", "Nome completo", turma, responsável, "Telefone do responsável", "Telefone do responsável 2"')
+            .eq('turma', turma)
+            .order('"Nome completo"');
+        
+        if (error) throw error;
+        return data || [];
+    },
+    
+    // Função para consulta geral (apenas código, nome, turma) - ultra otimizada
+    async getAllBasic() {
+        if (!supabase) {
+            await initSupabase();
+        }
+        
+        if (!supabase) {
+            console.error('❌ Supabase não disponível em alunosDB.getAllBasic()');
+            return [];
+        }
+        
+        const { data, error } = await supabase
+            .from('alunos')
+            .select('codigo, "código (matrícula)", "Nome completo", turma')
+            .order('"Nome completo"');
+        
+        if (error) throw error;
+        return data || [];
+    },
+    
     async create(aluno) {
         const { data, error } = await supabase
             .from('alunos')
