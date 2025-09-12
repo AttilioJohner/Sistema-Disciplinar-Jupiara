@@ -1322,6 +1322,99 @@
             }
         }
 
+        /* === ESTILOS DAS TABELAS === */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .table {
+            width: 100%;
+            margin-bottom: 0;
+            color: #212529;
+            border-collapse: collapse;
+        }
+        
+        .table th,
+        .table td {
+            padding: 12px;
+            vertical-align: middle;
+            border-top: 1px solid #dee2e6;
+            text-align: left;
+        }
+        
+        .table thead th {
+            background-color: #f8f9fa;
+            border-top: 0;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            color: #495057;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: rgba(0,123,255,0.05);
+        }
+        
+        .table tbody tr:hover {
+            background-color: rgba(0,123,255,0.1);
+            cursor: pointer;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: 4px;
+        }
+        
+        .badge-danger {
+            color: #fff;
+            background-color: #dc3545;
+        }
+        
+        .badge-success {
+            color: #fff;
+            background-color: #28a745;
+        }
+        
+        .text-truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .text-center {
+            text-align: center !important;
+        }
+        
+        .text-muted {
+            color: #6c757d !important;
+        }
+        
+        @media (max-width: 768px) {
+            .table th,
+            .table td {
+                padding: 8px 4px;
+                font-size: 14px;
+            }
+            
+            .text-truncate {
+                max-width: 150px;
+            }
+        }
+
         /* Estilos para categorias múltiplas */
         .categorias-selector {
             background: #f8f9fa;
@@ -2191,11 +2284,15 @@
                 
                 // Limpar formulário
                 form.reset();
-                document.getElementById('campoSuspensao').style.display = 'none';
-                document.getElementById('diasSuspensao').required = false;
-                document.getElementById('campoCategoriaMedida').style.display = 'none';
-                document.getElementById('campoSelecaoFalta').style.display = 'none';
-                document.getElementById('campoMotivoOriginal').style.display = 'block';
+                const campoSuspensao = document.getElementById('campoSuspensao');
+                const diasSuspensao = document.getElementById('diasSuspensao');
+                const campoSelecaoFalta = document.getElementById('campoSelecaoFalta');
+                const campoMotivoOriginal = document.getElementById('campoMotivoOriginal');
+                
+                if (campoSuspensao) campoSuspensao.style.display = 'none';
+                if (diasSuspensao) diasSuspensao.required = false;
+                if (campoSelecaoFalta) campoSelecaoFalta.style.display = 'none';
+                if (campoMotivoOriginal) campoMotivoOriginal.style.display = 'block';
                 
                 // Mostrar mensagem de sucesso
                 showMessage('✅ Medida disciplinar salva com sucesso!', 'success');
@@ -4603,24 +4700,24 @@
             
             let dadosFiltrados = [...medidasNegativasData];
             
-            // Filtrar por pesquisa (nome ou código)
+            // Primeiro: Limitar quantidade dos dados originais (mais recentes)
+            if (quantidade !== 'todas') {
+                const limite = parseInt(quantidade);
+                dadosFiltrados = dadosFiltrados.slice(0, limite);
+            }
+            
+            // Depois: Filtrar por turma
+            if (filtroTurma !== 'todas') {
+                dadosFiltrados = dadosFiltrados.filter(medida => medida.turma === filtroTurma);
+            }
+            
+            // Por último: Filtrar por pesquisa (nome ou código)
             if (pesquisa) {
                 dadosFiltrados = dadosFiltrados.filter(medida => {
                     const nome = medida.nome_completo?.toLowerCase() || '';
                     const codigo = medida.codigo_matricula?.toString().toLowerCase() || '';
                     return nome.includes(pesquisa) || codigo.includes(pesquisa);
                 });
-            }
-            
-            // Filtrar por turma
-            if (filtroTurma !== 'todas') {
-                dadosFiltrados = dadosFiltrados.filter(medida => medida.turma === filtroTurma);
-            }
-            
-            // Limitar quantidade
-            if (quantidade !== 'todas') {
-                const limite = parseInt(quantidade);
-                dadosFiltrados = dadosFiltrados.slice(0, limite);
             }
             
             renderizarTabelaFiltrada('tableMedidasNegativas', dadosFiltrados, 'negativa');
@@ -4633,24 +4730,24 @@
             
             let dadosFiltrados = [...medidasPositivasData];
             
-            // Filtrar por pesquisa (nome ou código)
+            // Primeiro: Limitar quantidade dos dados originais (mais recentes)
+            if (quantidade !== 'todas') {
+                const limite = parseInt(quantidade);
+                dadosFiltrados = dadosFiltrados.slice(0, limite);
+            }
+            
+            // Depois: Filtrar por turma
+            if (filtroTurma !== 'todas') {
+                dadosFiltrados = dadosFiltrados.filter(medida => medida.turma === filtroTurma);
+            }
+            
+            // Por último: Filtrar por pesquisa (nome ou código)
             if (pesquisa) {
                 dadosFiltrados = dadosFiltrados.filter(medida => {
                     const nome = medida.nome_completo?.toLowerCase() || '';
                     const codigo = medida.codigo_matricula?.toString().toLowerCase() || '';
                     return nome.includes(pesquisa) || codigo.includes(pesquisa);
                 });
-            }
-            
-            // Filtrar por turma
-            if (filtroTurma !== 'todas') {
-                dadosFiltrados = dadosFiltrados.filter(medida => medida.turma === filtroTurma);
-            }
-            
-            // Limitar quantidade
-            if (quantidade !== 'todas') {
-                const limite = parseInt(quantidade);
-                dadosFiltrados = dadosFiltrados.slice(0, limite);
             }
             
             renderizarTabelaFiltrada('tableMedidasPositivas', dadosFiltrados, 'positiva');
