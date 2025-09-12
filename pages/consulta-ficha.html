@@ -516,6 +516,32 @@
             border-color: #93c5fd;
         }
         
+        /* Estados de carregamento */
+        .loading-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #6b7280;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-left-color: #4f46e5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: #4f46e5;
+            font-weight: 500;
+        }
+        
         /* Estados vazios */
         .empty-state {
             text-align: center;
@@ -705,9 +731,9 @@
                     </div>
                     <div class="card-body">
                         <div id="frequenciaContainer">
-                            <div class="empty-state">
-                                <div class="empty-icon">📅</div>
-                                <h3>Carregando frequência...</h3>
+                            <div class="loading-state">
+                                <div class="loading-spinner"></div>
+                                <h3 class="loading-text">Carregando frequência...</h3>
                                 <p>Aguarde enquanto os dados são processados</p>
                             </div>
                         </div>
@@ -722,10 +748,10 @@
                     </div>
                     <div class="card-body">
                         <div id="medidasList" class="medidas-list">
-                            <div class="empty-state">
-                                <div class="empty-icon">📋</div>
-                                <h3>Nenhuma medida encontrada</h3>
-                                <p>Este aluno não possui medidas disciplinares registradas</p>
+                            <div class="loading-state">
+                                <div class="loading-spinner"></div>
+                                <h3 class="loading-text">Carregando medidas...</h3>
+                                <p>Aguarde enquanto os dados são processados</p>
                             </div>
                         </div>
                     </div>
@@ -840,6 +866,9 @@
                 btnConsultar.disabled = true;
                 btnConsultar.innerHTML = '⏳ Carregando...';
                 
+                // Mostrar ficha com loading
+                document.getElementById('fichaAluno').style.display = 'block';
+                
                 // Buscar dados do aluno
                 const aluno = todosAlunos.find(a => a.codigo == codigoAluno);
                 
@@ -933,30 +962,80 @@
             try {
                 console.log('📅 Carregando frequência do aluno:', codigoAluno);
                 
-                // Buscar dados de frequência por mês
-                const { data: frequenciaMensal, error: freqError } = await window.supabaseClient
-                    .from('mv_frequencia_mensal_aluno')
-                    .select('*')
+                // Buscar registros de frequência básicos
+                const { data: frequenciaData, error: freqError } = await window.supabaseClient
+                    .from('frequencia')
+                    .select('data, status, codigo_aluno')
                     .eq('codigo_aluno', codigoAluno)
-                    .order('ano', { ascending: false })
-                    .order('mes', { ascending: false });
+                    .order('data', { ascending: false })
+                    .limit(200);
                 
-                // Buscar registros específicos de faltas
-                const { data: faltasDetalhes, error: faltasError } = await window.supabaseClient
-                    .from('frequencia_detalhada')
-                    .select('data_aula, status')
-                    .eq('codigo_aluno', codigoAluno)
-                    .in('status', ['F', 'A', 'FC'])
-                    .order('data_aula', { ascending: false })
-                    .limit(50);
+                if (freqError) {
+                    console.warn('Erro ao buscar frequência:', freqError);
+                    exibirFrequenciaErro();
+                    return;
+                }
+                
+                // Processar dados de frequência
+                const dadosProcessados = processarFrequencia(frequenciaData || []);
                 
                 // Exibir dados de frequência
-                exibirFrequencia(frequenciaMensal || [], faltasDetalhes || []);
+                exibirFrequencia(dadosProcessados.mensal, dadosProcessados.faltas);
                 
             } catch (error) {
                 console.error('❌ Erro ao carregar frequência:', error);
                 exibirFrequenciaErro();
             }
+        }
+        
+        // Processar dados de frequência brutos
+        function processarFrequencia(dados) {
+            const mesesData = {};
+            const faltas = [];
+            
+            dados.forEach(registro => {
+                const data = new Date(registro.data);
+                const ano = data.getFullYear();
+                const mes = data.getMonth() + 1;
+                const chave = `${ano}-${mes}`;
+                
+                if (!mesesData[chave]) {
+                    mesesData[chave] = {
+                        ano,
+                        mes,
+                        total_presencas: 0,
+                        total_faltas: 0,
+                        total_abonadas: 0,
+                        total_compensadas: 0
+                    };
+                }
+                
+                // Contar por status
+                switch (registro.status) {
+                    case 'P':
+                        mesesData[chave].total_presencas++;
+                        break;
+                    case 'F':
+                        mesesData[chave].total_faltas++;
+                        faltas.push({data_aula: registro.data, status: registro.status});
+                        break;
+                    case 'A':
+                        mesesData[chave].total_abonadas++;
+                        faltas.push({data_aula: registro.data, status: registro.status});
+                        break;
+                    case 'FC':
+                        mesesData[chave].total_compensadas++;
+                        faltas.push({data_aula: registro.data, status: registro.status});
+                        break;
+                }
+            });
+            
+            // Converter para array ordenado
+            const mensal = Object.values(mesesData)
+                .sort((a, b) => b.ano - a.ano || b.mes - a.mes)
+                .slice(0, 12); // Últimos 12 meses
+            
+            return { mensal, faltas };
         }
         
         // Exibir dados de frequência
