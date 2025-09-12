@@ -1633,87 +1633,6 @@
                     </div>
                 </div>
 
-                <!-- SEÇÃO: FICHA DISCIPLINAR DO ALUNO -->
-                <div class="management-section">
-                    <div class="section-header" onclick="toggleSection('consulta')">
-                        <div class="management-title">
-                            🔍 Consultar Ficha Disciplinar do Aluno
-                        </div>
-                        <span class="section-toggle" id="consulta-toggle">🔽</span>
-                    </div>
-                    
-                    <div class="section-content" id="consulta-content">
-                        <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label">Selecionar Turma *</label>
-                            <select id="turmaConsulta" class="form-select" onchange="console.log('ONCHANGE DIRETO:', this.value); carregarAlunosPorTurmaSimples();" required>
-                                <option value="">Selecione uma turma...</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Selecionar Aluno *</label>
-                            <select id="alunoConsulta" class="form-select" onchange="habilitarBotaoPesquisa()" required>
-                                <option value="">Primeiro selecione uma turma...</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <button type="button" class="btn btn-success" onclick="exportarFichaPDF()" id="btnExportarPDF" disabled title="Funcionalidade PDF temporariamente desabilitada">
-                                📄 Exportar Ficha em PDF
-                            </button>
-                        </div>
-                        
-                        <!-- BOTÕES DE AÇÃO -->
-                        <div class="form-group" style="display: flex; gap: 10px;">
-                            <button type="button" class="btn btn-primary" onclick="carregarFichaDisciplinar()" id="btnPesquisarFicha" disabled>
-                                🔍 Pesquisar Ficha Disciplinar
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- ÁREA DE FREQUÊNCIA SEPARADA -->
-                    <div id="areaFrequenciaAluno" style="display: none; margin-top: 20px; padding: 20px; background: #e3f2fd; border-radius: 8px; border: 2px solid #2196f3;">
-                        <h4>📅 Frequência do Aluno Selecionado</h4>
-                        <div id="resultadoFrequenciaAluno"></div>
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="fecharFrequencia()" style="margin-top: 10px;">
-                            ✖️ Fechar
-                        </button>
-                    </div>
-                    
-                    <!-- ÁREA DE EXIBIÇÃO DA FICHA -->
-                    <div id="fichaAluno" class="ficha-container" style="display: none;">
-                        <!-- Dados pessoais do aluno -->
-                        <div class="ficha-section">
-                            <h3 class="ficha-section-title">👤 Dados Pessoais</h3>
-                            <div id="dadosPessoais" class="dados-pessoais"></div>
-                        </div>
-                        
-                        
-                        <!-- Histórico de medidas disciplinares -->
-                        <div class="ficha-section">
-                            <h3 class="ficha-section-title">⚖️ Histórico de Medidas Disciplinares</h3>
-                            <div id="historicoMedidas" class="historico-container"></div>
-                        </div>
-                        
-                        <!-- Frequência Escolar -->
-                        <div class="ficha-section">
-                            <h3 class="ficha-section-title">📅 Frequência Escolar</h3>
-                            <div id="frequenciaEscolar" class="frequencia-container">
-                                <div class="loading-state">
-                                    <p>Carregando dados de frequência...</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Resumo estatístico -->
-                        <div class="ficha-section">
-                            <h3 class="ficha-section-title">📊 Resumo Estatístico</h3>
-                            <div id="resumoEstatistico" class="resumo-stats" style="max-height: 300px; overflow-y: auto; overflow-x: hidden;"></div>
-                        </div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- SEÇÃO: REGISTROS RECENTES -->
                 <div class="table-container">
@@ -3449,204 +3368,7 @@
             habilitarBotaoPesquisa();
         }
         
-        // Função para habilitar botão de pesquisa quando aluno for selecionado
-        function habilitarBotaoPesquisa() {
-            const selectAluno = document.getElementById('alunoConsulta');
-            const btnPesquisar = document.getElementById('btnPesquisarFicha');
-            const btnExportar = document.getElementById('btnExportarPDF');
-            
-            if (selectAluno.value) {
-                btnPesquisar.disabled = false;
-                console.log('✅ [CONSULTA] Botão de pesquisa habilitado para aluno:', selectAluno.value);
-            } else {
-                btnPesquisar.disabled = true;
-                btnExportar.disabled = true;
-                // Esconder ficha se nenhum aluno selecionado
-                document.getElementById('fichaAluno').style.display = 'none';
-                console.log('⚠️ [CONSULTA] Botão de pesquisa desabilitado - nenhum aluno selecionado');
-            }
-        }
         
-        // ======= FUNÇÃO DE CARREGAMENTO DA FICHA DISCIPLINAR =======
-        
-        async function carregarFichaDisciplinar() {
-            // Mostrar loading rápido para ficha
-            if (window.loadingManager && !window.loadingManager.isVisible) {
-                window.loadingManager.show('Carregando Ficha', 'Buscando dados do aluno...');
-                window.loadingManager.updateProgress(30, 'Carregando dados do aluno...');
-            }
-            try {
-                const selectAluno = document.getElementById('alunoConsulta');
-                const fichaContainer = document.getElementById('fichaAluno');
-                const btnExportar = document.getElementById('btnExportarPDF');
-                
-                
-                if (!selectAluno.value) {
-                    fichaContainer.style.display = 'none';
-                    btnExportar.disabled = true;
-                    return;
-                }
-                
-                showMessage('🔄 Carregando ficha disciplinar...', 'loading');
-                
-                // Carregar dados do aluno dos dados locais
-                let alunoData = null;
-                
-                // Tentar encontrar o aluno nos dados globais
-                if (window.alunosCarregados && window.alunosCarregados.length > 0) {
-                    alunoData = window.alunosCarregados.find(aluno => aluno.id === selectAluno.value);
-                }
-                
-                // Se não encontrou nos dados globais, buscar dos dados locais do select
-                if (!alunoData) {
-                    // Buscar nos dados locais carregados para o select
-                    const alunoEncontrado = todosAlunosMedidas.find(aluno => 
-                        aluno.codigo === selectAluno.value || aluno.id === selectAluno.value
-                    );
-                    
-                    if (alunoEncontrado) {
-                        alunoData = alunoEncontrado;
-                    } else {
-                        
-                        // Tentar buscar turma e foto dos dados de medidas se disponível
-                        let turmaAluno = 'N/A';
-                        let fotoAluno = null;
-                        if (window.alunosMedidasGlobal) {
-                            const alunoComDados = window.alunosMedidasGlobal.find(a => a.codigo == selectAluno.value || a.id == selectAluno.value);
-                            if (alunoComDados) {
-                                turmaAluno = alunoComDados.turma || 'N/A';
-                                fotoAluno = alunoComDados.foto_url;
-                            }
-                        }
-                        
-                        alunoData = {
-                            id: selectAluno.value,
-                            nome: selectAluno.options[selectAluno.selectedIndex]?.text || 'Aluno não identificado',
-                            codigo: selectAluno.value,
-                            turma: turmaAluno,
-                            foto_url: fotoAluno
-                        };
-                    }
-                }
-                
-                // Se ainda não temos turma ou foto, tentar buscar do Supabase
-                if (!alunoData.turma || alunoData.turma === 'N/A' || !alunoData.foto_url) {
-                    try {
-                        const { data: dadosSupabase, error } = await window.supabaseClient
-                            .from('alunos')
-                            .select('*')
-                            .eq('codigo', parseInt(selectAluno.value))
-                            .single();
-                            
-                        if (!error && dadosSupabase) {
-                            alunoData.turma = dadosSupabase.turma || 'N/A';
-                            alunoData.nome_completo = dadosSupabase['Nome completo'] || alunoData.nome;
-                            // Verificar múltiplos campos possíveis para foto
-                            alunoData.foto_url = dadosSupabase.foto_url || dadosSupabase.foto_base64 || dadosSupabase.foto;
-                        }
-                    } catch (error) {
-                        console.warn('FICHA: Não foi possível buscar dados do Supabase:', error);
-                    }
-                }
-                
-                
-                // Carregar medidas disciplinares do aluno (usar dados locais se disponível)
-                let medidas = [];
-                
-                try {
-                    // Aguardar supabaseClient estar disponível
-                    if (!window.supabaseClient) {
-                        await new Promise(resolve => {
-                            const check = setInterval(() => {
-                                if (window.supabaseClient) {
-                                    clearInterval(check);
-                                    resolve();
-                                }
-                            }, 100);
-                        });
-                    }
-                    
-                    const { data: medidasData, error } = await window.supabaseClient
-                        .from('medidas')
-                        .select('*')
-                        .eq('codigo_matricula', selectAluno.value)
-                        .order('criado_em', { ascending: false });
-                        
-                    if (error) throw error;
-                    
-                    
-                    if (medidasData) {
-                        medidasData.forEach(item => {
-                            const medidaData = {
-                                id: item.id,
-                                codigo_aluno: item.codigo_matricula,
-                                nome_aluno: item.nome_completo,
-                                turma: item.turma,
-                                data: item.data,
-                                especificacao: item.especificacao,
-                                observacao: item.observacao,
-                                tipo_medida: item.tipo_medida,
-                                data_registro: item.criado_em
-                            };
-                            medidas.push(medidaData);
-                        });
-                    }
-                } catch (supaError) {
-                    console.log('FICHA: Erro ao carregar medidas do Supabase:', supaError.message);
-                }
-                
-                /* EXPLICAÇÃO DEBUG: Este bloco é necessário para diagnosticar problemas de conectividade 
-                 * com o Supabase e verificar a estrutura de dados da tabela 'medidas'.
-                 * Útil para: 1) Confirmar conexão com banco, 2) Verificar campos disponíveis,
-                 * 3) Identificar discrepâncias nos dados. Pode ser mantido em produção 
-                 * pois só executa quando há problemas de carregamento de dados. */
-                try {
-                    const { data: todasMedidas, error: debugError } = await window.supabaseClient
-                        .from('medidas')
-                        .select('id, codigo_matricula, nome_completo');
-                        
-                    if (!debugError && todasMedidas) {
-                    }
-                } catch (debugError) {
-                    // Debug removido
-                }
-                
-                
-                // Atualizar progresso antes de exibir
-                if (window.loadingManager && window.loadingManager.isVisible) {
-                    window.loadingManager.updateProgress(80, 'Processando dados...');
-                }
-                
-                // Exibir ficha completa
-                await exibirFichaDisciplinar(alunoData, medidas);
-                
-                // Finalizar loading
-                if (window.loadingManager && window.loadingManager.isVisible) {
-                    window.loadingManager.updateProgress(100, 'Ficha carregada!');
-                    setTimeout(() => window.loadingManager.hide(), 500);
-                }
-                
-                fichaContainer.style.display = 'block';
-                btnExportar.disabled = false;
-                
-                showMessage('✅ Ficha disciplinar carregada com sucesso!', 'success');
-                
-            } catch (error) {
-                console.error('FICHA: ERRO CAPTURADO na funcao carregarFichaDisciplinar:', error);
-                console.error('FICHA: Stack trace:', error.stack);
-                
-                // Esconder loading em caso de erro
-                if (window.loadingManager && window.loadingManager.isVisible) {
-                    window.loadingManager.updateProgress(100, 'Erro ao carregar ficha');
-                    setTimeout(() => window.loadingManager.hide(), 1000);
-                }
-                showMessage('❌ Erro ao carregar ficha disciplinar: ' + error.message, 'error');
-                const fichaContainer = document.getElementById('fichaAluno');
-                const btnExportar = document.getElementById('btnExportarPDF');
-                if (fichaContainer) fichaContainer.style.display = 'none';
-                if (btnExportar) btnExportar.disabled = true;
-            }
-        }
         
         
         
@@ -3730,73 +3452,6 @@
             }
         }
 
-        async function exibirFichaDisciplinar(aluno, medidas) {
-            /* EXPLICAÇÃO DEBUG FOTO: Logs essenciais para diagnosticar problemas na funcionalidade 
-             * de fotos 3x4 dos alunos. Identifica: 1) Estrutura de dados recebidos,
-             * 2) Existência e tipo do campo foto_url, 3) Diferenças entre cache e banco,
-             * 4) Problemas de parsing/conversão. Recomendado manter para suporte técnico. */
-            
-            // Verificação cruzada com banco para diagnóstico
-            if (window.supabaseClient && aluno.codigo) {
-                try {
-                    const { data: fotoCheck, error } = await window.supabaseClient
-                        .from('alunos')
-                        .select('codigo, "Nome completo"')
-                        .eq('codigo', parseInt(aluno.codigo))
-                        .single();
-                    // Debug temporário removido
-                } catch (e) {
-                    // Debug temporário removido
-                }
-            }
-            
-            // Dados pessoais com foto
-            const fotoHtml = aluno.foto_url ? 
-                `<div class="dado-item" style="grid-column: 1; grid-row: 1 / span 3; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px;">
-                    <span class="dado-label" style="margin-bottom: 10px;">Foto 3x4:</span>
-                    <img src="${aluno.foto_url}" alt="Foto do aluno" style="width: 120px; height: 160px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" />
-                </div>` : 
-                `<div class="dado-item" style="grid-column: 1; grid-row: 1 / span 3; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px; background: #f0f0f0; color: #999;">
-                    <span class="dado-label" style="margin-bottom: 10px;">Foto 3x4:</span>
-                    <div style="width: 120px; height: 160px; display: flex; align-items: center; justify-content: center; border: 2px dashed #ddd; border-radius: 8px; font-size: 14px; text-align: center;">Sem foto</div>
-                </div>`;
-            
-            document.getElementById('dadosPessoais').innerHTML = `
-                <div class="dados-grid" style="grid-template-columns: 200px 1fr 1fr; gap: 20px;">
-                    ${fotoHtml}
-                    <div class="dado-item">
-                        <span class="dado-label">Nome:</span>
-                        <span class="dado-valor">${aluno.nome_completo || aluno.nome || 'N/A'}</span>
-                    </div>
-                    <div class="dado-item">
-                        <span class="dado-label">Código:</span>
-                        <span class="dado-valor">${aluno.codigo || aluno.id || 'N/A'}</span>
-                    </div>
-                    <div class="dado-item">
-                        <span class="dado-label">Turma:</span>
-                        <span class="dado-valor">${aluno.turma || aluno.Turma || 'N/A'}</span>
-                    </div>
-                    <div class="dado-item">
-                        <span class="dado-label">Responsável:</span>
-                        <span class="dado-valor">${aluno.responsavel || aluno['responsável'] || 'N/A'}</span>
-                    </div>
-                    <div class="dado-item">
-                        <span class="dado-label">Status:</span>
-                        <span class="dado-valor">${aluno.status || 'Ativo'}</span>
-                    </div>
-                </div>
-            `;
-            
-            
-            // Dados de frequência escolar
-            await exibirFrequenciaEscolar(aluno);
-            
-            // Histórico de medidas disciplinares
-            exibirHistoricoMedidas(medidas);
-            
-            // Resumo estatístico
-            await exibirResumoEstatistico(aluno, medidas);
-        }
         
         // Função para exibir dados de frequência escolar
         async function exibirFrequenciaEscolar(aluno) {
@@ -4396,9 +4051,6 @@
             }
         }
 
-        function fecharFrequencia() {
-            document.getElementById('areaFrequenciaAluno').style.display = 'none';
-        }
 
         // ======= FUNÇÃO DE EXPORTAÇÃO PARA PDF TEMPORARIAMENTE DESABILITADA =======
         async function exportarFichaPDF() {
@@ -5447,30 +5099,13 @@
                     if (window.carregarRegistrosRecentes) {
                         window.carregarRegistrosRecentes();
                     }
-                } else if (sectionId === 'consulta') {
-                    // Garantir que dados estejam carregados para consulta
-                    console.log('🔍 [TOGGLE] Seção consulta expandida, verificando dados...');
-                    console.log('📊 [TOGGLE] Estado atual todosAlunosMedidas:', window.todosAlunosMedidas ? window.todosAlunosMedidas.length : 'NULL/UNDEFINED');
-                    if (!window.todosAlunosMedidas || window.todosAlunosMedidas.length === 0) {
-                        console.log('📦 [TOGGLE] Dados vazios! Forçando carregamento...');
-                        if (window.carregarTurmasEAlunos) {
-                            window.carregarTurmasEAlunos().then(() => {
-                                console.log('✅ [TOGGLE] Carregamento concluído via toggle');
-                            }).catch(error => {
-                                console.error('❌ [TOGGLE] Erro no carregamento:', error);
-                            });
-                        }
-                    } else {
-                        console.log('✅ [TOGGLE] Dados já carregados:', window.todosAlunosMedidas.length, 'alunos');
-                    }
-                }
                 // Removido carregamento automático das tabelas - só carrega quando clicar no botão
             }
         }
         
         // Inicializar seções colapsadas por padrão
         document.addEventListener('DOMContentLoaded', function() {
-            const sections = ['alertas', 'medidas', 'consulta', 'registros', 'medidasNegativas', 'medidasPositivas'];
+            const sections = ['alertas', 'medidas', 'registros', 'medidasNegativas', 'medidasPositivas'];
             sections.forEach(sectionId => {
                 const content = document.getElementById(sectionId + '-content');
                 const toggle = document.getElementById(sectionId + '-toggle');
