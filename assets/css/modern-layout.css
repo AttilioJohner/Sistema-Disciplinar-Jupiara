@@ -35,14 +35,12 @@ body {
 }
 
 .module-title {
-  font-size: 2.5rem !important;
-  font-weight: 700 !important;
-  text-align: center !important;
-  margin-bottom: 30px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 15px !important;
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  text-align: left !important;
+  margin-bottom: 20px !important;
+  color: var(--text-primary) !important;
+  padding: 10px 0 !important;
 }
 
 /* Emoji e texto separados */
@@ -262,8 +260,6 @@ body {
 }
 
 .table-content {
-  max-height: 500px !important;
-  overflow: auto !important;
   border-radius: 12px !important;
   background: rgba(255,255,255,0.05) !important;
   backdrop-filter: blur(10px) !important;
@@ -699,7 +695,6 @@ body label {
 
 .content-area {
   margin-left: 280px !important;
-  margin-top: 60px !important;
   transition: margin-left 0.3s ease !important;
 }
 
