@@ -18,8 +18,8 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase-only.js"></script>
     
-    <!-- jsPDF para exportação em PDF -->
-    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <!-- jsPDF para exportação em PDF (sem source map para evitar CSP warning) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNhh/TCUZNMX5qFTwpNxdPf/k5+uw21O8wDLHGHdHaHIQgYHj8YO8pktQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     
     <!-- Scripts de categoria de medidas -->
     <script src="../assets/js/medidas-categorias.js"></script>
@@ -3241,7 +3241,7 @@
                     });
                     
                 } else {
-                    console.error('❌ [TURMAS] Elemento turmaConsulta não encontrado');
+                    console.log('ℹ️ [TURMAS] Elemento turmaConsulta não encontrado (seção pode ter sido removida)');
                 }
                 
                 console.log(`✅ Carregados: ${todasTurmasMedidas.length} turmas, ${todosAlunosMedidas.length} alunos`);
@@ -3282,10 +3282,7 @@
             const selectAluno = document.getElementById('alunoConsulta');
             
             if (!selectTurma || !selectAluno) {
-                console.error('❌ [CONSULTA] Elementos select não encontrados:', {
-                    selectTurma: !!selectTurma,
-                    selectAluno: !!selectAluno
-                });
+                console.log('ℹ️ [CONSULTA] Elementos de consulta não encontrados (seção pode ter sido removida)');
                 return;
             }
             
@@ -3332,6 +3329,7 @@
             const selectAluno = document.getElementById('alunoConsulta');
             
             if (!selectTurma || !selectAluno) {
+                console.log('ℹ️ [CONSULTA-SIMPLES] Elementos de consulta não encontrados (seção pode ter sido removida)');
                 return;
             }
             
@@ -4174,6 +4172,26 @@
             }
         }
         */
+
+        // Função para controle de seções expansíveis
+        function toggleSection(sectionId) {
+            const content = document.getElementById(sectionId + '-content');
+            const icon = document.querySelector(`[onclick="toggleSection('${sectionId}')"] .toggle-icon`);
+            
+            if (content) {
+                if (content.style.display === 'none') {
+                    content.style.display = 'block';
+                    if (icon) icon.textContent = '▼';
+                    console.log(`✅ Seção ${sectionId} expandida`);
+                } else {
+                    content.style.display = 'none';
+                    if (icon) icon.textContent = '▶';
+                    console.log(`🔽 Seção ${sectionId} recolhida`);
+                }
+            } else {
+                console.warn(`❌ Elemento ${sectionId}-content não encontrado`);
+            }
+        }
     </script>
 
 </body>
