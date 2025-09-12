@@ -4530,13 +4530,6 @@
 
         // Carregar estatísticas de medidas disciplinares
         async function carregarEstatisticasMedidas() {
-                const pageHeight = 297;
-                const margin = 12; // Margens mais compactas
-                const contentWidth = pageWidth - (margin * 2);
-                
-                // Paleta de cores moderna
-                const cores = {
-                    azulPrimario: [0, 102, 204],      // Azul principal
                     azulSecundario: [51, 133, 214],   // Azul mais claro  
                     cinzaClaro: [248, 249, 250],      // Fundo suave
                     cinzaTexto: [60, 64, 67],        // Texto secundário
@@ -5335,6 +5328,8 @@
                 
                 yPos += Math.ceil(statsCards.length / 2) * (cardHeight + cardSpacing) + 8;
                 
+                // CÓDIGO PDF PROBLEMÁTICO COMENTADO
+                /*
                 // ===== FOOTER PROFISSIONAL =====
                 const ultimaPagina = pdf.getNumberOfPages();
                 const agora = new Date();
@@ -5397,6 +5392,7 @@
                 btnExportar.innerHTML = textoOriginal;
             }
         }
+        */
     </script>
     <script>
         // Proteger página - requer autenticação
