@@ -13,6 +13,8 @@
   --text-primary: #4a148c;
   --text-secondary: #6a1b9a;
   --text-light: #7b1fa2;
+  --border-primary: #7b1fa2;
+  --border-focus: #9c27b0;
 }
 
 body {
@@ -288,11 +290,35 @@ body {
 
 .filter-select {
   background: rgba(255,255,255,0.1) !important;
-  border: 1px solid rgba(255,255,255,0.3) !important;
+  border: 2px solid var(--border-primary) !important;
   border-radius: 8px !important;
   padding: 8px 12px !important;
   color: var(--text-primary) !important;
   font-size: 0.9rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.filter-select:focus {
+  outline: none !important;
+  border-color: var(--border-focus) !important;
+  box-shadow: 0 0 15px rgba(156, 39, 176, 0.2) !important;
+}
+
+/* Campo de busca da consulta */
+#buscaConsulta {
+  background: rgba(255,255,255,0.1) !important;
+  border: 2px solid var(--border-primary) !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  color: var(--text-primary) !important;
+  font-size: 0.9rem !important;
+  transition: all 0.3s ease !important;
+}
+
+#buscaConsulta:focus {
+  outline: none !important;
+  border-color: var(--border-focus) !important;
+  box-shadow: 0 0 15px rgba(156, 39, 176, 0.2) !important;
 }
 
 .badge {
@@ -347,24 +373,26 @@ body {
 
 .form-input, .form-select {
   background: rgba(255,255,255,0.1) !important;
-  border: 1px solid rgba(255,255,255,0.3) !important;
+  border: 2px solid var(--border-primary) !important;
   border-radius: 12px !important;
   padding: 12px 16px !important;
   color: var(--text-primary) !important;
   font-size: 1rem !important;
   transition: all 0.3s ease !important;
   backdrop-filter: blur(10px) !important;
+  box-shadow: 0 2px 8px rgba(123, 31, 162, 0.1) !important;
 }
 
 .form-input::placeholder {
-  color: rgba(255,255,255,0.7) !important;
+  color: var(--text-light) !important;
 }
 
 .form-input:focus, .form-select:focus {
   outline: none !important;
-  border-color: rgba(255,255,255,0.6) !important;
+  border-color: var(--border-focus) !important;
   background: rgba(255,255,255,0.2) !important;
-  box-shadow: 0 0 20px rgba(255,255,255,0.1) !important;
+  box-shadow: 0 0 20px rgba(156, 39, 176, 0.3) !important;
+  transform: translateY(-1px) !important;
 }
 
 .form-select option {
