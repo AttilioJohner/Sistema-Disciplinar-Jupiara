@@ -4467,10 +4467,7 @@
                 
                 const { data, error } = await window.supabaseClient
                     .from('medidas')
-                    .select(`
-                        *,
-                        alunos!medidas_codigo_matricula_fkey (nome, codigo, turma)
-                    `)
+                    .select('*')
                     .in('tipo_medida', ['Advertência Verbal', 'Advertência Escrita', 'Suspensão'])
                     .order('criado_em', { ascending: false });
                 
@@ -4503,10 +4500,7 @@
                 
                 const { data, error } = await window.supabaseClient
                     .from('medidas')
-                    .select(`
-                        *,
-                        alunos!medidas_codigo_matricula_fkey (nome, codigo, turma)
-                    `)
+                    .select('*')
                     .in('tipo_medida', ['Elogio Individual', 'Elogio Coletivo', 'Fato Observado Positivo'])
                     .order('criado_em', { ascending: false });
                 
@@ -4645,47 +4639,82 @@
             
             const opcoesPorTipo = {
                 'Elogio Individual': [
-                    'Excelente comportamento em sala de aula',
-                    'Ajudou colegas com dificuldades de aprendizagem',
-                    'Demonstrou liderança positiva em atividade escolar',
-                    'Participação exemplar nas aulas',
-                    'Atitude colaborativa com professores e funcionários',
-                    'Iniciativa em projetos escolares',
-                    'Comportamento respeitoso e educado',
-                    'Dedicação exemplar aos estudos',
-                    'Prestou ajuda espontânea a colegas',
-                    'Demonstrou honestidade em situação específica',
-                    'Atitude de responsabilidade com materiais escolares',
-                    'Comportamento exemplar em formatura/evento',
-                    'Mediação positiva em conflito entre colegas',
-                    'Demonstrou valores cívicos e patrióticos'
+                    // 📌 Comportamento e Disciplina
+                    'Aluno bem apresentado',
+                    'Apresentou postura exemplar',
+                    'Demonstrou respeito',
+                    'Ajudou espontaneamente na manutenção da ordem da sala',
+                    'Apresentou melhoramento de Disciplina',
+                    'Elogiado pelo Professor',
+                    
+                    // 📌 Civismo e Atitude
+                    'Cantou o hino nacional com entusiasmo',
+                    'Participou ativamente do hasteamento da bandeira',
+                    'Apresentou continência correta e bem executada',
+                    'Demonstrou espírito de equipe em atividade cívico-militar',
+                    'Colaborou na organização de evento escolar',
+                    
+                    // 📌 Dedicação e Responsabilidade
+                    'Realizou todas as tarefas dentro do prazo',
+                    'Trouxe materiais extras para auxiliar colegas',
+                    'Assumiu responsabilidade voluntária em atividade',
+                    'Apresentou melhora significativa na pontualidade',
+                    'Cumpriu escala de serviço com excelência',
+                    
+                    // 📌 Convivência e Respeito
+                    'Ajudou colega com dificuldade sem ser solicitado',
+                    'Mediou conflito entre colegas de forma positiva',
+                    'Tratou todos com cortesia e educação',
+                    'Apresentou liderança positiva no grupo',
+                    'Demonstrou solidariedade em situação de necessidade',
+                    
+                    // 📌 Participação e Proatividade
+                    'Participou com destaque em atividade esportiva',
+                    'Contribuiu ativamente em clube/atividade extracurricular',
+                    'Fez perguntas pertinentes durante a aula',
+                    'Apresentou sugestões construtivas para a turma',
+                    'Engajou-se em atividades de leitura e estudo',
+                    
+                    // 🎖️ Elogios Individuais
+                    'Demonstrou liderança positiva em atividade de grupo',
+                    'Exerceu exemplo de disciplina e postura durante toda a semana',
+                    'Obteve destaque na participação em evento cívico-militar',
+                    'Apresentou melhora significativa no comportamento e rendimento',
+                    'Recebeu elogio espontâneo de professor ou servidor',
+                    'Manteve uniforme completo e impecável em todas as formações',
+                    'Cumpriu com excelência sua função de escala de serviço',
+                    'Demonstrou iniciativa e proatividade em situações escolares',
+                    'Conduziu colegas com respeito e espírito de equipe',
+                    'Realizou apresentação ou tarefa acadêmica de destaque'
                 ],
                 'Elogio Coletivo': [
-                    'Turma demonstrou excelente comportamento conjunto',
-                    'Colaboração exemplar da turma em atividade',
-                    'Participação ativa e ordeira em evento escolar',
-                    'Comportamento solidário da classe',
-                    'Organização e responsabilidade coletiva',
-                    'Turma se destacou em competição acadêmica',
-                    'Apresentação cultural exemplar da turma',
-                    'Comportamento exemplar em visita/passeio',
-                    'Turma demonstrou espírito de equipe',
-                    'Colaboração da turma em ação social'
+                    // 🏅 Elogios Coletivos (Turma / Grupo)
+                    'Turma apresentou disciplina exemplar durante a formação',
+                    'Executou o hasteamento da bandeira de forma impecável',
+                    'Destacou-se pela pontualidade coletiva ao longo da semana',
+                    'Demonstrou espírito de equipe em atividade esportiva/cívica',
+                    'Participou de evento externo representando a escola com honra',
+                    'Realizou atividade de sala com organização e cooperação',
+                    'Manteve ambiente de sala limpo e organizado coletivamente',
+                    'Demonstrou respeito coletivo aos professores e colegas',
+                    'Alcançou melhor média de frequência entre as turmas',
+                    'Recebeu elogio público da direção/coordenação pela postura'
                 ],
                 'Fato Observado Positivo': [
-                    'Atitude de honestidade com objeto encontrado',
-                    'Ajuda espontânea a funcionários da escola',
-                    'Cuidado especial com patrimônio escolar',
-                    'Mediação pacífica em conflito',
-                    'Iniciativa em melhorias ambientais',
-                    'Atitude inclusiva com colega especial',
-                    'Demonstração prática de valores éticos',
-                    'Gesto de bondade com colega necessitado',
-                    'Comportamento exemplar fora da escola',
-                    'Atitude de coragem em situação de risco',
-                    'Demonstrou respeito aos símbolos nacionais',
-                    'Iniciativa em preservação do meio ambiente',
-                    'Atitude de solidariedade com a comunidade'
+                    // Baseado nas categorias de Elogio Individual para Fatos Observados
+                    'Observado comportamento exemplar fora do ambiente escolar',
+                    'Observado ajuda espontânea a pessoa necessitada',
+                    'Observado cuidado especial com patrimônio público',
+                    'Observado mediação pacífica em situação de conflito',
+                    'Observado iniciativa em preservação do meio ambiente',
+                    'Observado atitude inclusiva com pessoa especial',
+                    'Observado demonstração prática de valores éticos',
+                    'Observado gesto de bondade com colega/pessoa necessitada',
+                    'Observado respeito aos símbolos nacionais em evento público',
+                    'Observado atitude de coragem em situação de risco',
+                    'Observado solidariedade com a comunidade',
+                    'Observado honestidade ao devolver objeto encontrado',
+                    'Observado liderança positiva em atividade comunitária'
                 ]
             };
             
