@@ -18,8 +18,8 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase-only.js"></script>
     
-    <!-- jsPDF para exportação em PDF (sem source map para evitar CSP warning) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNhh/TCUZNMX5qFTwpNxdPf/k5+uw21O8wDLHGHdHaHIQgYHj8YO8pktQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- jsPDF para exportação em PDF -->
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     
     <!-- Scripts de categoria de medidas -->
     <script src="../assets/js/medidas-categorias.js"></script>
@@ -4176,17 +4176,20 @@
         // Função para controle de seções expansíveis
         function toggleSection(sectionId) {
             const content = document.getElementById(sectionId + '-content');
-            const icon = document.querySelector(`[onclick="toggleSection('${sectionId}')"] .toggle-icon`);
+            const toggle = document.getElementById(sectionId + '-toggle');
             
             if (content) {
-                if (content.style.display === 'none') {
-                    content.style.display = 'block';
-                    if (icon) icon.textContent = '▼';
-                    console.log(`✅ Seção ${sectionId} expandida`);
-                } else {
-                    content.style.display = 'none';
-                    if (icon) icon.textContent = '▶';
+                // Usar classes CSS em vez de style.display
+                if (content.classList.contains('expanded')) {
+                    content.classList.remove('expanded');
+                    content.classList.add('collapsed');
+                    if (toggle) toggle.textContent = '🔽';
                     console.log(`🔽 Seção ${sectionId} recolhida`);
+                } else {
+                    content.classList.remove('collapsed');
+                    content.classList.add('expanded');
+                    if (toggle) toggle.textContent = '🔼';
+                    console.log(`✅ Seção ${sectionId} expandida`);
                 }
             } else {
                 console.warn(`❌ Elemento ${sectionId}-content não encontrado`);
