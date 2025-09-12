@@ -14,6 +14,10 @@
     <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
+    <!-- html2canvas e jsPDF para exportação PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
     <!-- Services removidos para evitar erros de export -->
     
     <!-- Main CSS -->
@@ -160,7 +164,7 @@
         /* Formulário de Busca */
         .search-form {
             display: grid;
-            grid-template-columns: 1fr 1fr auto;
+            grid-template-columns: 1fr 1fr auto auto;
             gap: 1rem;
             align-items: end;
             margin-bottom: 2rem;
@@ -622,6 +626,69 @@
             color: #0e7490;
         }
         
+        /* Estilos específicos para PDF */
+        .pdf-export {
+            background: white !important;
+        }
+        
+        .pdf-export .sidebar {
+            display: none !important;
+        }
+        
+        .pdf-export .main-content {
+            margin-left: 0 !important;
+            padding: 20px !important;
+        }
+        
+        .pdf-export .medidas-list {
+            max-height: none !important;
+            overflow: visible !important;
+        }
+        
+        .pdf-export .card {
+            page-break-inside: avoid;
+            margin-bottom: 20px !important;
+        }
+        
+        .pdf-export .charts-grid {
+            page-break-inside: avoid;
+        }
+        
+        .pdf-export .chart-container {
+            margin-bottom: 30px;
+        }
+        
+        /* Cabeçalho do PDF */
+        .pdf-header {
+            display: none;
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 2px solid #4f46e5;
+            margin-bottom: 30px;
+        }
+        
+        .pdf-export .pdf-header {
+            display: block;
+        }
+        
+        .pdf-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 5px;
+        }
+        
+        .pdf-subtitle {
+            font-size: 16px;
+            color: #64748b;
+        }
+        
+        .pdf-date {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 10px;
+        }
+        
         /* Estados de carregamento */
         .loading-state {
             text-align: center;
@@ -678,6 +745,10 @@
             
             .search-form {
                 grid-template-columns: 1fr;
+            }
+            
+            .search-form .form-group {
+                margin-bottom: 1rem;
             }
             
             .student-info {
@@ -759,12 +830,24 @@
                                 🔍 Consultar Ficha
                             </button>
                         </div>
+                        
+                        <div class="form-group">
+                            <button id="btnExportarPDF" class="btn" style="background: linear-gradient(135deg, #dc2626, #b91c1c);" disabled onclick="exportarParaPDF()">
+                                📄 Exportar PDF
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
             
             <!-- Ficha do Aluno -->
             <div id="fichaAluno" class="ficha-aluno">
+                <!-- Cabeçalho para PDF -->
+                <div class="pdf-header">
+                    <div class="pdf-title">Ficha Disciplinar do Aluno</div>
+                    <div class="pdf-subtitle">E.E.C.M. Jupiara - Sistema de Gestão Escolar</div>
+                    <div class="pdf-date" id="pdfDate"></div>
+                </div>
                 <!-- Informações do Aluno -->
                 <div class="card">
                     <div class="card-header">
@@ -973,7 +1056,10 @@
             
             // Evento mudança de aluno
             alunoSelect.addEventListener('change', function() {
+                const btnConsultar = document.getElementById('btnConsultar');
+                const btnExportarPDF = document.getElementById('btnExportarPDF');
                 btnConsultar.disabled = !this.value;
+                btnExportarPDF.disabled = !this.value;
             });
         }
         
@@ -991,6 +1077,9 @@
                 
                 // Mostrar ficha com loading
                 document.getElementById('fichaAluno').style.display = 'block';
+                
+                // Habilitar botão de exportar PDF
+                document.getElementById('btnExportarPDF').disabled = false;
                 
                 // Buscar dados do aluno
                 const aluno = todosAlunos.find(a => a.codigo == codigoAluno);
@@ -1317,6 +1406,10 @@
         async function carregarAnalisesComparativas(codigoAluno, turmaAluno) {
             try {
                 console.log('📊 Carregando análises comparativas...');
+                
+                // Atualizar data do PDF
+                const dataAtual = new Date().toLocaleDateString('pt-BR');
+                document.getElementById('pdfDate').textContent = `Gerado em ${dataAtual}`;
                 
                 // Buscar dados do aluno atual
                 const dadosAluno = await buscarDadosComparativos(codigoAluno);
@@ -1799,6 +1892,158 @@
                     <p>Não foi possível carregar os gráficos comparativos</p>
                 </div>
             `;
+        }
+        
+        // Exportar ficha para PDF
+        async function exportarParaPDF() {
+            const alunoSelect = document.getElementById('alunoSelect');
+            const nomeAluno = alunoSelect.options[alunoSelect.selectedIndex].text;
+            
+            if (!nomeAluno || nomeAluno === 'Selecione um aluno...') {
+                alert('Selecione um aluno primeiro!');
+                return;
+            }
+            
+            try {
+                console.log('📄 Iniciando exportação PDF...');
+                
+                const btnExportar = document.getElementById('btnExportarPDF');
+                const textoOriginal = btnExportar.innerHTML;
+                btnExportar.disabled = true;
+                btnExportar.innerHTML = '⏳ Gerando PDF...';
+                
+                // Preparar documento para PDF
+                await prepararDocumentoParaPDF(nomeAluno);
+                
+                // Gerar PDF
+                await gerarPDF(nomeAluno);
+                
+                console.log('✅ PDF gerado com sucesso!');
+                
+            } catch (error) {
+                console.error('❌ Erro ao gerar PDF:', error);
+                alert('Erro ao gerar PDF: ' + error.message);
+            } finally {
+                // Restaurar botão
+                const btnExportar = document.getElementById('btnExportarPDF');
+                btnExportar.disabled = false;
+                btnExportar.innerHTML = '📄 Exportar PDF';
+                
+                // Limpar classes de PDF
+                document.body.classList.remove('pdf-export');
+            }
+        }
+        
+        // Preparar documento para PDF
+        async function prepararDocumentoParaPDF(nomeAluno) {
+            // Adicionar classe para PDF
+            document.body.classList.add('pdf-export');
+            
+            // Definir data atual no cabeçalho
+            const dataAtual = new Date().toLocaleDateString('pt-BR', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            document.getElementById('pdfDate').textContent = `Gerado em ${dataAtual}`;
+            
+            // Expandir seções com scroll para mostrar todo o conteúdo
+            const medidasList = document.getElementById('medidasList');
+            if (medidasList) {
+                medidasList.style.maxHeight = 'none';
+                medidasList.style.overflow = 'visible';
+            }
+            
+            // Aguardar renderização dos gráficos
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+        
+        // Gerar PDF usando html2canvas + jsPDF
+        async function gerarPDF(nomeAluno) {
+            const { jsPDF } = window.jspdf;
+            const fichaElement = document.getElementById('fichaAluno');
+            
+            if (!fichaElement) {
+                throw new Error('Elemento da ficha não encontrado');
+            }
+            
+            // Configurações do html2canvas
+            const canvasOptions = {
+                scale: 2, // Maior resolução
+                useCORS: true,
+                allowTaint: false,
+                backgroundColor: '#ffffff',
+                logging: false,
+                width: fichaElement.scrollWidth,
+                height: fichaElement.scrollHeight,
+                scrollX: 0,
+                scrollY: 0
+            };
+            
+            console.log('📷 Capturando conteúdo...');
+            const canvas = await html2canvas(fichaElement, canvasOptions);
+            
+            // Configurações do PDF
+            const imgWidth = 190; // Largura da imagem no PDF (mm)
+            const pageWidth = 210; // A4 width
+            const pageHeight = 297; // A4 height
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            
+            let position = 10; // Margem superior
+            let remainingHeight = imgHeight;
+            
+            console.log('📄 Gerando páginas do PDF...');
+            
+            // Adicionar primeira página
+            const imgData = canvas.toDataURL('image/png', 1.0);
+            
+            if (remainingHeight <= (pageHeight - 20)) {
+                // Conteúdo cabe em uma página
+                pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+            } else {
+                // Conteúdo precisa de múltiplas páginas
+                let pageCount = 1;
+                
+                while (remainingHeight > 0) {
+                    const pageImageHeight = Math.min(remainingHeight, pageHeight - 20);
+                    
+                    if (pageCount > 1) {
+                        pdf.addPage();
+                        position = 10;
+                    }
+                    
+                    // Calcular a posição de recorte na imagem original
+                    const sourceY = (pageCount - 1) * (pageHeight - 20) * (canvas.height / imgHeight);
+                    const sourceHeight = pageImageHeight * (canvas.height / imgHeight);
+                    
+                    // Criar canvas temporário para esta página
+                    const tempCanvas = document.createElement('canvas');
+                    const tempCtx = tempCanvas.getContext('2d');
+                    tempCanvas.width = canvas.width;
+                    tempCanvas.height = sourceHeight;
+                    
+                    // Copiar a parte relevante da imagem
+                    tempCtx.drawImage(canvas, 0, sourceY, canvas.width, sourceHeight, 0, 0, canvas.width, sourceHeight);
+                    
+                    // Adicionar ao PDF
+                    const pageImgData = tempCanvas.toDataURL('image/png', 1.0);
+                    pdf.addImage(pageImgData, 'PNG', 10, position, imgWidth, pageImageHeight);
+                    
+                    remainingHeight -= pageImageHeight;
+                    pageCount++;
+                }
+            }
+            
+            // Salvar PDF
+            const nomeArquivo = `Ficha_Disciplinar_${nomeAluno.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+            pdf.save(nomeArquivo);
+            
+            console.log(`✅ PDF salvo como: ${nomeArquivo}`);
         }
     </script>
 </body>
