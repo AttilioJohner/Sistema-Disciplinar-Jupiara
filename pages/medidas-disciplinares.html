@@ -1595,24 +1595,6 @@
                             </div>
                             
                             <!-- Campos de categoria de faltas - inicialmente ocultos -->
-                            <div class="form-group form-group-full" id="campoCategoriaMedida" style="display: none;">
-                                <label class="form-label">Categorias de Faltas</label>
-                                <div class="categorias-container">
-                                    <div class="categoria-group" onclick="toggleCategoria('leves')">
-                                        <input type="checkbox" id="cat_leves" class="categoria-checkbox" />
-                                        <label for="cat_leves">📗 Faltas Leves (1-26)</label>
-                                    </div>
-                                    <div class="categoria-group" onclick="toggleCategoria('medias')">
-                                        <input type="checkbox" id="cat_medias" class="categoria-checkbox" />
-                                        <label for="cat_medias">📙 Faltas Médias (27-62)</label>
-                                    </div>
-                                    <div class="categoria-group" onclick="toggleCategoria('graves')">
-                                        <input type="checkbox" id="cat_graves" class="categoria-checkbox" />
-                                        <label for="cat_graves">📕 Faltas Graves (63-91)</label>
-                                    </div>
-                                </div>
-                                <small class="form-help">Você pode selecionar múltiplas categorias para o mesmo incidente</small>
-                            </div>
                             
                             <div class="form-group form-group-full" id="campoSelecaoFalta" style="display: none;">
                                 <label class="form-label">Selecionar Faltas Específicas *</label>
@@ -2248,7 +2230,6 @@
         // Funções para gerenciar seleção de medidas categorizadas
         function configurarCamposMedida() {
             const tipoMedida = document.getElementById('tipoMedida').value;
-            const campoCategoria = document.getElementById('campoCategoriaMedida');
             const campoSelecaoFalta = document.getElementById('campoSelecaoFalta');
             const campoMotivoOriginal = document.getElementById('campoMotivoOriginal');
             const selectCategoria = document.getElementById('categoriaMedida');
@@ -2273,11 +2254,10 @@
             
             if (medidasComCategoria.includes(tipoMedida)) {
                 // Mostrar campos de categoria para medidas disciplinares (MÚLTIPLAS CATEGORIAS)
-                if (campoCategoria) campoCategoria.style.display = 'block';
                 if (campoSelecaoFalta) campoSelecaoFalta.style.display = 'block';
                 if (campoMotivoOriginal) campoMotivoOriginal.style.display = 'none';
                 if (selectCategoria) selectCategoria.required = false; // Não usar o select antigo
-                if (selectFalta) selectFalta.required = true;
+                if (selectFalta) selectFalta.required = false; // Usar sistema de múltiplas categorias
                 if (textareaMotivo) {
                     textareaMotivo.required = false;
                     textareaMotivo.removeAttribute('required');
@@ -2296,7 +2276,6 @@
                 
             } else if (medidasPositivas.includes(tipoMedida)) {
                 // Para medidas positivas, mostrar seleção de situações específicas
-                if (campoCategoria) campoCategoria.style.display = 'none';
                 if (campoSelecaoFalta) campoSelecaoFalta.style.display = 'block';
                 if (campoMotivoOriginal) campoMotivoOriginal.style.display = 'none';
                 if (selectCategoria) selectCategoria.style.display = 'none';
@@ -2314,7 +2293,6 @@
                 
             } else {
                 // Para outras medidas, usar campo de texto tradicional
-                if (campoCategoria) campoCategoria.style.display = 'none';
                 if (campoSelecaoFalta) campoSelecaoFalta.style.display = 'none';
                 if (campoMotivoOriginal) campoMotivoOriginal.style.display = 'block';
                 if (selectCategoria) selectCategoria.required = false;
@@ -4280,25 +4258,36 @@
             }
             
             // Recarregar faltas baseado nas categorias selecionadas
-            const container = document.getElementById('faltasMultiContainer');
+            const container = document.getElementById('faltasCategoriasContainer');
             if (container) {
                 container.innerHTML = '';
                 
-                categoriasSelecionadas.forEach(cat => {
-                    const faltas = carregarFaltasCategorizadas(cat);
-                    faltas.forEach(falta => {
-                        if (!document.querySelector(`input[value="${falta}"]`)) {
-                            const div = document.createElement('div');
-                            div.innerHTML = `
-                                <label class="falta-checkbox">
-                                    <input type="checkbox" value="${falta}" onchange="toggleFalta('${falta}')">
-                                    <span class="categoria-${cat}">${falta}</span>
-                                </label>
-                            `;
-                            container.appendChild(div);
-                        }
+                if (categoriasSelecionadas.length === 0) {
+                    container.innerHTML = '<p class="texto-instrucao">👆 Marque as categorias acima para ver as faltas específicas</p>';
+                } else {
+                    // Criar seção para cada categoria selecionada
+                    categoriasSelecionadas.forEach(cat => {
+                        const faltas = carregarFaltasCategorizadas(cat);
+                        const categoriaLabel = cat === 'leve' ? '⚡ Faltas Leves' : 
+                                              cat === 'media' ? '⚠️ Faltas Médias' : 
+                                              '🚨 Faltas Graves';
+                        
+                        const secaoDiv = document.createElement('div');
+                        secaoDiv.className = 'categoria-secao';
+                        secaoDiv.innerHTML = `
+                            <h5 style="color: #333; margin: 15px 0 10px 0;">${categoriaLabel}</h5>
+                            <div class="faltas-categoria">
+                                ${faltas.map(falta => `
+                                    <label class="falta-checkbox categoria-${cat}">
+                                        <input type="checkbox" value="${falta}" onchange="toggleFalta('${falta}')">
+                                        <span>${falta}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        `;
+                        container.appendChild(secaoDiv);
                     });
-                });
+                }
             }
         }
 
