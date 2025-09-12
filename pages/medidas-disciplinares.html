@@ -3184,6 +3184,9 @@
                 `;
             }
         }
+        
+        // Tornar função disponível globalmente
+        window.carregarRegistrosRecentes = carregarRegistrosRecentes;
 
         // Carregar dados de demonstração
         function carregarDadosDemoMedidas() {
@@ -3208,6 +3211,10 @@
         let todosAlunosMedidas = [];
         let todasTurmasMedidas = [];
         
+        // Tornar variáveis disponíveis globalmente
+        window.todosAlunosMedidas = todosAlunosMedidas;
+        window.todasTurmasMedidas = todasTurmasMedidas;
+        
         async function carregarTurmasEAlunos() {
             try {
                 // Aguardar supabaseClient estar disponível
@@ -3224,6 +3231,7 @@
                 
                     
                 todosAlunosMedidas = [];
+                window.todosAlunosMedidas = todosAlunosMedidas;
                 
                 // Carregar diretamente do Supabase
                 const { data: alunosData, error } = await window.supabaseClient
@@ -3252,6 +3260,7 @@
                         if (dbData.alunos) {
                             console.log('FREQ: Carregando alunos do arquivo db.json');
                             todosAlunosMedidas = [];
+                window.todosAlunosMedidas = todosAlunosMedidas;
                             
                             // Converter objeto em array
                             Object.keys(dbData.alunos).forEach(alunoId => {
@@ -3276,6 +3285,7 @@
                 } else {
                     console.log('FREQ: Carregando alunos do localDb');
                     todosAlunosMedidas = [];
+                window.todosAlunosMedidas = todosAlunosMedidas;
                     
                     // Carregar alunos do localDb
                     // USAR SISTEMA HÍBRIDO em vez de localDb diretamente
@@ -3299,6 +3309,7 @@
                 
                 // Extrair turmas únicas
                 todasTurmasMedidas = [...new Set(todosAlunosMedidas.map(a => a.turma))].sort();
+                window.todasTurmasMedidas = todasTurmasMedidas;
                 
                 // Carregar turmas no select
                 const selectTurma = document.getElementById('turmaConsulta');
@@ -3320,6 +3331,9 @@
                 console.error('Erro ao carregar turmas e alunos:', error);
             }
         }
+        
+        // Tornar função disponível globalmente
+        window.carregarTurmasEAlunos = carregarTurmasEAlunos;
         
         // Função separada para configurar evento de turma (evita conflitos)
         function configurarEventoTurma() {
@@ -5363,13 +5377,13 @@
                 const nomeArquivo = `ficha_disciplinar_${codigoAluno}_${dataGeracao.replace(/\//g, '-')}.pdf`;
                 pdf.save(nomeArquivo);
                 
-                console.log('✅ PDF MODERNO gerado:', nomeArquivo);
-                console.log('🎨 Layout profissional aplicado com sucesso!');
-                alert(`📄 PDF gerado com sucesso!\n\n🎨 Design moderno e profissional\n📊 Todas as informações incluídas\n📁 Arquivo: ${nomeArquivo}`);
+                console.log('PDF MODERNO gerado:', nomeArquivo);
+                console.log('Layout profissional aplicado com sucesso!');
+                alert(`PDF gerado com sucesso!\n\nDesign moderno e profissional\nTodas as informações incluídas\nArquivo: ${nomeArquivo}`);
                 
             } catch (error) {
-                console.error('❌ Erro ao gerar PDF:', error);
-                alert('❌ Erro ao gerar PDF: ' + error.message);
+                console.error('Erro ao gerar PDF:', error);
+                alert('Erro ao gerar PDF: ' + error.message);
             } finally {
                 btnExportar.disabled = false;
                 btnExportar.innerHTML = textoOriginal;
@@ -5426,20 +5440,24 @@
                 
                 // Carregar dados específicos quando expandir certas seções
                 if (sectionId === 'registros') {
-                    carregarRegistrosRecentes();
+                    if (window.carregarRegistrosRecentes) {
+                        window.carregarRegistrosRecentes();
+                    }
                 } else if (sectionId === 'consulta') {
                     // Garantir que dados estejam carregados para consulta
                     console.log('🔍 [TOGGLE] Seção consulta expandida, verificando dados...');
-                    console.log('📊 [TOGGLE] Estado atual todosAlunosMedidas:', todosAlunosMedidas ? todosAlunosMedidas.length : 'NULL/UNDEFINED');
-                    if (!todosAlunosMedidas || todosAlunosMedidas.length === 0) {
+                    console.log('📊 [TOGGLE] Estado atual todosAlunosMedidas:', window.todosAlunosMedidas ? window.todosAlunosMedidas.length : 'NULL/UNDEFINED');
+                    if (!window.todosAlunosMedidas || window.todosAlunosMedidas.length === 0) {
                         console.log('📦 [TOGGLE] Dados vazios! Forçando carregamento...');
-                        carregarTurmasEAlunos().then(() => {
-                            console.log('✅ [TOGGLE] Carregamento concluído via toggle');
-                        }).catch(error => {
-                            console.error('❌ [TOGGLE] Erro no carregamento:', error);
-                        });
+                        if (window.carregarTurmasEAlunos) {
+                            window.carregarTurmasEAlunos().then(() => {
+                                console.log('✅ [TOGGLE] Carregamento concluído via toggle');
+                            }).catch(error => {
+                                console.error('❌ [TOGGLE] Erro no carregamento:', error);
+                            });
+                        }
                     } else {
-                        console.log('✅ [TOGGLE] Dados já carregados:', todosAlunosMedidas.length, 'alunos');
+                        console.log('✅ [TOGGLE] Dados já carregados:', window.todosAlunosMedidas.length, 'alunos');
                     }
                 }
                 // Removido carregamento automático das tabelas - só carrega quando clicar no botão
