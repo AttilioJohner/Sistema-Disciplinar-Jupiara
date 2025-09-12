@@ -4571,7 +4571,7 @@
                 const { data, error } = await window.supabaseClient
                     .from('medidas')
                     .select('*')
-                    .in('tipo_medida', ['Advertência Verbal', 'Advertência Escrita', 'Suspensão'])
+                    .in('tipo_medida', ['Fato Observado Negativo', 'Advertência Verbal', 'Advertência Escrita', 'Suspensão', 'Ação Educativa'])
                     .order('criado_em', { ascending: false });
                 
                 if (error) throw error;
