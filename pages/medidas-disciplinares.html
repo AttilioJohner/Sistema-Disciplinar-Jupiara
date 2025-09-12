@@ -1321,6 +1321,65 @@
                 margin: 5px 0;
             }
         }
+
+        /* Estilos para categorias múltiplas */
+        .categorias-selector {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .categoria-grupo {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .categoria-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            background: white;
+            transition: all 0.3s ease;
+        }
+        
+        .categoria-checkbox:hover {
+            border-color: #007bff;
+            background: #f0f7ff;
+        }
+        
+        .categoria-checkbox input[type="checkbox"]:checked + span {
+            color: #007bff;
+            font-weight: 600;
+        }
+        
+        .falta-checkbox {
+            display: block;
+            margin: 8px 0;
+            padding: 8px;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .falta-checkbox:hover {
+            background: #f8f9fa;
+            border-color: #007bff;
+        }
+        
+        .texto-instrucao {
+            color: #6c757d;
+            font-style: italic;
+            text-align: center;
+            margin: 20px 0;
+        }
     </style>
 </head>
 
@@ -1599,6 +1658,7 @@
                                     id="prazoAssinatura" 
                                     class="form-input"
                                     title="Data limite para o responsável devolver o documento assinado"
+                                    min="2024-01-01"
                                 >
                                 <small class="form-help">🤖 <strong>Automático:</strong> 3 dias úteis a partir da data de ocorrência (ajustável se necessário)</small>
                             </div>
@@ -2230,6 +2290,9 @@
                 
                 // Limpar seleções múltiplas anteriores
                 limparSelecoesCategorias();
+                
+                // Carregar interface de categorias múltiplas
+                carregarFaltasMultiplasCategorias();
                 
             } else if (medidasPositivas.includes(tipoMedida)) {
                 // Para medidas positivas, esconder seleção de categorias múltiplas e usar select tradicional
@@ -4343,7 +4406,7 @@
                 
                 console.log('📊 Carregando medidas disciplinares negativas...');
                 
-                const { data, error } = await db
+                const { data, error } = await window.supabaseClient
                     .from('medidas_disciplinares')
                     .select(`
                         *,
@@ -4379,7 +4442,7 @@
                 
                 console.log('📊 Carregando medidas disciplinares positivas...');
                 
-                const { data, error } = await db
+                const { data, error } = await window.supabaseClient
                     .from('medidas_disciplinares')
                     .select(`
                         *,
@@ -4487,6 +4550,34 @@
             
             html += '</tbody></table></div>';
             container.innerHTML = html;
+        }
+
+        function carregarFaltasMultiplasCategorias() {
+            const container = document.getElementById('faltasMultiContainer');
+            if (!container) return;
+            
+            container.innerHTML = `
+                <div class="categorias-selector">
+                    <h4>Selecione as categorias de faltas:</h4>
+                    <div class="categoria-grupo">
+                        <label class="categoria-checkbox">
+                            <input type="checkbox" id="cat_disciplinar" onchange="toggleCategoria('disciplinar')">
+                            <span>📚 Disciplinares</span>
+                        </label>
+                        <label class="categoria-checkbox">
+                            <input type="checkbox" id="cat_material" onchange="toggleCategoria('material')">
+                            <span>📝 Material/Tarefas</span>
+                        </label>
+                        <label class="categoria-checkbox">
+                            <input type="checkbox" id="cat_frequencia" onchange="toggleCategoria('frequencia')">
+                            <span>⏰ Frequência</span>
+                        </label>
+                    </div>
+                </div>
+                <div id="faltasCategoriasContainer" style="margin-top: 15px;">
+                    <p class="texto-instrucao">👆 Marque as categorias acima para ver as opções disponíveis</p>
+                </div>
+            `;
         }
 
         // === SISTEMA DE CÁLCULO DE PRAZO ===
