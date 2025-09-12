@@ -1,4 +1,5 @@
 /* Layout moderno com glass-morphism para dashboard e gestão */
+/* Aplicado em todas as páginas: index, gestao-alunos, medidas-disciplinares */
 :root {
   --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
@@ -451,4 +452,83 @@ body {
     height: 60px !important;
     font-size: 2rem !important;
   }
+}
+
+/* Regras específicas para medidas-disciplinares.html */
+body .form-input,
+body .form-select,
+body input[type="text"],
+body input[type="date"],
+body input[type="number"],
+body select,
+body textarea {
+  background: rgba(255,255,255,0.1) !important;
+  border: 2px solid var(--border-primary) !important;
+  border-radius: 12px !important;
+  padding: 12px 16px !important;
+  color: var(--text-primary) !important;
+  font-size: 1rem !important;
+  transition: all 0.3s ease !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 0 2px 8px rgba(123, 31, 162, 0.1) !important;
+}
+
+body .form-input:focus,
+body .form-select:focus,
+body input[type="text"]:focus,
+body input[type="date"]:focus,
+body input[type="number"]:focus,
+body select:focus,
+body textarea:focus {
+  outline: none !important;
+  border-color: var(--border-focus) !important;
+  background: rgba(255,255,255,0.2) !important;
+  box-shadow: 0 0 20px rgba(156, 39, 176, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+body .form-label,
+body label {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+  margin-bottom: 8px !important;
+  font-size: 0.9rem !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
+}
+
+/* Inputs específicos da página medidas disciplinares */
+#turmaMedida,
+#alunoMedida,
+#dataMedida,
+#tipoMedida,
+#diasSuspensao,
+#motivoMedida,
+#acaoTomada,
+#pesquisaNegativas,
+#pesquisaPositivas {
+  background: rgba(255,255,255,0.1) !important;
+  border: 2px solid var(--border-primary) !important;
+  border-radius: 12px !important;
+  padding: 12px 16px !important;
+  color: var(--text-primary) !important;
+  font-size: 1rem !important;
+  transition: all 0.3s ease !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 0 2px 8px rgba(123, 31, 162, 0.1) !important;
+}
+
+#turmaMedida:focus,
+#alunoMedida:focus,
+#dataMedida:focus,
+#tipoMedida:focus,
+#diasSuspensao:focus,
+#motivoMedida:focus,
+#acaoTomada:focus,
+#pesquisaNegativas:focus,
+#pesquisaPositivas:focus {
+  outline: none !important;
+  border-color: var(--border-focus) !important;
+  background: rgba(255,255,255,0.2) !important;
+  box-shadow: 0 0 20px rgba(156, 39, 176, 0.3) !important;
+  transform: translateY(-1px) !important;
 }
