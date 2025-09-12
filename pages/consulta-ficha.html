@@ -2001,9 +2001,9 @@
                 throw new Error('Elemento da ficha não encontrado');
             }
             
-            // Configurações do html2canvas
+            // Configurações otimizadas do html2canvas
             const canvasOptions = {
-                scale: 2, // Maior resolução
+                scale: 1.5, // Reduzido de 2 para 1.5 (economia ~44%)
                 useCORS: true,
                 allowTaint: false,
                 backgroundColor: '#ffffff',
@@ -2011,7 +2011,9 @@
                 width: fichaElement.scrollWidth,
                 height: fichaElement.scrollHeight,
                 scrollX: 0,
-                scrollY: 0
+                scrollY: 0,
+                removeContainer: true, // Remove elementos temporários
+                foreignObjectRendering: false // Melhora performance
             };
             
             console.log('📷 Capturando conteúdo...');
@@ -2030,8 +2032,8 @@
             
             console.log('📄 Gerando páginas do PDF...');
             
-            // Adicionar primeira página
-            const imgData = canvas.toDataURL('image/png', 1.0);
+            // Adicionar primeira página com compressão
+            const imgData = canvas.toDataURL('image/jpeg', 0.85); // JPEG 85% quality
             
             if (remainingHeight <= (pageHeight - 20)) {
                 // Conteúdo cabe em uma página
@@ -2061,8 +2063,8 @@
                     // Copiar a parte relevante da imagem
                     tempCtx.drawImage(canvas, 0, sourceY, canvas.width, sourceHeight, 0, 0, canvas.width, sourceHeight);
                     
-                    // Adicionar ao PDF
-                    const pageImgData = tempCanvas.toDataURL('image/png', 1.0);
+                    // Adicionar ao PDF com compressão
+                    const pageImgData = tempCanvas.toDataURL('image/jpeg', 0.85); // JPEG 85% quality
                     pdf.addImage(pageImgData, 'PNG', 10, position, imgWidth, pageImageHeight);
                     
                     remainingHeight -= pageImageHeight;
