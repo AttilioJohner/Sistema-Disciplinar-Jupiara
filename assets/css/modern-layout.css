@@ -574,31 +574,34 @@ body label {
 }
 
 .app-launcher {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  width: 24px !important;
-  height: 24px !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  grid-template-rows: repeat(3, 1fr) !important;
+  width: 20px !important;
+  height: 20px !important;
   gap: 2px !important;
   cursor: pointer !important;
-  padding: 4px !important;
-  border-radius: 6px !important;
+  padding: 6px !important;
+  border-radius: 8px !important;
   transition: all 0.3s ease !important;
 }
 
 .app-launcher:hover {
   background: rgba(255,255,255,0.2) !important;
+  transform: scale(1.1) !important;
 }
 
 .app-launcher span {
-  width: 6px !important;
-  height: 6px !important;
+  width: 4px !important;
+  height: 4px !important;
   background: white !important;
-  border-radius: 1px !important;
+  border-radius: 50% !important;
   transition: all 0.3s ease !important;
 }
 
 .app-launcher:hover span {
-  background: rgba(255,255,255,0.8) !important;
+  background: rgba(255,255,255,0.9) !important;
+  transform: scale(1.2) !important;
 }
 
 .top-bar-logo {
@@ -757,4 +760,14 @@ body label {
 .sidebar-text {
   flex: 1 !important;
   font-weight: 500 !important;
+}
+
+/* Correções específicas para evitar barras duplas */
+.main-layout {
+  margin-top: 60px !important; /* Espaço para a topbar fixa */
+}
+
+/* Para páginas com CSS próprio, ocultar elementos conflitantes */
+body > .top-bar:not(:first-child) {
+  display: none !important;
 }
