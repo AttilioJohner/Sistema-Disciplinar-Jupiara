@@ -4195,6 +4195,352 @@
                 console.warn(`❌ Elemento ${sectionId}-content não encontrado`);
             }
         }
+
+        // === SISTEMA DE CATEGORIAS MÚLTIPLAS ===
+        let faltasSelecionadas = [];
+        let categoriasSelecionadas = [];
+
+        function limparSelecoesCategorias() {
+            categoriasSelecionadas = [];
+            faltasSelecionadas = [];
+            
+            // Desmarcar todos os checkboxes
+            document.querySelectorAll('#faltasMultiContainer input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+            });
+            
+            // Limpar container
+            const container = document.getElementById('faltasMultiContainer');
+            if (container) container.innerHTML = '';
+            
+            const tagsContainer = document.getElementById('faltasTagsContainer');
+            if (tagsContainer) tagsContainer.innerHTML = '';
+        }
+
+        function toggleCategoria(categoria) {
+            const checkbox = document.getElementById(`cat_${categoria}`);
+            const index = categoriasSelecionadas.indexOf(categoria);
+            
+            if (checkbox && checkbox.checked && index === -1) {
+                categoriasSelecionadas.push(categoria);
+            } else if (checkbox && !checkbox.checked && index > -1) {
+                categoriasSelecionadas.splice(index, 1);
+            }
+            
+            // Recarregar faltas baseado nas categorias selecionadas
+            const container = document.getElementById('faltasMultiContainer');
+            if (container) {
+                container.innerHTML = '';
+                
+                categoriasSelecionadas.forEach(cat => {
+                    const faltas = carregarFaltasCategorizadas(cat);
+                    faltas.forEach(falta => {
+                        if (!document.querySelector(`input[value="${falta}"]`)) {
+                            const div = document.createElement('div');
+                            div.innerHTML = `
+                                <label class="falta-checkbox">
+                                    <input type="checkbox" value="${falta}" onchange="toggleFalta('${falta}')">
+                                    <span class="categoria-${cat}">${falta}</span>
+                                </label>
+                            `;
+                            container.appendChild(div);
+                        }
+                    });
+                });
+            }
+        }
+
+        function carregarFaltasCategorizadas(categoria) {
+            const faltasPorCategoria = {
+                'disciplinar': [
+                    'Conversar durante a aula',
+                    'Usar aparelhos eletrônicos sem autorização',
+                    'Dormir durante a aula',
+                    'Comer ou beber durante a aula (exceto água)',
+                    'Não fazer atividades propostas',
+                    'Desrespeitar colegas',
+                    'Desrespeitar professores ou funcionários',
+                    'Tumultuar o ambiente escolar',
+                    'Sair da sala sem autorização',
+                    'Não permanecer no local designado',
+                    'Fazer brincadeiras inadequadas'
+                ],
+                'material': [
+                    'Não trouxe material escolar básico',
+                    'Não trouxe livro didático',
+                    'Não trouxe caderno específico da disciplina',
+                    'Não trouxe uniforme completo',
+                    'Não realizou tarefa de casa',
+                    'Não trouxe trabalho/projeto no prazo'
+                ],
+                'frequencia': [
+                    'Atraso injustificado',
+                    'Falta injustificada',
+                    'Saída antecipada não autorizada',
+                    'Não comparecimento a avaliação'
+                ]
+            };
+            
+            return faltasPorCategoria[categoria] || [];
+        }
+
+        function toggleFalta(falta) {
+            const index = faltasSelecionadas.indexOf(falta);
+            if (index > -1) {
+                faltasSelecionadas.splice(index, 1);
+            } else {
+                faltasSelecionadas.push(falta);
+            }
+            atualizarTagsFaltas();
+        }
+
+        function atualizarTagsFaltas() {
+            const tagsContainer = document.getElementById('faltasTagsContainer');
+            if (!tagsContainer) return;
+            
+            tagsContainer.innerHTML = '';
+            
+            faltasSelecionadas.forEach(falta => {
+                const tag = document.createElement('span');
+                tag.className = 'falta-tag';
+                tag.innerHTML = `
+                    ${falta}
+                    <button type="button" onclick="removerFalta('${falta}')" class="remover-tag">×</button>
+                `;
+                tagsContainer.appendChild(tag);
+            });
+            
+            // Atualizar o campo oculto se necessário
+            const hiddenField = document.getElementById('faltasSelecionadasHidden');
+            if (hiddenField) {
+                hiddenField.value = JSON.stringify(faltasSelecionadas);
+            }
+        }
+
+        function removerFalta(falta) {
+            faltasSelecionadas = faltasSelecionadas.filter(f => f !== falta);
+            
+            // Desmarcar checkbox correspondente
+            const checkbox = document.querySelector(`input[value="${falta}"]`);
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+            
+            atualizarTagsFaltas();
+        }
+
+        // === FUNCIONALIDADES DE MEDIDAS NEGATIVAS E POSITIVAS ===
+        let medidasNegativasData = [];
+        let medidasPositivasData = [];
+
+        async function carregarMedidasNegativas() {
+            const button = event.target;
+            const originalText = button.innerHTML;
+            
+            try {
+                button.innerHTML = '⏳ Carregando...';
+                button.disabled = true;
+                
+                console.log('📊 Carregando medidas disciplinares negativas...');
+                
+                const { data, error } = await db
+                    .from('medidas_disciplinares')
+                    .select(`
+                        *,
+                        alunos (nome, codigo, turma)
+                    `)
+                    .in('tipo_medida', ['Advertência Verbal', 'Advertência Escrita', 'Suspensão'])
+                    .order('data_ocorrencia', { ascending: false });
+                
+                if (error) throw error;
+                
+                medidasNegativasData = data || [];
+                console.log(`✅ ${medidasNegativasData.length} medidas negativas carregadas`);
+                
+                // Renderizar tabela
+                renderizarTabelaMedidasNegativas();
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar medidas negativas:', error);
+                alert('Erro ao carregar medidas negativas: ' + error.message);
+            } finally {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        }
+
+        async function carregarMedidasPositivas() {
+            const button = event.target;
+            const originalText = button.innerHTML;
+            
+            try {
+                button.innerHTML = '⏳ Carregando...';
+                button.disabled = true;
+                
+                console.log('📊 Carregando medidas disciplinares positivas...');
+                
+                const { data, error } = await db
+                    .from('medidas_disciplinares')
+                    .select(`
+                        *,
+                        alunos (nome, codigo, turma)
+                    `)
+                    .in('tipo_medida', ['Elogio Individual', 'Elogio Coletivo', 'Fato Observado Positivo'])
+                    .order('data_ocorrencia', { ascending: false });
+                
+                if (error) throw error;
+                
+                medidasPositivasData = data || [];
+                console.log(`✅ ${medidasPositivasData.length} medidas positivas carregadas`);
+                
+                // Renderizar tabela
+                renderizarTabelaMedidasPositivas();
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar medidas positivas:', error);
+                alert('Erro ao carregar medidas positivas: ' + error.message);
+            } finally {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        }
+
+        function renderizarTabelaMedidasNegativas() {
+            const container = document.getElementById('tableMedidasNegativas');
+            if (!container) return;
+            
+            if (medidasNegativasData.length === 0) {
+                container.innerHTML = '<p class="text-center text-muted">Nenhuma medida negativa encontrada.</p>';
+                return;
+            }
+            
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Aluno</th>
+                                <th>Turma</th>
+                                <th>Tipo</th>
+                                <th>Especificação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            medidasNegativasData.forEach(medida => {
+                const dataFormatada = new Date(medida.data_ocorrencia).toLocaleDateString('pt-BR');
+                
+                html += `
+                    <tr>
+                        <td>${dataFormatada}</td>
+                        <td>${medida.alunos?.nome || 'N/A'}</td>
+                        <td>${medida.alunos?.turma || 'N/A'}</td>
+                        <td><span class="badge badge-danger">${medida.tipo_medida}</span></td>
+                        <td class="text-truncate" style="max-width: 300px;" title="${medida.especificacao_falta}">${medida.especificacao_falta}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+
+        function renderizarTabelaMedidasPositivas() {
+            const container = document.getElementById('tableMedidasPositivas');
+            if (!container) return;
+            
+            if (medidasPositivasData.length === 0) {
+                container.innerHTML = '<p class="text-center text-muted">Nenhuma medida positiva encontrada.</p>';
+                return;
+            }
+            
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Aluno</th>
+                                <th>Turma</th>
+                                <th>Tipo</th>
+                                <th>Especificação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            medidasPositivasData.forEach(medida => {
+                const dataFormatada = new Date(medida.data_ocorrencia).toLocaleDateString('pt-BR');
+                
+                html += `
+                    <tr>
+                        <td>${dataFormatada}</td>
+                        <td>${medida.alunos?.nome || 'N/A'}</td>
+                        <td>${medida.alunos?.turma || 'N/A'}</td>
+                        <td><span class="badge badge-success">${medida.tipo_medida}</span></td>
+                        <td class="text-truncate" style="max-width: 300px;" title="${medida.especificacao_falta}">${medida.especificacao_falta}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+
+        // === SISTEMA DE CÁLCULO DE PRAZO ===
+        function adicionarDiasUteis(data, diasUteis) {
+            const resultado = new Date(data);
+            let diasAdicionados = 0;
+            
+            while (diasAdicionados < diasUteis) {
+                resultado.setDate(resultado.getDate() + 1);
+                // Se não for sábado (6) nem domingo (0)
+                if (resultado.getDay() !== 0 && resultado.getDay() !== 6) {
+                    diasAdicionados++;
+                }
+            }
+            
+            return resultado;
+        }
+
+        function calcularPrazoAutomatico() {
+            const dataOcorrencia = document.getElementById('dataMedida').value;
+            const prazoInput = document.getElementById('prazoAssinatura');
+            
+            if (!dataOcorrencia || !prazoInput) return;
+            
+            try {
+                const dataOcorr = new Date(dataOcorrencia);
+                // 3 dias úteis após a ocorrência
+                const dataPrazo = adicionarDiasUteis(dataOcorr, 3);
+                
+                // Formatar para input date (YYYY-MM-DD)
+                const ano = dataPrazo.getFullYear();
+                const mes = String(dataPrazo.getMonth() + 1).padStart(2, '0');
+                const dia = String(dataPrazo.getDate()).padStart(2, '0');
+                
+                prazoInput.value = `${ano}-${mes}-${dia}`;
+                console.log(`✅ Prazo calculado automaticamente: ${prazoInput.value}`);
+            } catch (error) {
+                console.error('Erro ao calcular prazo:', error);
+            }
+        }
+
+        // Adicionar evento ao campo de data quando carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                const dataMedida = document.getElementById('dataMedida');
+                if (dataMedida) {
+                    dataMedida.addEventListener('change', calcularPrazoAutomatico);
+                    // Calcular prazo inicial se data já estiver preenchida
+                    if (dataMedida.value) {
+                        calcularPrazoAutomatico();
+                    }
+                }
+            }, 1000);
+        });
     </script>
 
 </body>
