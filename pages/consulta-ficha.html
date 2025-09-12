@@ -11,9 +11,7 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase-only.js"></script>
     
-    <!-- Services -->
-    <script src="../assets/js/notas-disciplinares.js"></script>
-    <script src="../assets/js/frequencia.js"></script>
+    <!-- Services removidos para evitar erros de export -->
     
     <!-- Main CSS -->
     <link rel="stylesheet" href="../assets/css/style.css">
@@ -607,7 +605,7 @@
                 
                 const { data: alunosData, error } = await window.supabaseClient
                     .from('alunos')
-                    .select('codigo, "Nome completo", turma, periodo, situacao, foto_url');
+                    .select('codigo, "Nome completo", turma, foto_url');
                     
                 if (error) throw error;
                 
@@ -692,14 +690,17 @@
                 // Buscar nota disciplinar
                 let notaDisciplinar = 8.0;
                 try {
-                    if (window.getNotaDisciplinar) {
-                        const resultadoNota = await window.getNotaDisciplinar(parseInt(codigoAluno));
-                        if (resultadoNota?.data?.nota_atual) {
-                            notaDisciplinar = parseFloat(resultadoNota.data.nota_atual);
-                        }
+                    const { data: notaData, error: notaError } = await window.supabaseClient
+                        .from('v_nota_disciplinar_atual')
+                        .select('*')
+                        .eq('codigo_aluno', parseInt(codigoAluno))
+                        .single();
+                    
+                    if (!notaError && notaData?.nota_atual) {
+                        notaDisciplinar = parseFloat(notaData.nota_atual);
                     }
                 } catch (error) {
-                    console.warn('Erro ao buscar nota disciplinar:', error);
+                    console.warn('Erro ao buscar nota disciplinar, usando padrão 8.0:', error);
                 }
                 
                 // Exibir dados na tela
@@ -726,8 +727,8 @@
             document.getElementById('studentName').textContent = aluno['Nome completo'];
             document.getElementById('studentCode').textContent = aluno.codigo;
             document.getElementById('studentClass').textContent = aluno.turma || '-';
-            document.getElementById('studentPeriod').textContent = aluno.periodo || '-';
-            document.getElementById('studentStatus').textContent = aluno.situacao || 'Ativo';
+            document.getElementById('studentPeriod').textContent = '-';
+            document.getElementById('studentStatus').textContent = 'Ativo';
             
             // Foto do aluno
             const photoElement = document.getElementById('studentPhoto');
