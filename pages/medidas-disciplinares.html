@@ -2014,34 +2014,34 @@
 
 
                 <!-- SEÇÃO: REGISTROS RECENTES -->
-                <div class="table-container">
-                    <div class="table-header">
-                        <div class="section-header" onclick="toggleSection('registros')">
-                            <div class="table-title">
-                                📋 Registros Recentes
-                            </div>
-                            <span class="section-toggle" id="registros-toggle">🔽</span>
+                <div class="management-section">
+                    <div class="section-header" onclick="toggleSection('registros')">
+                        <div class="management-title">
+                            📋 Registros Recentes
                         </div>
+                        <span class="section-toggle" id="registros-toggle">🔼</span>
                     </div>
                     <div class="section-content" id="registros-content">
-                        <div class="table-actions">
-                            <button class="btn btn-info btn-small" onclick="carregarRegistrosRecentes()">
-                                🔄 Atualizar
-                            </button>
-                            <select class="filter-select" onchange="filtrarRegistrosRecentes(this.value)">
-                                <option value="todos">Todos os tipos</option>
-                                <option value="faltas">Apenas Faltas</option>
-                                <option value="medidas">Apenas Medidas</option>
-                            </select>
-                            <button class="btn btn-secondary btn-small" onclick="exportarRegistros()">
-                                📊 Exportar
-                            </button>
-                        </div>
-                        
-                        <div id="registrosRecentes" class="table-content">
-                            <div class="loading-state">
-                                <div class="loading-spinner"></div>
-                                <p>Carregando registros recentes...</p>
+                        <div class="management-content">
+                            <div class="table-actions">
+                                <button class="btn btn-info btn-small" onclick="carregarRegistrosRecentes()">
+                                    🔄 Atualizar
+                                </button>
+                                <select class="filter-select" onchange="filtrarRegistrosRecentes(this.value)">
+                                    <option value="todos">Todos os tipos</option>
+                                    <option value="faltas">Apenas Faltas</option>
+                                    <option value="medidas">Apenas Medidas</option>
+                                </select>
+                                <button class="btn btn-secondary btn-small" onclick="exportarRegistros()">
+                                    📊 Exportar
+                                </button>
+                            </div>
+                            
+                            <div id="registrosRecentes" class="table-content">
+                                <div class="loading-state">
+                                    <div class="loading-spinner"></div>
+                                    <p>Carregando registros recentes...</p>
+                                </div>
                             </div>
                         </div>
                     </div>
