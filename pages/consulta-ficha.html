@@ -975,6 +975,24 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 Iniciando sistema de consulta de fichas...');
             
+            // Verificar bibliotecas PDF
+            setTimeout(() => {
+                console.log('📄 Verificando bibliotecas PDF...');
+                console.log('html2canvas disponível:', typeof html2canvas !== 'undefined');
+                console.log('jsPDF disponível:', typeof window.jspdf !== 'undefined');
+                
+                const btnPDF = document.getElementById('btnExportarPDF');
+                if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+                    console.warn('⚠️ Bibliotecas PDF não carregadas - botão será desabilitado');
+                    if (btnPDF) {
+                        btnPDF.innerHTML = '❌ PDF Indisponível';
+                        btnPDF.title = 'Bibliotecas PDF não carregadas';
+                    }
+                } else {
+                    console.log('✅ Bibliotecas PDF carregadas com sucesso!');
+                }
+            }, 2000);
+            
             // Aguardar Supabase estar pronto
             await aguardarSupabase();
             
@@ -1901,6 +1919,19 @@
             
             if (!nomeAluno || nomeAluno === 'Selecione um aluno...') {
                 alert('Selecione um aluno primeiro!');
+                return;
+            }
+            
+            // Verificar se as bibliotecas estão carregadas
+            if (typeof html2canvas === 'undefined') {
+                alert('Erro: Biblioteca html2canvas não carregada. Verifique a conexão.');
+                console.error('html2canvas não encontrado');
+                return;
+            }
+            
+            if (typeof window.jspdf === 'undefined') {
+                alert('Erro: Biblioteca jsPDF não carregada. Verifique a conexão.');
+                console.error('jsPDF não encontrado');
                 return;
             }
             
