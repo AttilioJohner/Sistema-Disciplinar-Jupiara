@@ -1640,7 +1640,6 @@
                                     id="prazoAssinatura" 
                                     class="form-input"
                                     title="Data limite para o responsável devolver o documento assinado"
-                                    min="2024-01-01"
                                 >
                                 <small class="form-help">🤖 <strong>Automático:</strong> 3 dias úteis a partir da data de ocorrência (ajustável se necessário)</small>
                             </div>
@@ -4465,8 +4464,9 @@
                 medidasNegativasData = data || [];
                 console.log(`✅ ${medidasNegativasData.length} medidas negativas carregadas`);
                 
-                // Renderizar tabela
-                renderizarTabelaMedidasNegativas();
+                // Popular filtros de turmas e aplicar filtros iniciais
+                popularFiltrosTurmas();
+                aplicarFiltrosNegativas();
                 
             } catch (error) {
                 console.error('❌ Erro ao carregar medidas negativas:', error);
@@ -4498,8 +4498,9 @@
                 medidasPositivasData = data || [];
                 console.log(`✅ ${medidasPositivasData.length} medidas positivas carregadas`);
                 
-                // Renderizar tabela
-                renderizarTabelaMedidasPositivas();
+                // Popular filtros de turmas e aplicar filtros iniciais
+                popularFiltrosTurmas();
+                aplicarFiltrosPositivas();
                 
             } catch (error) {
                 console.error('❌ Erro ao carregar medidas positivas:', error);
@@ -4540,10 +4541,10 @@
                 html += `
                     <tr>
                         <td>${dataFormatada}</td>
-                        <td>${medida.alunos?.nome || 'N/A'}</td>
-                        <td>${medida.alunos?.turma || 'N/A'}</td>
+                        <td>${medida.nome_completo || 'N/A'}</td>
+                        <td>${medida.turma || 'N/A'}</td>
                         <td><span class="badge badge-danger">${medida.tipo_medida}</span></td>
-                        <td class="text-truncate" style="max-width: 300px;" title="${medida.especificacao_falta}">${medida.especificacao_falta}</td>
+                        <td class="text-truncate" style="max-width: 300px;" title="${medida.especificacao || medida.especificacao_falta}">${medida.especificacao || medida.especificacao_falta}</td>
                     </tr>
                 `;
             });
@@ -4582,10 +4583,10 @@
                 html += `
                     <tr>
                         <td>${dataFormatada}</td>
-                        <td>${medida.alunos?.nome || 'N/A'}</td>
-                        <td>${medida.alunos?.turma || 'N/A'}</td>
+                        <td>${medida.nome_completo || 'N/A'}</td>
+                        <td>${medida.turma || 'N/A'}</td>
                         <td><span class="badge badge-success">${medida.tipo_medida}</span></td>
-                        <td class="text-truncate" style="max-width: 300px;" title="${medida.especificacao_falta}">${medida.especificacao_falta}</td>
+                        <td class="text-truncate" style="max-width: 300px;" title="${medida.especificacao || medida.especificacao_falta}">${medida.especificacao || medida.especificacao_falta}</td>
                     </tr>
                 `;
             });
@@ -4594,30 +4595,184 @@
             container.innerHTML = html;
         }
 
+        // === FUNÇÕES DE FILTROS DAS TABELAS ===
+        function aplicarFiltrosNegativas() {
+            const pesquisa = document.getElementById('pesquisaNegativas')?.value.toLowerCase() || '';
+            const filtroTurma = document.getElementById('filtroTurmaNegativas')?.value || 'todas';
+            const quantidade = document.getElementById('quantidadeNegativas')?.value || '10';
+            
+            let dadosFiltrados = [...medidasNegativasData];
+            
+            // Filtrar por pesquisa (nome ou código)
+            if (pesquisa) {
+                dadosFiltrados = dadosFiltrados.filter(medida => {
+                    const nome = medida.nome_completo?.toLowerCase() || '';
+                    const codigo = medida.codigo_matricula?.toString().toLowerCase() || '';
+                    return nome.includes(pesquisa) || codigo.includes(pesquisa);
+                });
+            }
+            
+            // Filtrar por turma
+            if (filtroTurma !== 'todas') {
+                dadosFiltrados = dadosFiltrados.filter(medida => medida.turma === filtroTurma);
+            }
+            
+            // Limitar quantidade
+            if (quantidade !== 'todas') {
+                const limite = parseInt(quantidade);
+                dadosFiltrados = dadosFiltrados.slice(0, limite);
+            }
+            
+            renderizarTabelaFiltrada('tableMedidasNegativas', dadosFiltrados, 'negativa');
+        }
+
+        function aplicarFiltrosPositivas() {
+            const pesquisa = document.getElementById('pesquisaPositivas')?.value.toLowerCase() || '';
+            const filtroTurma = document.getElementById('filtroTurmaPositivas')?.value || 'todas';
+            const quantidade = document.getElementById('quantidadePositivas')?.value || '10';
+            
+            let dadosFiltrados = [...medidasPositivasData];
+            
+            // Filtrar por pesquisa (nome ou código)
+            if (pesquisa) {
+                dadosFiltrados = dadosFiltrados.filter(medida => {
+                    const nome = medida.nome_completo?.toLowerCase() || '';
+                    const codigo = medida.codigo_matricula?.toString().toLowerCase() || '';
+                    return nome.includes(pesquisa) || codigo.includes(pesquisa);
+                });
+            }
+            
+            // Filtrar por turma
+            if (filtroTurma !== 'todas') {
+                dadosFiltrados = dadosFiltrados.filter(medida => medida.turma === filtroTurma);
+            }
+            
+            // Limitar quantidade
+            if (quantidade !== 'todas') {
+                const limite = parseInt(quantidade);
+                dadosFiltrados = dadosFiltrados.slice(0, limite);
+            }
+            
+            renderizarTabelaFiltrada('tableMedidasPositivas', dadosFiltrados, 'positiva');
+        }
+
+        function renderizarTabelaFiltrada(containerId, dados, tipo) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            if (dados.length === 0) {
+                container.innerHTML = `<p class="text-center text-muted">Nenhuma medida ${tipo} encontrada com os filtros aplicados.</p>`;
+                return;
+            }
+            
+            const badgeClass = tipo === 'negativa' ? 'badge-danger' : 'badge-success';
+            
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Aluno</th>
+                                <th>Turma</th>
+                                <th>Tipo</th>
+                                <th>Especificação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            dados.forEach(medida => {
+                const dataFormatada = new Date(medida.data || medida.criado_em).toLocaleDateString('pt-BR');
+                
+                html += `
+                    <tr>
+                        <td>${dataFormatada}</td>
+                        <td>${medida.nome_completo || 'N/A'}</td>
+                        <td>${medida.turma || 'N/A'}</td>
+                        <td><span class="badge ${badgeClass}">${medida.tipo_medida}</span></td>
+                        <td class="text-truncate" style="max-width: 300px;" title="${medida.especificacao || medida.especificacao_falta}">${medida.especificacao || medida.especificacao_falta}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+
+        // Carregar turmas nos filtros quando os dados são carregados
+        function popularFiltrosTurmas() {
+            const turmasNegativas = [...new Set(medidasNegativasData.map(m => m.turma).filter(Boolean))];
+            const turmasPositivas = [...new Set(medidasPositivasData.map(m => m.turma).filter(Boolean))];
+            
+            const selectNegativas = document.getElementById('filtroTurmaNegativas');
+            const selectPositivas = document.getElementById('filtroTurmaPositivas');
+            
+            if (selectNegativas) {
+                selectNegativas.innerHTML = '<option value="todas">Todas as turmas</option>';
+                turmasNegativas.sort().forEach(turma => {
+                    selectNegativas.innerHTML += `<option value="${turma}">${turma}</option>`;
+                });
+            }
+            
+            if (selectPositivas) {
+                selectPositivas.innerHTML = '<option value="todas">Todas as turmas</option>';
+                turmasPositivas.sort().forEach(turma => {
+                    selectPositivas.innerHTML += `<option value="${turma}">${turma}</option>`;
+                });
+            }
+        }
+
         function carregarFaltasMultiplasCategorias() {
             const container = document.getElementById('faltasMultiContainer');
             if (!container) return;
             
+            // Carregar todas as faltas diretamente sem seleção de categoria
+            const todasFaltas = [
+                ...carregarFaltasCategorizadas('leve'),
+                ...carregarFaltasCategorizadas('media'),
+                ...carregarFaltasCategorizadas('grave')
+            ];
+            
             container.innerHTML = `
                 <div class="categorias-selector">
-                    <h4>Selecione as categorias de faltas:</h4>
-                    <div class="categoria-grupo">
-                        <label class="categoria-checkbox">
-                            <input type="checkbox" id="cat_leve" onchange="toggleCategoria('leve')">
-                            <span>⚡ Faltas Leves (Itens 1-26)</span>
-                        </label>
-                        <label class="categoria-checkbox">
-                            <input type="checkbox" id="cat_media" onchange="toggleCategoria('media')">
-                            <span>⚠️ Faltas Médias (Itens 27-62)</span>
-                        </label>
-                        <label class="categoria-checkbox">
-                            <input type="checkbox" id="cat_grave" onchange="toggleCategoria('grave')">
-                            <span>🚨 Faltas Graves (Itens 63-91)</span>
-                        </label>
-                    </div>
+                    <h4>📋 Selecione as faltas disciplinares aplicáveis:</h4>
+                    <p class="texto-instrucao">Marque todas as faltas que se aplicam ao caso:</p>
                 </div>
-                <div id="faltasCategoriasContainer" style="margin-top: 15px;">
-                    <p class="texto-instrucao">👆 Marque as categorias acima para ver as faltas específicas</p>
+                <div class="todas-faltas">
+                    <div class="categoria-secao">
+                        <h5 style="color: #333; margin: 15px 0 10px 0;">⚡ Faltas Leves (Itens 1-26)</h5>
+                        <div class="faltas-categoria">
+                            ${carregarFaltasCategorizadas('leve').map(falta => `
+                                <label class="falta-checkbox categoria-leve">
+                                    <input type="checkbox" value="${falta}" onchange="toggleFalta('${falta}')">
+                                    <span>${falta}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="categoria-secao">
+                        <h5 style="color: #333; margin: 15px 0 10px 0;">⚠️ Faltas Médias (Itens 27-62)</h5>
+                        <div class="faltas-categoria">
+                            ${carregarFaltasCategorizadas('media').map(falta => `
+                                <label class="falta-checkbox categoria-media">
+                                    <input type="checkbox" value="${falta}" onchange="toggleFalta('${falta}')">
+                                    <span>${falta}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="categoria-secao">
+                        <h5 style="color: #333; margin: 15px 0 10px 0;">🚨 Faltas Graves (Itens 63-91)</h5>
+                        <div class="faltas-categoria">
+                            ${carregarFaltasCategorizadas('grave').map(falta => `
+                                <label class="falta-checkbox categoria-grave">
+                                    <input type="checkbox" value="${falta}" onchange="toggleFalta('${falta}')">
+                                    <span>${falta}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
                 </div>
             `;
         }
