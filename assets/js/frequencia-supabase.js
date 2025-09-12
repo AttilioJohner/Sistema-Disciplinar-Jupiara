@@ -2201,10 +2201,29 @@ function analisarFrequenciaAluno(aluno) {
 }
 
 function renderizarCardAlerta(problema, mes, ano) {
-    const { codigo, nome, turma, stats, problemas, gravidade } = problema;
+    const { codigo, nome, turma, stats, problemas, gravidade, status_ficai } = problema;
     
-    // Determinar classe CSS baseada na gravidade
-    const classeAlerta = gravidade === 'alta' ? 'alerta-item danger' : 'alerta-item warning';
+    // Determinar classe CSS baseada no status FICAI
+    let classeStatus = '';
+    if (status_ficai) {
+        switch (status_ficai) {
+            case 'resolvido':
+                classeStatus = 'status-resolvido';
+                break;
+            case 'aguardando':
+                classeStatus = 'status-aguardando';
+                break;
+            case 'conselho':
+                classeStatus = 'status-conselho';
+                break;
+            case 'cancelado':
+                classeStatus = 'status-cancelado';
+                break;
+        }
+    }
+    
+    // Classe base do alerta com status colorido
+    const classeAlerta = `alerta-item ${classeStatus}`.trim();
     
     // Gerar badges de estatísticas
     const badgesStats = [
@@ -2325,20 +2344,45 @@ function mostrarPrazoFicai(codigoAluno) {
         `;
         prazoDiv.classList.add('show');
         
-        // Marcar card como resolvido
-        const card = document.getElementById(`alerta-${codigoAluno}`);
-        if (card) {
-            card.classList.add('alerta-resolvido');
-        }
+    } else if (status === 'conselho') {
+        prazoDiv.innerHTML = `
+            <strong>⚖️ Em andamento no Conselho Tutelar</strong><br>
+            <small>Caso encaminhado para o órgão competente</small>
+        `;
+        prazoDiv.classList.add('show');
+        
+    } else if (status === 'cancelado') {
+        prazoDiv.innerHTML = `
+            <strong>❌ Cancelado pela escola</strong><br>
+            <small>FICAI cancelada por decisão da equipe escolar</small>
+        `;
+        prazoDiv.classList.add('show');
         
     } else {
         prazoDiv.classList.remove('show');
         prazoDiv.innerHTML = '';
+    }
+    
+    // Atualizar classe do card baseada no status
+    const card = document.getElementById(`alerta-${codigoAluno}`);
+    if (card) {
+        // Remover todas as classes de status anteriores
+        card.classList.remove('status-resolvido', 'status-aguardando', 'status-conselho', 'status-cancelado', 'alerta-resolvido');
         
-        // Remover marcação de resolvido
-        const card = document.getElementById(`alerta-${codigoAluno}`);
-        if (card) {
-            card.classList.remove('alerta-resolvido');
+        // Adicionar nova classe baseada no status
+        switch (status) {
+            case 'resolvido':
+                card.classList.add('status-resolvido');
+                break;
+            case 'aguardando':
+                card.classList.add('status-aguardando');
+                break;
+            case 'conselho':
+                card.classList.add('status-conselho');
+                break;
+            case 'cancelado':
+                card.classList.add('status-cancelado');
+                break;
         }
     }
 }

@@ -634,3 +634,60 @@
 .stat-card:hover {
   transform: translateY(-2px);
 }
+
+/* 🎨 Cores dos cards por status FICAI */
+
+/* Status: Sem status - Branco */
+.alerta-item {
+  background: white;
+  border: 1px solid #e9ecef;
+}
+
+/* Status: Resolvido - Verde */
+.alerta-item.status-resolvido {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  border-color: #28a745;
+  border-left: 4px solid #28a745;
+}
+
+/* Status: Aguardando prazo - Azul */
+.alerta-item.status-aguardando {
+  background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+  border-color: #007bff;
+  border-left: 4px solid #007bff;
+}
+
+/* Status: Conselho Tutelar - Amarelo */
+.alerta-item.status-conselho {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  border-color: #ffc107;
+  border-left: 4px solid #ffc107;
+}
+
+/* Status: Cancelado - Roxo */
+.alerta-item.status-cancelado {
+  background: linear-gradient(135deg, #e2d9f3 0%, #d1c4e9 100%);
+  border-color: #8e2de2;
+  border-left: 4px solid #8e2de2;
+}
+
+/* Efeito hover mantendo as cores */
+.alerta-item.status-resolvido:hover {
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+  border-color: #28a745;
+}
+
+.alerta-item.status-aguardando:hover {
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+  border-color: #007bff;
+}
+
+.alerta-item.status-conselho:hover {
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2);
+  border-color: #ffc107;
+}
+
+.alerta-item.status-cancelado:hover {
+  box-shadow: 0 4px 12px rgba(142, 45, 226, 0.2);
+  border-color: #8e2de2;
+}
