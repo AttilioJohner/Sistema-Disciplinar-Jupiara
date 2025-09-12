@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de Ficha Disciplinar - E.E.C.M. Jupiara</title>
+    
+    <!-- Supabase e configurações -->
+    <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
+    <script src="../assets/js/env-config.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-only.js"></script>
+    
+    <!-- Services -->
+    <script src="../assets/js/notas-disciplinares.js"></script>
+    <script src="../assets/js/frequencia.js"></script>
+    
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="../assets/css/style.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: #2c3e50;
+            overflow-x: hidden;
+        }
+        
+        /* Layout Principal com Sidebar */
+        .main-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .sidebar-header {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+        
+        .nav-item {
+            display: block;
+            padding: 0.75rem 1.5rem;
+            color: #64748b;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+        
+        .nav-item:hover, .nav-item.active {
+            background: linear-gradient(90deg, #f8fafc, #e2e8f0);
+            color: #4f46e5;
+            border-left-color: #4f46e5;
+            transform: translateX(5px);
+        }
+        
+        .nav-item i {
+            margin-right: 0.5rem;
+            width: 20px;
+        }
+        
+        /* Conteúdo Principal */
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+        
+        /* Header */
+        .page-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        
+        .page-description {
+            color: #64748b;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        /* Cards */
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-header {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+        
+        .card-body {
+            padding: 2rem;
+        }
+        
+        /* Formulário de Busca */
+        .search-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 1rem;
+            align-items: end;
+            margin-bottom: 2rem;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-select, .btn {
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-select:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* Ficha do Aluno */
+        .ficha-aluno {
+            display: none;
+        }
+        
+        .student-info {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 2rem;
+            align-items: start;
+            margin-bottom: 2rem;
+        }
+        
+        .student-photo {
+            width: 120px;
+            height: 150px;
+            border-radius: 8px;
+            object-fit: cover;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .student-photo.placeholder {
+            background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            font-size: 2rem;
+        }
+        
+        .student-details h3 {
+            font-size: 1.5rem;
+            color: #1e293b;
+            margin-bottom: 1rem;
+        }
+        
+        .student-meta {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+        }
+        
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #64748b;
+        }
+        
+        .nota-disciplinar {
+            text-align: center;
+            padding: 1rem;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        
+        .nota-disciplinar.baixa {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+        
+        .nota-valor {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        
+        /* Histórico de Medidas */
+        .historico-medidas {
+            margin-top: 2rem;
+        }
+        
+        .medidas-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .medida-item {
+            padding: 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .medida-item:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+        }
+        
+        .medida-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .medida-tipo {
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+        
+        .medida-tipo.advertencia {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .medida-tipo.suspensao {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .medida-tipo.elogio {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .medida-data {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        
+        /* Estatísticas */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4f46e5;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            color: #64748b;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Estados vazios */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #6b7280;
+        }
+        
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        /* Responsivo */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            
+            .search-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .student-info {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-wrapper">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>📊 Sistema Disciplinar</h2>
+                <p>E.E.C.M. Jupiara</p>
+            </div>
+            
+            <div class="sidebar-nav">
+                <a href="../index.html" class="nav-item">
+                    <i>🏠</i> Dashboard
+                </a>
+                <a href="medidas-disciplinares.html" class="nav-item">
+                    <i>📋</i> Medidas Disciplinares
+                </a>
+                <a href="consulta-ficha.html" class="nav-item active">
+                    <i>👤</i> Consulta de Ficha
+                </a>
+                <a href="relatorios.html" class="nav-item">
+                    <i>📈</i> Relatórios
+                </a>
+                <a href="frequencia.html" class="nav-item">
+                    <i>📅</i> Frequência
+                </a>
+                <a href="notas-disciplinares.html" class="nav-item">
+                    <i>⭐</i> Notas Disciplinares
+                </a>
+            </div>
+        </nav>
+        
+        <!-- Conteúdo Principal -->
+        <main class="main-content">
+            <!-- Header -->
+            <div class="page-header">
+                <h1 class="page-title">👤 Consulta de Ficha Disciplinar</h1>
+                <p class="page-description">
+                    Consulte informações detalhadas sobre histórico disciplinar, medidas aplicadas e estatísticas dos alunos
+                </p>
+            </div>
+            
+            <!-- Formulário de Busca -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">🔍 Buscar Aluno</h2>
+                    <p>Selecione a turma e o aluno para consultar sua ficha disciplinar</p>
+                </div>
+                <div class="card-body">
+                    <div class="search-form">
+                        <div class="form-group">
+                            <label for="turmaSelect" class="form-label">Turma</label>
+                            <select id="turmaSelect" class="form-select">
+                                <option value="">Selecione uma turma...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="alunoSelect" class="form-label">Aluno</label>
+                            <select id="alunoSelect" class="form-select" disabled>
+                                <option value="">Selecione um aluno...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <button id="btnConsultar" class="btn" disabled onclick="consultarFicha()">
+                                🔍 Consultar Ficha
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Ficha do Aluno -->
+            <div id="fichaAluno" class="ficha-aluno">
+                <!-- Informações do Aluno -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">📋 Informações do Aluno</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="student-info">
+                            <div class="student-photo placeholder" id="studentPhoto">
+                                👤
+                            </div>
+                            
+                            <div class="student-details">
+                                <h3 id="studentName">Nome do Aluno</h3>
+                                <div class="student-meta">
+                                    <div class="meta-item">
+                                        <strong>🎯 Código:</strong> <span id="studentCode">-</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <strong>🎓 Turma:</strong> <span id="studentClass">-</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <strong>📅 Período:</strong> <span id="studentPeriod">-</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <strong>📊 Situação:</strong> <span id="studentStatus">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="nota-disciplinar" id="notaDisciplinar">
+                                <div class="nota-valor" id="notaValor">8.0</div>
+                                <div>Nota Disciplinar</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Estatísticas -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">📊 Estatísticas Disciplinares</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-value" id="totalMedidas">0</div>
+                                <div class="stat-label">Total de Medidas</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="totalAdvertencias">0</div>
+                                <div class="stat-label">Advertências</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="totalSuspensoes">0</div>
+                                <div class="stat-label">Suspensões</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="totalElogios">0</div>
+                                <div class="stat-label">Elogios</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Histórico de Medidas -->
+                <div class="card historico-medidas">
+                    <div class="card-header">
+                        <h2 class="card-title">📝 Histórico de Medidas Disciplinares</h2>
+                        <p>Últimas medidas aplicadas ao aluno</p>
+                    </div>
+                    <div class="card-body">
+                        <div id="medidasList" class="medidas-list">
+                            <div class="empty-state">
+                                <div class="empty-icon">📋</div>
+                                <h3>Nenhuma medida encontrada</h3>
+                                <p>Este aluno não possui medidas disciplinares registradas</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        // Variáveis globais
+        let todosAlunos = [];
+        let todasTurmas = [];
+        
+        // Carregar dados iniciais
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 Iniciando sistema de consulta de fichas...');
+            
+            // Aguardar Supabase estar pronto
+            await aguardarSupabase();
+            
+            // Carregar turmas e alunos
+            await carregarTurmasEAlunos();
+            
+            // Configurar eventos
+            setupEventListeners();
+        });
+        
+        // Aguardar Supabase
+        async function aguardarSupabase() {
+            while (!window.supabaseClient) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            console.log('✅ Supabase pronto');
+        }
+        
+        // Carregar turmas e alunos
+        async function carregarTurmasEAlunos() {
+            try {
+                console.log('📚 Carregando turmas e alunos...');
+                
+                const { data: alunosData, error } = await window.supabaseClient
+                    .from('alunos')
+                    .select('codigo, "Nome completo", turma, periodo, situacao, foto_url');
+                    
+                if (error) throw error;
+                
+                todosAlunos = alunosData || [];
+                todasTurmas = [...new Set(todosAlunos.map(a => a.turma))].sort();
+                
+                // Preencher select de turmas
+                const turmaSelect = document.getElementById('turmaSelect');
+                turmaSelect.innerHTML = '<option value="">Selecione uma turma...</option>';
+                
+                todasTurmas.forEach(turma => {
+                    const option = document.createElement('option');
+                    option.value = turma;
+                    option.textContent = turma;
+                    turmaSelect.appendChild(option);
+                });
+                
+                console.log(`✅ Carregados: ${todasTurmas.length} turmas, ${todosAlunos.length} alunos`);
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar dados:', error);
+            }
+        }
+        
+        // Configurar eventos
+        function setupEventListeners() {
+            const turmaSelect = document.getElementById('turmaSelect');
+            const alunoSelect = document.getElementById('alunoSelect');
+            const btnConsultar = document.getElementById('btnConsultar');
+            
+            // Evento mudança de turma
+            turmaSelect.addEventListener('change', function() {
+                const turmaSelecionada = this.value;
+                
+                if (turmaSelecionada) {
+                    const alunosDaTurma = todosAlunos.filter(aluno => aluno.turma === turmaSelecionada);
+                    
+                    alunoSelect.innerHTML = '<option value="">Selecione um aluno...</option>';
+                    alunoSelect.disabled = false;
+                    
+                    alunosDaTurma.forEach(aluno => {
+                        const option = document.createElement('option');
+                        option.value = aluno.codigo;
+                        option.textContent = aluno['Nome completo'];
+                        alunoSelect.appendChild(option);
+                    });
+                } else {
+                    alunoSelect.innerHTML = '<option value="">Selecione um aluno...</option>';
+                    alunoSelect.disabled = true;
+                    btnConsultar.disabled = true;
+                }
+            });
+            
+            // Evento mudança de aluno
+            alunoSelect.addEventListener('change', function() {
+                btnConsultar.disabled = !this.value;
+            });
+        }
+        
+        // Consultar ficha do aluno
+        async function consultarFicha() {
+            const codigoAluno = document.getElementById('alunoSelect').value;
+            if (!codigoAluno) return;
+            
+            try {
+                console.log('🔍 Consultando ficha do aluno:', codigoAluno);
+                
+                const btnConsultar = document.getElementById('btnConsultar');
+                btnConsultar.disabled = true;
+                btnConsultar.innerHTML = '⏳ Carregando...';
+                
+                // Buscar dados do aluno
+                const aluno = todosAlunos.find(a => a.codigo == codigoAluno);
+                
+                // Buscar medidas disciplinares
+                const { data: medidas, error: medidasError } = await window.supabaseClient
+                    .from('medidas')
+                    .select('*')
+                    .eq('codigo_matricula', parseInt(codigoAluno))
+                    .order('data', { ascending: false });
+                
+                // Buscar nota disciplinar
+                let notaDisciplinar = 8.0;
+                try {
+                    if (window.getNotaDisciplinar) {
+                        const resultadoNota = await window.getNotaDisciplinar(parseInt(codigoAluno));
+                        if (resultadoNota?.data?.nota_atual) {
+                            notaDisciplinar = parseFloat(resultadoNota.data.nota_atual);
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Erro ao buscar nota disciplinar:', error);
+                }
+                
+                // Exibir dados na tela
+                exibirFichaAluno(aluno, medidas || [], notaDisciplinar);
+                
+                // Mostrar ficha
+                document.getElementById('fichaAluno').style.display = 'block';
+                
+                console.log('✅ Ficha carregada com sucesso');
+                
+            } catch (error) {
+                console.error('❌ Erro ao consultar ficha:', error);
+                alert('Erro ao carregar ficha: ' + error.message);
+            } finally {
+                const btnConsultar = document.getElementById('btnConsultar');
+                btnConsultar.disabled = false;
+                btnConsultar.innerHTML = '🔍 Consultar Ficha';
+            }
+        }
+        
+        // Exibir ficha do aluno
+        function exibirFichaAluno(aluno, medidas, notaDisciplinar) {
+            // Informações básicas
+            document.getElementById('studentName').textContent = aluno['Nome completo'];
+            document.getElementById('studentCode').textContent = aluno.codigo;
+            document.getElementById('studentClass').textContent = aluno.turma || '-';
+            document.getElementById('studentPeriod').textContent = aluno.periodo || '-';
+            document.getElementById('studentStatus').textContent = aluno.situacao || 'Ativo';
+            
+            // Foto do aluno
+            const photoElement = document.getElementById('studentPhoto');
+            if (aluno.foto_url) {
+                photoElement.innerHTML = `<img src="${aluno.foto_url}" alt="Foto do aluno" class="student-photo">`;
+            } else {
+                photoElement.innerHTML = '👤';
+                photoElement.className = 'student-photo placeholder';
+            }
+            
+            // Nota disciplinar
+            document.getElementById('notaValor').textContent = notaDisciplinar.toFixed(1);
+            const notaElement = document.getElementById('notaDisciplinar');
+            notaElement.className = 'nota-disciplinar';
+            if (notaDisciplinar < 7.0) {
+                notaElement.classList.add('baixa');
+            }
+            
+            // Estatísticas
+            const totalMedidas = medidas.length;
+            const advertencias = medidas.filter(m => m.tipo_medida === 'Advertência Verbal' || m.tipo_medida === 'Advertência Escrita').length;
+            const suspensoes = medidas.filter(m => m.tipo_medida === 'Suspensão').length;
+            const elogios = medidas.filter(m => m.tipo_medida === 'Elogio' || m.tipo_medida === 'Reconhecimento').length;
+            
+            document.getElementById('totalMedidas').textContent = totalMedidas;
+            document.getElementById('totalAdvertencias').textContent = advertencias;
+            document.getElementById('totalSuspensoes').textContent = suspensoes;
+            document.getElementById('totalElogios').textContent = elogios;
+            
+            // Histórico de medidas
+            exibirHistoricoMedidas(medidas);
+        }
+        
+        // Exibir histórico de medidas
+        function exibirHistoricoMedidas(medidas) {
+            const container = document.getElementById('medidasList');
+            
+            if (medidas.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📋</div>
+                        <h3>Nenhuma medida encontrada</h3>
+                        <p>Este aluno não possui medidas disciplinares registradas</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = medidas.map(medida => {
+                const data = new Date(medida.data).toLocaleDateString('pt-BR');
+                const tipoClass = medida.tipo_medida.toLowerCase().includes('advertência') ? 'advertencia' :
+                                medida.tipo_medida.toLowerCase().includes('suspensão') ? 'suspensao' :
+                                medida.tipo_medida.toLowerCase().includes('elogio') ? 'elogio' : 'advertencia';
+                
+                return `
+                    <div class="medida-item">
+                        <div class="medida-header">
+                            <span class="medida-tipo ${tipoClass}">${medida.tipo_medida}</span>
+                            <span class="medida-data">${data}</span>
+                        </div>
+                        <p><strong>Especificação:</strong> ${medida.especificacao || '-'}</p>
+                        ${medida.responsavel ? `<p><strong>Responsável:</strong> ${medida.responsavel}</p>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>
