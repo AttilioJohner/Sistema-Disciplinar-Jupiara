@@ -1659,7 +1659,7 @@
                         </div>
                         
                         <div class="form-group">
-                            <button type="button" class="btn btn-success" onclick="exportarFichaPDF()" id="btnExportarPDF" disabled>
+                            <button type="button" class="btn btn-success" onclick="exportarFichaPDF()" id="btnExportarPDF" disabled title="Funcionalidade PDF temporariamente desabilitada">
                                 📄 Exportar Ficha em PDF
                             </button>
                         </div>
@@ -4400,8 +4400,15 @@
             document.getElementById('areaFrequenciaAluno').style.display = 'none';
         }
 
-        // ======= FUNÇÃO DE EXPORTAÇÃO PARA PDF - LAYOUT ORGANIZADO =======
+        // ======= FUNÇÃO DE EXPORTAÇÃO PARA PDF TEMPORARIAMENTE DESABILITADA =======
         async function exportarFichaPDF() {
+            alert('Funcionalidade PDF temporariamente desabilitada para correção de erros. Use outras opções de relatório disponíveis.');
+            return;
+        }
+        
+        // FUNÇÃO ORIGINAL COMENTADA PARA EVITAR ERROS
+        /*
+        async function exportarFichaPDF_original() {
             console.log('📄 Iniciando exportação para PDF...');
             const btnExportar = document.getElementById('btnExportarPDF');
             const selectAluno = document.getElementById('alunoConsulta');
@@ -4514,6 +4521,7 @@
                 btnExportar.innerHTML = textoOriginal;
             }
         }
+        */
 
         // ======= ADIÇÃO DE HTML2CANVAS AO CABEÇALHO =======
         const html2canvasScript = document.createElement('script');
@@ -5377,13 +5385,13 @@
                 const nomeArquivo = `ficha_disciplinar_${codigoAluno}_${dataGeracao.replace(/\//g, '-')}.pdf`;
                 pdf.save(nomeArquivo);
                 
-                console.log('PDF MODERNO gerado:', nomeArquivo);
-                console.log('Layout profissional aplicado com sucesso!');
-                alert(`PDF gerado com sucesso!\n\nDesign moderno e profissional\nTodas as informações incluídas\nArquivo: ${nomeArquivo}`);
+                console.log('✅ PDF MODERNO gerado:', nomeArquivo);
+                console.log('🎨 Layout profissional aplicado com sucesso!');
+                alert(`📄 PDF gerado com sucesso!\n\n🎨 Design moderno e profissional\n📊 Todas as informações incluídas\n📁 Arquivo: ${nomeArquivo}`);
                 
             } catch (error) {
-                console.error('Erro ao gerar PDF:', error);
-                alert('Erro ao gerar PDF: ' + error.message);
+                console.error('❌ Erro ao gerar PDF:', error);
+                alert('❌ Erro ao gerar PDF: ' + error.message);
             } finally {
                 btnExportar.disabled = false;
                 btnExportar.innerHTML = textoOriginal;
