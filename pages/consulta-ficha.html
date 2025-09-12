@@ -370,6 +370,152 @@
             letter-spacing: 0.5px;
         }
         
+        /* Seção de Frequência */
+        .frequencia-summary {
+            margin-bottom: 2rem;
+        }
+        
+        .freq-total {
+            text-align: center;
+            padding: 1rem;
+            background: linear-gradient(135deg, #e0f2fe, #b3e5fc);
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .freq-percentage {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #0277bd;
+            margin-bottom: 0.25rem;
+        }
+        
+        .freq-label {
+            color: #546e7a;
+            font-size: 0.875rem;
+        }
+        
+        .monthly-breakdown {
+            display: grid;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .month-item {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 1rem;
+            border-left: 4px solid #4f46e5;
+        }
+        
+        .month-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+        
+        .month-name {
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .month-percentage {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #059669;
+        }
+        
+        .month-percentage.baixa {
+            color: #dc2626;
+        }
+        
+        .status-bar {
+            display: flex;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.75rem;
+        }
+        
+        .status-segment {
+            transition: all 0.3s ease;
+        }
+        
+        .status-segment.presente {
+            background: #059669;
+        }
+        
+        .status-segment.falta {
+            background: #dc2626;
+        }
+        
+        .status-segment.abonada {
+            background: #f59e0b;
+        }
+        
+        .status-segment.compensada {
+            background: #3b82f6;
+        }
+        
+        .status-legend {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+        
+        .fault-records {
+            margin-top: 1.5rem;
+        }
+        
+        .records-title {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+        
+        .records-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 0.5rem;
+        }
+        
+        .record-item {
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
+            padding: 0.5rem;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+        
+        .record-item.abonada {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            color: #92400e;
+            border-color: #fcd34d;
+        }
+        
+        .record-item.compensada {
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+            color: #1e40af;
+            border-color: #93c5fd;
+        }
+        
         /* Estados vazios */
         .empty-state {
             text-align: center;
@@ -551,6 +697,23 @@
                     </div>
                 </div>
                 
+                <!-- Frequência do Aluno -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">📅 Frequência</h2>
+                        <p>Resumo mensal de frequência e registros de faltas</p>
+                    </div>
+                    <div class="card-body">
+                        <div id="frequenciaContainer">
+                            <div class="empty-state">
+                                <div class="empty-icon">📅</div>
+                                <h3>Carregando frequência...</h3>
+                                <p>Aguarde enquanto os dados são processados</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Histórico de Medidas -->
                 <div class="card historico-medidas">
                     <div class="card-header">
@@ -703,6 +866,9 @@
                     console.warn('Erro ao buscar nota disciplinar, usando padrão 8.0:', error);
                 }
                 
+                // Buscar dados de frequência
+                await carregarFrequenciaAluno(parseInt(codigoAluno));
+                
                 // Exibir dados na tela
                 exibirFichaAluno(aluno, medidas || [], notaDisciplinar);
                 
@@ -760,6 +926,152 @@
             
             // Histórico de medidas
             exibirHistoricoMedidas(medidas);
+        }
+        
+        // Carregar dados de frequência do aluno
+        async function carregarFrequenciaAluno(codigoAluno) {
+            try {
+                console.log('📅 Carregando frequência do aluno:', codigoAluno);
+                
+                // Buscar dados de frequência por mês
+                const { data: frequenciaMensal, error: freqError } = await window.supabaseClient
+                    .from('mv_frequencia_mensal_aluno')
+                    .select('*')
+                    .eq('codigo_aluno', codigoAluno)
+                    .order('ano', { ascending: false })
+                    .order('mes', { ascending: false });
+                
+                // Buscar registros específicos de faltas
+                const { data: faltasDetalhes, error: faltasError } = await window.supabaseClient
+                    .from('frequencia_detalhada')
+                    .select('data_aula, status')
+                    .eq('codigo_aluno', codigoAluno)
+                    .in('status', ['F', 'A', 'FC'])
+                    .order('data_aula', { ascending: false })
+                    .limit(50);
+                
+                // Exibir dados de frequência
+                exibirFrequencia(frequenciaMensal || [], faltasDetalhes || []);
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar frequência:', error);
+                exibirFrequenciaErro();
+            }
+        }
+        
+        // Exibir dados de frequência
+        function exibirFrequencia(dadosMensais, faltasDetalhes) {
+            const container = document.getElementById('frequenciaContainer');
+            
+            if (dadosMensais.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📅</div>
+                        <h3>Dados de frequência não encontrados</h3>
+                        <p>Não há registros de frequência para este aluno</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Calcular frequência total
+            let totalDias = 0;
+            let totalPresencas = 0;
+            dadosMensais.forEach(mes => {
+                totalDias += (mes.total_presencas || 0) + (mes.total_faltas || 0) + (mes.total_abonadas || 0) + (mes.total_compensadas || 0);
+                totalPresencas += mes.total_presencas || 0;
+            });
+            
+            const percentualTotal = totalDias > 0 ? ((totalPresencas / totalDias) * 100).toFixed(1) : 0;
+            
+            // Gerar HTML
+            const mesesHTML = dadosMensais.map(mes => {
+                const total = (mes.total_presencas || 0) + (mes.total_faltas || 0) + (mes.total_abonadas || 0) + (mes.total_compensadas || 0);
+                const percentual = total > 0 ? ((mes.total_presencas || 0) / total * 100).toFixed(1) : 0;
+                const classe = percentual < 75 ? 'baixa' : '';
+                
+                // Calcular larguras das barras
+                const widthP = total > 0 ? (mes.total_presencas || 0) / total * 100 : 0;
+                const widthF = total > 0 ? (mes.total_faltas || 0) / total * 100 : 0;
+                const widthA = total > 0 ? (mes.total_abonadas || 0) / total * 100 : 0;
+                const widthFC = total > 0 ? (mes.total_compensadas || 0) / total * 100 : 0;
+                
+                const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                              'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+                
+                return `
+                    <div class="month-item">
+                        <div class="month-header">
+                            <span class="month-name">${meses[mes.mes - 1]} ${mes.ano}</span>
+                            <span class="month-percentage ${classe}">${percentual}%</span>
+                        </div>
+                        <div class="status-bar">
+                            <div class="status-segment presente" style="width: ${widthP}%"></div>
+                            <div class="status-segment falta" style="width: ${widthF}%"></div>
+                            <div class="status-segment abonada" style="width: ${widthA}%"></div>
+                            <div class="status-segment compensada" style="width: ${widthFC}%"></div>
+                        </div>
+                        <div class="status-legend">
+                            <div class="legend-item">
+                                <div class="legend-color presente"></div>
+                                <span>P: ${mes.total_presencas || 0}</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color falta"></div>
+                                <span>F: ${mes.total_faltas || 0}</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color abonada"></div>
+                                <span>A: ${mes.total_abonadas || 0}</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color compensada"></div>
+                                <span>FC: ${mes.total_compensadas || 0}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Gerar registros de faltas
+            const faltasHTML = faltasDetalhes.length > 0 ? `
+                <div class="fault-records">
+                    <div class="records-title">📋 Registros de Faltas</div>
+                    <div class="records-grid">
+                        ${faltasDetalhes.map(falta => {
+                            const data = new Date(falta.data_aula).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                            const classe = falta.status === 'A' ? 'abonada' : 
+                                         falta.status === 'FC' ? 'compensada' : '';
+                            return `<div class="record-item ${classe}">${data}</div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            ` : '';
+            
+            container.innerHTML = `
+                <div class="frequencia-summary">
+                    <div class="freq-total">
+                        <div class="freq-percentage">${percentualTotal}%</div>
+                        <div class="freq-label">Frequência Total</div>
+                    </div>
+                    <div class="monthly-breakdown">
+                        ${mesesHTML}
+                    </div>
+                    ${faltasHTML}
+                </div>
+            `;
+        }
+        
+        // Exibir erro na seção de frequência
+        function exibirFrequenciaErro() {
+            const container = document.getElementById('frequenciaContainer');
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">⚠️</div>
+                    <h3>Erro ao carregar frequência</h3>
+                    <p>Não foi possível carregar os dados de frequência</p>
+                </div>
+            `;
         }
         
         // Exibir histórico de medidas
