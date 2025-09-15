@@ -30,122 +30,30 @@
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     
     <style>
-        /* Estilos específicos para ficha disciplinar mantendo funcionalidade */
-        .ficha-container {
-            padding: 24px;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         
-        .search-section {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: #2c3e50;
+            overflow-x: hidden;
         }
         
-        .student-card {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        }
-        
-        .student-header {
+        /* Layout Principal com Sidebar */
+        .main-wrapper {
             display: flex;
-            align-items: center;
-            gap: 20px;
-            margin-bottom: 24px;
-            padding: 20px;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            border-radius: 12px;
-            color: white;
+            min-height: 100vh;
         }
         
-        .student-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-        }
-        
-        .student-details h2 {
-            margin: 0 0 8px 0;
-            font-size: 1.5rem;
-        }
-        
-        .student-meta {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            opacity: 0.9;
-        }
-        
-        .meta-item {
-            background: rgba(255,255,255,0.1);
-            padding: 12px;
-            border-radius: 8px;
-            backdrop-filter: blur(10px);
-        }
-        
-        .charts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 24px;
-            margin-bottom: 24px;
-        }
-        
-        .chart-container {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        }
-        
-        .records-table {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            overflow-x: auto;
-        }
-        
-        .search-form {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            align-items: end;
-        }
-        
-        .pdf-header {
-            text-align: center;
-            margin-bottom: 24px;
-            padding: 20px;
-            border-bottom: 2px solid var(--primary-color);
-        }
-        
-        /* Ocultar conteúdo inicialmente - só mostra após pesquisa */
-        .ficha-aluno {
-            display: none;
-        }
-        
-        .ficha-aluno.visible {
-            display: block;
-        }
-        
-        @media print {
-            .sidebar, .top-bar, .btn, button {
-                display: none !important;
-            }
-            .content-area {
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-        }
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
@@ -908,75 +816,58 @@
         <!-- TÍTULO -->
         <div class="module-title">👤 Ficha Disciplinar</div>
             
-        <!-- Formulário de Busca -->
-        <div class="management-section">
-          <div class="management-title">🔍 Buscar Aluno</div>
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="turmaSelect" class="form-label">Turma</label>
-              <select id="turmaSelect" class="form-select">
-                <option value="">Selecione uma turma...</option>
-              </select>
-            </div>
-            
-            <div class="form-group">
-              <label for="alunoSelect" class="form-label">Aluno</label>
-              <select id="alunoSelect" class="form-select" disabled>
-                <option value="">Selecione um aluno...</option>
-              </select>
-            </div>
-            
-            <div class="form-group">
-              <button id="btnConsultar" class="btn btn-primary" disabled onclick="consultarFicha()">
-                🔍 Consultar Ficha
-              </button>
-            </div>
-            
-            <div class="form-group">
-              <button id="btnExportarPDF" class="btn btn-secondary" disabled onclick="exportarParaPDF()">
-                📄 Exportar PDF
-              </button>
-            </div>
-          </div>
-        </div>
-            
-        <!-- Ficha do Aluno (inicialmente oculta) -->
-        <div id="fichaAluno" class="ficha-aluno">
-          <!-- Cabeçalho para PDF -->
-          <div class="pdf-header">
-            <div class="pdf-title">Ficha Disciplinar do Aluno</div>
-            <div class="pdf-subtitle">E.E.C.M. Jupiara - Sistema de Gestão Escolar</div>
-            <div class="pdf-date" id="pdfDate"></div>
-          </div>
-          
-          <!-- Informações do Aluno -->
-          <div class="management-section">
-            <div class="management-title">📋 Informações do Aluno</div>
-            <div class="student-header">
-              <div class="student-avatar" id="studentPhoto">👤</div>
-              <div class="student-details">
-                <h2 id="studentName">Nome do Aluno</h2>
-                <div class="student-meta">
-                  <div class="meta-item">
-                    <strong>🎯 Código:</strong> <span id="studentCode">-</span>
-                  </div>
-                  <div class="meta-item">
-                    <strong>🎓 Turma:</strong> <span id="studentClass">-</span>
-                  </div>
-                  <div class="meta-item">
-                    <strong>📅 Período:</strong> <span id="studentPeriod">-</span>
-                  </div>
-                  <div class="meta-item">
-                    <strong>📊 Situação:</strong> <span id="studentStatus">-</span>
-                  </div>
+            <!-- Formulário de Busca -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">🔍 Buscar Aluno</h2>
+                    <p>Selecione a turma e o aluno para consultar sua ficha disciplinar</p>
                 </div>
-              </div>
-              <div class="nota-disciplinar" id="notaDisciplinar">
-                <div class="nota-valor" id="notaValor">8.0</div>
-                <div>Nota Disciplinar</div>
-              </div>
+                <div class="card-body">
+                    <div class="search-form">
+                        <div class="form-group">
+                            <label for="turmaSelect" class="form-label">Turma</label>
+                            <select id="turmaSelect" class="form-select">
+                                <option value="">Selecione uma turma...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="alunoSelect" class="form-label">Aluno</label>
+                            <select id="alunoSelect" class="form-select" disabled>
+                                <option value="">Selecione um aluno...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <button id="btnConsultar" class="btn" disabled onclick="consultarFicha()">
+                                🔍 Consultar Ficha
+                            </button>
+                        </div>
+                        
+                        <div class="form-group">
+                            <button id="btnExportarPDF" class="btn" style="background: linear-gradient(135deg, #dc2626, #b91c1c);" disabled onclick="exportarParaPDF()">
+                                📄 Exportar PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
+            
+            <!-- Ficha do Aluno -->
+            <div id="fichaAluno" class="ficha-aluno">
+                <!-- Cabeçalho para PDF -->
+                <div class="pdf-header">
+                    <div class="pdf-title">Ficha Disciplinar do Aluno</div>
+                    <div class="pdf-subtitle">E.E.C.M. Jupiara - Sistema de Gestão Escolar</div>
+                    <div class="pdf-date" id="pdfDate"></div>
+                </div>
+                <!-- Informações do Aluno -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">📋 Informações do Aluno</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="student-info">
                             <div class="student-photo placeholder" id="studentPhoto">
                                 👤
                             </div>
@@ -1216,7 +1107,7 @@
                 btnConsultar.innerHTML = '⏳ Carregando...';
                 
                 // Mostrar ficha com loading
-                document.getElementById('fichaAluno').classList.add('visible');
+                document.getElementById('fichaAluno').style.display = 'block';
                 
                 // Habilitar botão de exportar PDF
                 document.getElementById('btnExportarPDF').disabled = false;
@@ -1257,7 +1148,7 @@
                 await carregarAnalisesComparativas(parseInt(codigoAluno), aluno.turma);
                 
                 // Mostrar ficha
-                document.getElementById('fichaAluno').classList.add('visible');
+                document.getElementById('fichaAluno').style.display = 'block';
                 
                 console.log('✅ Ficha carregada com sucesso');
                 
