@@ -72,232 +72,188 @@
     <div class="content-area">
       <div class="main-content">
         <!-- TÍTULO -->
-        <div class="module-title">📱 Comunicação</div>
+        <div class="module-title">📱 Comunicação Automática</div>
 
-                <!-- AVISO DE FUNCIONALIDADE -->
-                <div class="management-section">
-                    <div class="management-title">
-                        🚧 Funcionalidade em Desenvolvimento
-                    </div>
-                    <div class="insight-item">
-                        <div class="insight-text">
-                            Este módulo está sendo desenvolvido e estará disponível em breve. 
-                            Incluirá funcionalidades para comunicação direta com responsáveis, 
-                            envio de notificações automáticas e histórico de comunicações.
-                        </div>
-                        <span class="trend-indicator trend-stable">
-                            🚧 Em Breve
-                        </span>
-                    </div>
-                </div>
+        <!-- ABAS DE NAVEGAÇÃO -->
+        <div class="tab-navigation">
+          <button class="tab-btn active" onclick="switchTab('faltas')">
+            📅 Faltas de Presença
+          </button>
+          <button class="tab-btn" onclick="switchTab('medidas')">
+            ⚖️ Medidas Disciplinares
+          </button>
+          <button class="tab-btn" onclick="switchTab('historico')">
+            📋 Histórico de Envios
+          </button>
+        </div>
 
-                <!-- PRÉVIA DAS FUNCIONALIDADES -->
-                <div class="quick-stats">
-                    <div class="stat-card stat-primary">
-                        <div class="stat-icon">📧</div>
-                        <div class="stat-content">
-                            <div class="stat-number">Email</div>
-                            <div class="stat-label">Notificações Automáticas</div>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card stat-info">
-                        <div class="stat-icon">📱</div>
-                        <div class="stat-content">
-                            <div class="stat-number">SMS</div>
-                            <div class="stat-label">Alertas por Mensagem</div>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card stat-success">
-                        <div class="stat-icon">📞</div>
-                        <div class="stat-content">
-                            <div class="stat-number">WhatsApp</div>
-                            <div class="stat-label">Comunicação Direta</div>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card stat-warning">
-                        <div class="stat-icon">📋</div>
-                        <div class="stat-content">
-                            <div class="stat-number">Relatórios</div>
-                            <div class="stat-label">Para Responsáveis</div>
-                        </div>
-                    </div>
-                </div>
+        <!-- ESTATÍSTICAS RÁPIDAS -->
+        <div class="quick-stats">
+          <div class="stat-card stat-primary">
+            <div class="stat-icon">📅</div>
+            <div class="stat-content">
+              <div class="stat-number" id="totalFaltas">0</div>
+              <div class="stat-label">Faltas Hoje</div>
+            </div>
+          </div>
+          
+          <div class="stat-card stat-warning">
+            <div class="stat-icon">⚖️</div>
+            <div class="stat-content">
+              <div class="stat-number" id="totalMedidas">0</div>
+              <div class="stat-label">Medidas Hoje</div>
+            </div>
+          </div>
+          
+          <div class="stat-card stat-info">
+            <div class="stat-icon">📱</div>
+            <div class="stat-content">
+              <div class="stat-number" id="totalPendentes">0</div>
+              <div class="stat-label">Pendentes</div>
+            </div>
+          </div>
+          
+          <div class="stat-card stat-success">
+            <div class="stat-icon">✅</div>
+            <div class="stat-content">
+              <div class="stat-number" id="totalEnviados">0</div>
+              <div class="stat-label">Enviados</div>
+            </div>
+          </div>
+        </div>
 
-                <!-- FUNCIONALIDADES PLANEJADAS -->
-                <div class="management-section">
-                    <div class="management-title">
-                        🎯 Funcionalidades Planejadas
-                    </div>
-                    
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <div class="stat-box">
-                                <div class="stat-number">📧</div>
-                                <div class="stat-label">Email Automático</div>
-                            </div>
-                            <p style="margin-top: 10px; color: #666; font-size: 14px;">
-                                Envio automático de notificações por email quando faltas ou medidas disciplinares são registradas
-                            </p>
-                        </div>
-                        
-                        <div class="form-group">
-                            <div class="stat-box">
-                                <div class="stat-number">📱</div>
-                                <div class="stat-label">SMS/WhatsApp</div>
-                            </div>
-                            <p style="margin-top: 10px; color: #666; font-size: 14px;">
-                                Integração com APIs de SMS e WhatsApp para comunicação imediata com responsáveis
-                            </p>
-                        </div>
-                        
-                        <div class="form-group">
-                            <div class="stat-box">
-                                <div class="stat-number">📋</div>
-                                <div class="stat-label">Relatórios Personalizados</div>
-                            </div>
-                            <p style="margin-top: 10px; color: #666; font-size: 14px;">
-                                Geração automática de relatórios personalizados para envio aos responsáveis
-                            </p>
-                        </div>
-                        
-                        <div class="form-group">
-                            <div class="stat-box">
-                                <div class="stat-number">🔔</div>
-                                <div class="stat-label">Portal dos Pais</div>
-                            </div>
-                            <p style="margin-top: 10px; color: #666; font-size: 14px;">
-                                Portal web onde responsáveis podem acompanhar em tempo real a situação dos filhos
-                            </p>
-                        </div>
-                        
-                        <div class="form-group">
-                            <div class="stat-box">
-                                <div class="stat-number">🤖</div>
-                                <div class="stat-label">Chatbot Inteligente</div>
-                            </div>
-                            <p style="margin-top: 10px; color: #666; font-size: 14px;">
-                                Bot automatizado para responder dúvidas comuns dos responsáveis 24/7
-                            </p>
-                        </div>
-                        
-                        <div class="form-group">
-                            <div class="stat-box">
-                                <div class="stat-number">📅</div>
-                                <div class="stat-label">Agendamento</div>
-                            </div>
-                            <p style="margin-top: 10px; color: #666; font-size: 14px;">
-                                Sistema de agendamento de reuniões e comunicações programadas
-                            </p>
-                        </div>
-                    </div>
-                </div>
+        <!-- CONTEÚDO DAS ABAS -->
+        
+        <!-- ABA FALTAS DE PRESENÇA -->
+        <div id="tab-faltas" class="tab-content active">
+          <div class="management-section">
+            <div class="management-title">📅 Faltas de Presença - Hoje</div>
+            
+            <div class="table-container">
+              <div class="table-content">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Código</th>
+                      <th>Nome do Aluno</th>
+                      <th>Turma</th>
+                      <th>Data</th>
+                      <th>Telefone</th>
+                      <th>Status</th>
+                      <th>Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tabela-faltas">
+                    <tr>
+                      <td colspan="7" class="text-center">⏳ Carregando faltas...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
 
-                <!-- CONFIGURAÇÕES FUTURAS -->
-                <div class="management-section">
-                    <div class="management-title">
-                        ⚙️ Configurações Futuras
-                    </div>
-                    
-                    <div class="insight-item">
-                        <div class="insight-text">
-                            <strong>📧 Templates de Email:</strong> Criação de modelos personalizados para diferentes tipos de comunicação
-                        </div>
-                    </div>
-                    
-                    <div class="insight-item">
-                        <div class="insight-text">
-                            <strong>🔔 Regras de Notificação:</strong> Configuração de quando e como notificar responsáveis automaticamente
-                        </div>
-                    </div>
-                    
-                    <div class="insight-item">
-                        <div class="insight-text">
-                            <strong>📱 Integrações:</strong> Conexão com plataformas como WhatsApp Business API, Twilio, SendGrid
-                        </div>
-                    </div>
-                    
-                    <div class="insight-item">
-                        <div class="insight-text">
-                            <strong>🎯 Segmentação:</strong> Comunicações diferentes baseadas no tipo de ocorrência e gravidade
-                        </div>
-                    </div>
-                </div>
+        <!-- ABA MEDIDAS DISCIPLINARES -->
+        <div id="tab-medidas" class="tab-content">
+          <div class="management-section">
+            <div class="management-title">⚖️ Medidas Disciplinares - Hoje</div>
+            
+            <div class="table-container">
+              <div class="table-content">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Código</th>
+                      <th>Nome do Aluno</th>
+                      <th>Turma</th>
+                      <th>Medida</th>
+                      <th>Data</th>
+                      <th>Telefone</th>
+                      <th>Status</th>
+                      <th>Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tabela-medidas">
+                    <tr>
+                      <td colspan="8" class="text-center">⏳ Carregando medidas...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
 
-                <!-- CRONOGRAMA -->
-                <div class="management-section">
-                    <div class="management-title">
-                        📅 Cronograma de Desenvolvimento
-                    </div>
-                    
-                    <div class="table-container">
-                        <div class="table-content">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Funcionalidade</th>
-                                        <th>Prioridade</th>
-                                        <th>Previsão</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td><strong>📧 Email Automático</strong></td>
-                                        <td><span class="detail-type" style="background: #dc3545; color: white;">Alta</span></td>
-                                        <td>Próxima versão</td>
-                                        <td><span class="detail-type" style="background: #ffc107; color: #323130;">Em Desenvolvimento</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>📋 Portal dos Pais</strong></td>
-                                        <td><span class="detail-type" style="background: #dc3545; color: white;">Alta</span></td>
-                                        <td>Versão 1.1</td>
-                                        <td><span class="detail-type" style="background: #6c757d; color: white;">Planejado</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>📱 WhatsApp Integration</strong></td>
-                                        <td><span class="detail-type" style="background: #ffc107; color: #323130;">Média</span></td>
-                                        <td>Versão 1.2</td>
-                                        <td><span class="detail-type" style="background: #6c757d; color: white;">Planejado</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>🤖 Chatbot</strong></td>
-                                        <td><span class="detail-type" style="background: #28a745; color: white;">Baixa</span></td>
-                                        <td>Versão 2.0</td>
-                                        <td><span class="detail-type" style="background: #6c757d; color: white;">Planejado</span></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+        <!-- ABA HISTÓRICO -->
+        <div id="tab-historico" class="tab-content">
+          <div class="management-section">
+            <div class="management-title">📋 Histórico de Comunicações</div>
+            
+            <div class="form-grid" style="margin-bottom: 20px;">
+              <div class="form-group">
+                <label class="form-label">Data Inicial</label>
+                <input type="date" id="dataInicial" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Data Final</label>
+                <input type="date" id="dataFinal" class="form-input">
+              </div>
+              <div class="form-group">
+                <button class="btn btn-primary" onclick="filtrarHistorico()">
+                  🔍 Filtrar
+                </button>
+              </div>
+            </div>
+            
+            <div class="table-container">
+              <div class="table-content">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Data Envio</th>
+                      <th>Tipo</th>
+                      <th>Aluno</th>
+                      <th>Telefone</th>
+                      <th>Status</th>
+                      <th>Mensagem</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tabela-historico">
+                    <tr>
+                      <td colspan="6" class="text-center">📋 Nenhum histórico encontrado</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
 
-                <!-- FEEDBACK -->
-                <div class="management-section">
-                    <div class="management-title">
-                        💬 Sugestões e Feedback
-                    </div>
-                    
-                    <form id="formFeedback">
-                        <div class="form-group form-group-full">
-                            <label class="form-label">Sua Sugestão para o Módulo de Comunicação:</label>
-                            <textarea 
-                                id="feedbackText" 
-                                class="form-textarea" 
-                                placeholder="Descreva suas necessidades de comunicação, integrações desejadas, ou sugestões de melhorias..." 
-                                rows="4"
-                            ></textarea>
-                        </div>
-                        
-                        <div class="form-actions">
-                            <button type="button" class="btn btn-primary" onclick="enviarFeedback()">
-                                📧 Enviar Sugestão
-                            </button>
-                        </div>
-                    </form>
-                </div>
+        <!-- CONFIGURAÇÃO WHATSAPP -->
+        <div class="management-section">
+          <div class="management-title">⚙️ Configuração WhatsApp</div>
+          
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Método de Envio</label>
+              <select id="metodoEnvio" class="form-select">
+                <option value="link">WhatsApp Link (Gratuito)</option>
+                <option value="twilio">Twilio API (Pago)</option>
+                <option value="evolution">Evolution API (Próprio)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">API Token (se aplicável)</label>
+              <input type="password" id="apiToken" class="form-input" placeholder="Token da API">
+            </div>
+            <div class="form-group">
+              <button class="btn btn-primary" onclick="salvarConfiguracoes()">
+                💾 Salvar Configurações
+              </button>
+            </div>
+          </div>
+        </div>
 
             </div>
         </div>
@@ -306,27 +262,339 @@
   <!-- SISTEMA DE MENSAGENS -->
   <script src="/assets/js/messages.js?v=20250915"></script>
   
+  <style>
+    /* Estilos para abas */
+    .tab-navigation {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 8px;
+    }
+    
+    .tab-btn {
+      padding: 12px 20px;
+      border: none;
+      background: #f8fafc;
+      color: #64748b;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      color: white;
+    }
+    
+    .tab-btn:hover:not(.active) {
+      background: #e2e8f0;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .btn-whatsapp {
+      background: #25d366 !important;
+      color: white !important;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-whatsapp:hover {
+      background: #1db954 !important;
+      transform: translateY(-1px);
+    }
+    
+    .btn-whatsapp:disabled {
+      background: #9ca3af !important;
+      cursor: not-allowed;
+    }
+    
+    .status-pendente {
+      background: #fbbf24;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    
+    .status-enviado {
+      background: #10b981;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    
+    .text-center {
+      text-align: center;
+    }
+  </style>
+  
   <script>
+    // Variáveis globais
+    let comunicacoesPendentes = [];
+    let configuracoes = {
+      metodoEnvio: 'link',
+      apiToken: ''
+    };
+
     // Inicialização da página
     document.addEventListener('DOMContentLoaded', function() {
-      console.log('📱 Página de Comunicação carregada');
+      console.log('📱 Sistema de Comunicação Automática carregado');
+      inicializarSistema();
     });
 
-    function enviarFeedback() {
-      const feedback = document.getElementById('feedbackText').value.trim();
+    // Inicializar sistema
+    async function inicializarSistema() {
+      try {
+        await carregarConfiguracoes();
+        await carregarComunicacoesPendentes();
+        atualizarEstatisticas();
+      } catch (error) {
+        console.error('Erro ao inicializar sistema:', error);
+        showMessage('Erro ao carregar dados', 'error');
+      }
+    }
+
+    // Função para trocar abas
+    function switchTab(tabName) {
+      // Remover active de todas as abas
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
       
-      if (!feedback) {
-        showMessage('Por favor, digite sua sugestão', 'error');
+      // Ativar aba selecionada
+      event.target.classList.add('active');
+      document.getElementById('tab-' + tabName).classList.add('active');
+      
+      console.log('Aba alterada para:', tabName);
+    }
+
+    // Carregar comunicações pendentes
+    async function carregarComunicacoesPendentes() {
+      try {
+        const hoje = new Date().toISOString().split('T')[0];
+        
+        // Simular dados para demonstração
+        comunicacoesPendentes = [
+          {
+            tipo: 'falta',
+            codigo: '2025001',
+            nome: 'João Silva Santos',
+            turma: '1º A',
+            data: hoje,
+            telefone: '(11) 99999-9999',
+            enviado: false,
+            descricao: 'Falta não justificada'
+          },
+          {
+            tipo: 'medida',
+            codigo: '2025002', 
+            nome: 'Maria Oliveira Costa',
+            turma: '2º B',
+            data: hoje,
+            telefone: '(11) 88888-8888',
+            enviado: false,
+            descricao: 'Advertência verbal - Conversa em sala'
+          }
+        ];
+        
+        renderizarTabelas();
+      } catch (error) {
+        console.error('Erro ao carregar comunicações:', error);
+      }
+    }
+
+    // Renderizar tabelas
+    function renderizarTabelas() {
+      renderizarTabelaFaltas();
+      renderizarTabelaMedidas();
+    }
+
+    // Renderizar tabela de faltas
+    function renderizarTabelaFaltas() {
+      const tbody = document.getElementById('tabela-faltas');
+      const faltas = comunicacoesPendentes.filter(c => c.tipo === 'falta');
+      
+      if (faltas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">📅 Nenhuma falta registrada hoje</td></tr>';
         return;
       }
       
-      // Simular envio de feedback
-      showMessage('✅ Obrigado pela sugestão! Ela será considerada no desenvolvimento.', 'success');
-      document.getElementById('feedbackText').value = '';
+      tbody.innerHTML = faltas.map(falta => `
+        <tr>
+          <td>${falta.codigo}</td>
+          <td>${falta.nome}</td>
+          <td>${falta.turma}</td>
+          <td>${formatarData(falta.data)}</td>
+          <td>${falta.telefone}</td>
+          <td><span class="status-${falta.enviado ? 'enviado' : 'pendente'}">${falta.enviado ? 'Enviado' : 'Pendente'}</span></td>
+          <td>
+            <button class="btn-whatsapp" onclick="enviarMensagem('${falta.codigo}', 'falta')" ${falta.enviado ? 'disabled' : ''}>
+              ${falta.enviado ? '✅ Enviado' : '📱 Informar Pais'}
+            </button>
+          </td>
+        </tr>
+      `).join('');
     }
 
-    // Função global
-    window.enviarFeedback = enviarFeedback;
+    // Renderizar tabela de medidas
+    function renderizarTabelaMedidas() {
+      const tbody = document.getElementById('tabela-medidas');
+      const medidas = comunicacoesPendentes.filter(c => c.tipo === 'medida');
+      
+      if (medidas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">⚖️ Nenhuma medida registrada hoje</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = medidas.map(medida => `
+        <tr>
+          <td>${medida.codigo}</td>
+          <td>${medida.nome}</td>
+          <td>${medida.turma}</td>
+          <td>${medida.descricao}</td>
+          <td>${formatarData(medida.data)}</td>
+          <td>${medida.telefone}</td>
+          <td><span class="status-${medida.enviado ? 'enviado' : 'pendente'}">${medida.enviado ? 'Enviado' : 'Pendente'}</span></td>
+          <td>
+            <button class="btn-whatsapp" onclick="enviarMensagem('${medida.codigo}', 'medida')" ${medida.enviado ? 'disabled' : ''}>
+              ${medida.enviado ? '✅ Enviado' : '📱 Informar Pais'}
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // Enviar mensagem WhatsApp
+    async function enviarMensagem(codigo, tipo) {
+      try {
+        const comunicacao = comunicacoesPendentes.find(c => c.codigo === codigo && c.tipo === tipo);
+        if (!comunicacao) {
+          showMessage('Comunicação não encontrada', 'error');
+          return;
+        }
+
+        const mensagem = gerarMensagem(comunicacao);
+        const telefone = comunicacao.telefone.replace(/[^0-9]/g, '');
+        
+        if (configuracoes.metodoEnvio === 'link') {
+          // Método link (gratuito)
+          const url = `https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`;
+          window.open(url, '_blank');
+        } else {
+          // APIs pagas (implementar conforme necessário)
+          await enviarViaTwilio(telefone, mensagem);
+        }
+        
+        // Marcar como enviado
+        comunicacao.enviado = true;
+        renderizarTabelas();
+        atualizarEstatisticas();
+        
+        showMessage('Mensagem enviada com sucesso!', 'success');
+        
+      } catch (error) {
+        console.error('Erro ao enviar mensagem:', error);
+        showMessage('Erro ao enviar mensagem', 'error');
+      }
+    }
+
+    // Gerar mensagem personalizada
+    function gerarMensagem(comunicacao) {
+      const escola = 'E.E.C.M. Jupiara';
+      const data = formatarData(comunicacao.data);
+      
+      if (comunicacao.tipo === 'falta') {
+        return `🏫 *${escola}*
+
+📅 *Comunicado - Falta de Presença*
+
+Prezado(a) responsável,
+
+Informamos que o(a) aluno(a) *${comunicacao.nome}* (Código: ${comunicacao.codigo}) da turma *${comunicacao.turma}* apresentou falta não justificada no dia *${data}*.
+
+Por favor, entre em contato conosco para esclarecimentos.
+
+Atenciosamente,
+Coordenação Pedagógica`;
+      } else {
+        return `🏫 *${escola}*
+
+⚖️ *Comunicado - Medida Disciplinar*
+
+Prezado(a) responsável,
+
+Informamos que foi aplicada uma medida disciplinar ao(à) aluno(a) *${comunicacao.nome}* (Código: ${comunicacao.codigo}) da turma *${comunicacao.turma}*.
+
+*Medida:* ${comunicacao.descricao}
+*Data:* ${data}
+
+Solicitamos sua presença na escola para conversa.
+
+Atenciosamente,
+Coordenação Disciplinar`;
+      }
+    }
+
+    // Funções auxiliares
+    function formatarData(data) {
+      return new Date(data + 'T00:00:00').toLocaleDateString('pt-BR');
+    }
+
+    function atualizarEstatisticas() {
+      const faltas = comunicacoesPendentes.filter(c => c.tipo === 'falta');
+      const medidas = comunicacoesPendentes.filter(c => c.tipo === 'medida');
+      const pendentes = comunicacoesPendentes.filter(c => !c.enviado);
+      const enviados = comunicacoesPendentes.filter(c => c.enviado);
+      
+      document.getElementById('totalFaltas').textContent = faltas.length;
+      document.getElementById('totalMedidas').textContent = medidas.length;
+      document.getElementById('totalPendentes').textContent = pendentes.length;
+      document.getElementById('totalEnviados').textContent = enviados.length;
+    }
+
+    // Carregar configurações
+    async function carregarConfiguracoes() {
+      // Implementar carregamento do localStorage ou banco
+      const configs = localStorage.getItem('whatsapp-config');
+      if (configs) {
+        configuracoes = JSON.parse(configs);
+        document.getElementById('metodoEnvio').value = configuracoes.metodoEnvio;
+        document.getElementById('apiToken').value = configuracoes.apiToken;
+      }
+    }
+
+    // Salvar configurações
+    function salvarConfiguracoes() {
+      configuracoes.metodoEnvio = document.getElementById('metodoEnvio').value;
+      configuracoes.apiToken = document.getElementById('apiToken').value;
+      
+      localStorage.setItem('whatsapp-config', JSON.stringify(configuracoes));
+      showMessage('Configurações salvas!', 'success');
+    }
+
+    // Filtrar histórico
+    function filtrarHistorico() {
+      showMessage('Funcionalidade em desenvolvimento', 'info');
+    }
+
+    // Funções globais
+    window.switchTab = switchTab;
+    window.enviarMensagem = enviarMensagem;
+    window.salvarConfiguracoes = salvarConfiguracoes;
+    window.filtrarHistorico = filtrarHistorico;
   </script>
   
   <!-- AUTENTICAÇÃO (modo permissivo) -->
