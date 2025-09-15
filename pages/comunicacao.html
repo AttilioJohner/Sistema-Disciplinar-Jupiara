@@ -237,18 +237,61 @@
           <div class="form-grid">
             <div class="form-group">
               <label class="form-label">Método de Envio</label>
-              <select id="metodoEnvio" class="form-select">
-                <option value="link">WhatsApp Link (Gratuito)</option>
+              <select id="metodoEnvio" class="form-select" onchange="toggleConfigFields()">
+                <option value="link">WhatsApp Link (Gratuito - Nova Aba)</option>
+                <option value="evolution">Evolution API (Automático - Recomendado)</option>
                 <option value="twilio">Twilio API (Pago)</option>
-                <option value="evolution">Evolution API (Próprio)</option>
               </select>
             </div>
-            <div class="form-group">
-              <label class="form-label">API Token (se aplicável)</label>
-              <input type="password" id="apiToken" class="form-input" placeholder="Token da API">
+            
+            <!-- Configurações Evolution API -->
+            <div id="evolutionConfig" style="display: none; grid-column: span 2;">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">URL da Evolution API</label>
+                  <input type="text" id="evolutionUrl" class="form-input" placeholder="https://evolution.seudominio.com">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Instance Name</label>
+                  <input type="text" id="evolutionInstance" class="form-input" placeholder="escola_jupiara">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">API Key</label>
+                  <input type="password" id="evolutionKey" class="form-input" placeholder="sua-api-key">
+                </div>
+                <div class="form-group">
+                  <button class="btn btn-info" onclick="testarEvolution()">
+                    🧪 Testar Conexão
+                  </button>
+                </div>
+              </div>
             </div>
+
+            <!-- Configurações Twilio -->
+            <div id="twilioConfig" style="display: none; grid-column: span 2;">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Account SID</label>
+                  <input type="text" id="twilioSid" class="form-input" placeholder="ACxxxxxxxxx">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Auth Token</label>
+                  <input type="password" id="twilioToken" class="form-input" placeholder="xxxxxxxx">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">WhatsApp Number</label>
+                  <input type="text" id="twilioFrom" class="form-input" placeholder="+14155238886">
+                </div>
+                <div class="form-group">
+                  <button class="btn btn-info" onclick="testarTwilio()">
+                    🧪 Testar Conexão
+                  </button>
+                </div>
+              </div>
+            </div>
+            
             <div class="form-group">
-              <button class="btn btn-primary" onclick="salvarConfiguracoes()">
+              <button class="btn btn-success" onclick="salvarConfiguracoes()">
                 💾 Salvar Configurações
               </button>
             </div>
@@ -261,6 +304,9 @@
 
   <!-- SISTEMA DE MENSAGENS -->
   <script src="/assets/js/messages.js?v=20250915"></script>
+  
+  <!-- MÓDULO DE COMUNICAÇÕES DB -->
+  <script src="/assets/js/comunicacoes-db.js?v=20250915"></script>
   
   <style>
     /* Estilos para abas */
@@ -384,36 +430,77 @@
     // Carregar comunicações pendentes
     async function carregarComunicacoesPendentes() {
       try {
-        const hoje = new Date().toISOString().split('T')[0];
+        console.log('📱 Carregando comunicações do banco...');
         
-        // Simular dados para demonstração
-        comunicacoesPendentes = [
-          {
-            tipo: 'falta',
-            codigo: '2025001',
-            nome: 'João Silva Santos',
-            turma: '1º A',
-            data: hoje,
-            telefone: '(11) 99999-9999',
-            enviado: false,
-            descricao: 'Falta não justificada'
-          },
-          {
-            tipo: 'medida',
-            codigo: '2025002', 
-            nome: 'Maria Oliveira Costa',
-            turma: '2º B',
-            data: hoje,
-            telefone: '(11) 88888-8888',
-            enviado: false,
-            descricao: 'Advertência verbal - Conversa em sala'
-          }
-        ];
+        // Aguardar inicialização do módulo DB
+        if (window.ComunicacoesDB) {
+          await window.ComunicacoesDB.initComunicacoesDB();
+        }
         
+        // Buscar dados do banco
+        let dados = [];
+        if (window.ComunicacoesDB) {
+          dados = await window.ComunicacoesDB.getComunicacoesPendentesHoje();
+        }
+        
+        // Converter formato do banco para formato usado na interface
+        comunicacoesPendentes = dados.map(item => ({
+          id: item.id, // ID do banco para updates
+          tipo: item.tipo,
+          codigo: item.aluno_codigo,
+          nome: item.aluno_nome,
+          turma: item.turma,
+          data: item.data_ocorrencia,
+          telefone: item.telefone,
+          enviado: item.status === 'enviado',
+          descricao: item.descricao || 'Sem descrição',
+          tentativas: item.tentativas_envio || 0
+        }));
+        
+        console.log('✅ Comunicações carregadas:', comunicacoesPendentes.length);
         renderizarTabelas();
+        
+        // Carregar estatísticas do banco
+        if (window.ComunicacoesDB) {
+          const stats = await window.ComunicacoesDB.getEstatisticasDiarias();
+          atualizarEstatisticasComDados(stats);
+        }
+        
       } catch (error) {
-        console.error('Erro ao carregar comunicações:', error);
+        console.error('❌ Erro ao carregar comunicações:', error);
+        // Fallback para dados mock em caso de erro
+        carregarDadosMock();
       }
+    }
+    
+    // Carregar dados mock como fallback
+    function carregarDadosMock() {
+      const hoje = new Date().toISOString().split('T')[0];
+      comunicacoesPendentes = [
+        {
+          id: null,
+          tipo: 'falta',
+          codigo: '2025001',
+          nome: 'João Silva Santos',
+          turma: '1º A',
+          data: hoje,
+          telefone: '(66) 99999-9999',
+          enviado: false,
+          descricao: 'Falta não justificada'
+        },
+        {
+          id: null,
+          tipo: 'medida',
+          codigo: '2025002', 
+          nome: 'Maria Oliveira Costa',
+          turma: '2º B',
+          data: hoje,
+          telefone: '(66) 88888-8888',
+          enviado: false,
+          descricao: 'Advertência verbal - Conversa em sala'
+        }
+      ];
+      renderizarTabelas();
     }
 
     // Renderizar tabelas
@@ -489,25 +576,55 @@
         const mensagem = gerarMensagem(comunicacao);
         const telefone = comunicacao.telefone.replace(/[^0-9]/g, '');
         
-        if (configuracoes.metodoEnvio === 'link') {
-          // Método link (gratuito)
+        // Mostrar loading no botão
+        const btn = document.querySelector(`button[onclick*="${codigo}"][onclick*="${tipo}"]`);
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '⏳ Enviando...';
+        btn.disabled = true;
+        
+        let sucesso = false;
+        
+        if (configuracoes.metodoEnvio === 'evolution') {
+          sucesso = await enviarViaEvolution(telefone, mensagem);
+        } else if (configuracoes.metodoEnvio === 'twilio') {
+          sucesso = await enviarViaTwilio(telefone, mensagem);
+        } else {
+          // Método link (abre nova aba)
           const url = `https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`;
           window.open(url, '_blank');
-        } else {
-          // APIs pagas (implementar conforme necessário)
-          await enviarViaTwilio(telefone, mensagem);
+          sucesso = true;
         }
         
-        // Marcar como enviado
-        comunicacao.enviado = true;
-        renderizarTabelas();
-        atualizarEstatisticas();
-        
-        showMessage('Mensagem enviada com sucesso!', 'success');
+        if (sucesso) {
+          // Marcar como enviado no banco (se disponível)
+          if (comunicacao.id && window.ComunicacoesDB) {
+            await window.ComunicacoesDB.marcarComoEnviada(
+              comunicacao.id, 
+              configuracoes.metodoEnvio,
+              { timestamp: new Date().toISOString() }
+            );
+          }
+          
+          // Marcar como enviado na interface
+          comunicacao.enviado = true;
+          renderizarTabelas();
+          atualizarEstatisticas();
+          showMessage('✅ Mensagem enviada com sucesso!', 'success');
+        } else {
+          // Marcar erro no banco (se disponível)
+          if (comunicacao.id && window.ComunicacoesDB) {
+            await window.ComunicacoesDB.marcarComErro(comunicacao.id, 'Erro no envio via ' + configuracoes.metodoEnvio);
+          }
+          
+          // Restaurar botão em caso de erro
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+          showMessage('❌ Erro ao enviar mensagem', 'error');
+        }
         
       } catch (error) {
         console.error('Erro ao enviar mensagem:', error);
-        showMessage('Erro ao enviar mensagem', 'error');
+        showMessage('❌ Erro ao enviar mensagem', 'error');
       }
     }
 
@@ -564,25 +681,110 @@ Coordenação Disciplinar`;
       document.getElementById('totalPendentes').textContent = pendentes.length;
       document.getElementById('totalEnviados').textContent = enviados.length;
     }
+    
+    // Atualizar estatísticas com dados do banco
+    function atualizarEstatisticasComDados(stats) {
+      if (stats) {
+        document.getElementById('totalFaltas').textContent = stats.total_faltas || 0;
+        document.getElementById('totalMedidas').textContent = stats.total_medidas || 0;
+        document.getElementById('totalPendentes').textContent = stats.pendentes || 0;
+        document.getElementById('totalEnviados').textContent = stats.enviados || 0;
+        
+        console.log('✅ Estatísticas atualizadas do banco:', stats);
+      }
+    }
 
     // Carregar configurações
     async function carregarConfiguracoes() {
-      // Implementar carregamento do localStorage ou banco
       const configs = localStorage.getItem('whatsapp-config');
       if (configs) {
         configuracoes = JSON.parse(configs);
-        document.getElementById('metodoEnvio').value = configuracoes.metodoEnvio;
-        document.getElementById('apiToken').value = configuracoes.apiToken;
+        document.getElementById('metodoEnvio').value = configuracoes.metodoEnvio || 'link';
+        
+        // Carregar configurações Evolution
+        if (configuracoes.evolutionUrl) document.getElementById('evolutionUrl').value = configuracoes.evolutionUrl;
+        if (configuracoes.evolutionInstance) document.getElementById('evolutionInstance').value = configuracoes.evolutionInstance;
+        if (configuracoes.evolutionKey) document.getElementById('evolutionKey').value = configuracoes.evolutionKey;
+        
+        // Carregar configurações Twilio
+        if (configuracoes.twilioSid) document.getElementById('twilioSid').value = configuracoes.twilioSid;
+        if (configuracoes.twilioToken) document.getElementById('twilioToken').value = configuracoes.twilioToken;
+        if (configuracoes.twilioFrom) document.getElementById('twilioFrom').value = configuracoes.twilioFrom;
+        
+        // Mostrar campos corretos
+        toggleConfigFields();
       }
+    }
+
+    // Alternar campos de configuração
+    function toggleConfigFields() {
+      const metodo = document.getElementById('metodoEnvio').value;
+      
+      document.getElementById('evolutionConfig').style.display = metodo === 'evolution' ? 'block' : 'none';
+      document.getElementById('twilioConfig').style.display = metodo === 'twilio' ? 'block' : 'none';
     }
 
     // Salvar configurações
     function salvarConfiguracoes() {
       configuracoes.metodoEnvio = document.getElementById('metodoEnvio').value;
-      configuracoes.apiToken = document.getElementById('apiToken').value;
+      
+      if (configuracoes.metodoEnvio === 'evolution') {
+        configuracoes.evolutionUrl = document.getElementById('evolutionUrl').value;
+        configuracoes.evolutionInstance = document.getElementById('evolutionInstance').value;
+        configuracoes.evolutionKey = document.getElementById('evolutionKey').value;
+      } else if (configuracoes.metodoEnvio === 'twilio') {
+        configuracoes.twilioSid = document.getElementById('twilioSid').value;
+        configuracoes.twilioToken = document.getElementById('twilioToken').value;
+        configuracoes.twilioFrom = document.getElementById('twilioFrom').value;
+      }
       
       localStorage.setItem('whatsapp-config', JSON.stringify(configuracoes));
-      showMessage('Configurações salvas!', 'success');
+      showMessage('✅ Configurações salvas!', 'success');
+    }
+
+    // Testar Evolution API
+    async function testarEvolution() {
+      try {
+        const url = document.getElementById('evolutionUrl').value;
+        const instance = document.getElementById('evolutionInstance').value;
+        const key = document.getElementById('evolutionKey').value;
+        
+        if (!url || !instance || !key) {
+          showMessage('❌ Preencha todos os campos da Evolution API', 'error');
+          return;
+        }
+
+        showMessage('⏳ Testando conexão...', 'info');
+        
+        const response = await fetch(`${url}/instance/connectionState/${instance}`, {
+          headers: {
+            'apikey': key
+          }
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.instance && result.instance.state === 'open') {
+            showMessage('✅ Evolution API conectada com sucesso!', 'success');
+          } else {
+            showMessage('⚠️ Evolution API encontrada, mas WhatsApp não conectado. Escaneie o QR Code.', 'warning');
+          }
+        } else {
+          showMessage('❌ Erro ao conectar com Evolution API', 'error');
+        }
+      } catch (error) {
+        showMessage('❌ Erro ao testar Evolution API', 'error');
+        console.error(error);
+      }
+    }
+
+    // Testar Twilio
+    async function testarTwilio() {
+      showMessage('⏳ Testando Twilio...', 'info');
+      // Implementação do teste Twilio seria feita no backend
+      setTimeout(() => {
+        showMessage('⚠️ Teste Twilio requer implementação backend', 'warning');
+      }, 1000);
     }
 
     // Filtrar histórico
@@ -590,11 +792,78 @@ Coordenação Disciplinar`;
       showMessage('Funcionalidade em desenvolvimento', 'info');
     }
 
+    // Enviar via Evolution API
+    async function enviarViaEvolution(telefone, mensagem) {
+      try {
+        if (!configuracoes.evolutionUrl || !configuracoes.evolutionKey) {
+          showMessage('❌ Configure a Evolution API primeiro', 'error');
+          return false;
+        }
+
+        const response = await fetch(`${configuracoes.evolutionUrl}/message/sendText/${configuracoes.evolutionInstance}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': configuracoes.evolutionKey
+          },
+          body: JSON.stringify({
+            number: `55${telefone}`,
+            text: mensagem
+          })
+        });
+
+        const result = await response.json();
+        
+        if (response.ok && result.key) {
+          console.log('✅ Evolution API - Mensagem enviada:', result);
+          return true;
+        } else {
+          console.error('❌ Evolution API erro:', result);
+          return false;
+        }
+      } catch (error) {
+        console.error('❌ Evolution API falhou:', error);
+        return false;
+      }
+    }
+
+    // Enviar via Twilio
+    async function enviarViaTwilio(telefone, mensagem) {
+      try {
+        if (!configuracoes.twilioSid || !configuracoes.twilioToken) {
+          showMessage('❌ Configure o Twilio primeiro', 'error');
+          return false;
+        }
+
+        const response = await fetch('/api/twilio/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            to: `+55${telefone}`,
+            message: mensagem,
+            sid: configuracoes.twilioSid,
+            token: configuracoes.twilioToken
+          })
+        });
+
+        const result = await response.json();
+        return response.ok && result.success;
+      } catch (error) {
+        console.error('❌ Twilio falhou:', error);
+        return false;
+      }
+    }
+
     // Funções globais
     window.switchTab = switchTab;
     window.enviarMensagem = enviarMensagem;
     window.salvarConfiguracoes = salvarConfiguracoes;
     window.filtrarHistorico = filtrarHistorico;
+    window.toggleConfigFields = toggleConfigFields;
+    window.testarEvolution = testarEvolution;
+    window.testarTwilio = testarTwilio;
   </script>
   
   <!-- AUTENTICAÇÃO (modo permissivo) -->
