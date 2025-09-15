@@ -229,6 +229,37 @@
             display: none;
         }
         
+        /* Loading states */
+        .loading-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            font-size: 14px;
+            color: #666;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+        
+        .loading-status.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .loading-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #e1e5e9;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         .student-info {
             display: grid;
             grid-template-columns: auto 1fr auto;
@@ -826,9 +857,13 @@
                     <div class="search-form">
                         <div class="form-group">
                             <label for="turmaSelect" class="form-label">Turma</label>
-                            <select id="turmaSelect" class="form-select">
-                                <option value="">Selecione uma turma...</option>
+                            <select id="turmaSelect" class="form-select" disabled>
+                                <option value="">⏳ Carregando turmas...</option>
                             </select>
+                            <div id="loadingStatus" class="loading-status">
+                                <span class="loading-spinner"></span>
+                                Buscando dados das turmas... Isso pode levar alguns segundos.
+                            </div>
                         </div>
                         
                         <div class="form-group">
@@ -1026,8 +1061,16 @@
         
         // Carregar turmas e alunos
         async function carregarTurmasEAlunos() {
+            const turmaSelect = document.getElementById('turmaSelect');
+            const loadingStatus = document.getElementById('loadingStatus');
+            
             try {
                 console.log('📚 Carregando turmas e alunos...');
+                
+                // Mostrar loading
+                turmaSelect.disabled = true;
+                turmaSelect.innerHTML = '<option value="">⏳ Carregando turmas...</option>';
+                loadingStatus.classList.remove('hidden');
                 
                 const { data: alunosData, error } = await window.supabaseClient
                     .from('alunos')
@@ -1039,7 +1082,6 @@
                 todasTurmas = [...new Set(todosAlunos.map(a => a.turma))].sort();
                 
                 // Preencher select de turmas
-                const turmaSelect = document.getElementById('turmaSelect');
                 turmaSelect.innerHTML = '<option value="">Selecione uma turma...</option>';
                 
                 todasTurmas.forEach(turma => {
@@ -1049,10 +1091,19 @@
                     turmaSelect.appendChild(option);
                 });
                 
+                // Habilitar select e ocultar loading
+                turmaSelect.disabled = false;
+                loadingStatus.classList.add('hidden');
+                
                 console.log(`✅ Carregados: ${todasTurmas.length} turmas, ${todosAlunos.length} alunos`);
                 
             } catch (error) {
                 console.error('❌ Erro ao carregar dados:', error);
+                
+                // Mostrar erro no select e status
+                turmaSelect.innerHTML = '<option value="">❌ Erro ao carregar turmas - Tente recarregar a página</option>';
+                turmaSelect.disabled = true;
+                loadingStatus.innerHTML = '<span style="color: #dc2626;">⚠️ Erro ao carregar dados. Verifique sua conexão e recarregue a página.</span>';
             }
         }
         
