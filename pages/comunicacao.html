@@ -235,13 +235,11 @@
           <div class="management-title">⚙️ Configuração WhatsApp</div>
           
           <div class="form-grid">
-            <div class="form-group">
-              <label class="form-label">Método de Envio</label>
-              <select id="metodoEnvio" class="form-select" onchange="toggleConfigFields()">
-                <option value="link">WhatsApp Link (Gratuito - Nova Aba)</option>
-                <option value="evolution">Evolution API (Automático - Recomendado)</option>
-                <option value="twilio">Twilio API (Pago)</option>
-              </select>
+            <div class="form-group" style="grid-column: span 2;">
+              <div style="background: linear-gradient(135deg, #25d366, #128c7e); color: white; padding: 15px; border-radius: 8px; text-align: center;">
+                <h3 style="margin: 0; font-size: 18px;">📱 Evolution API - WhatsApp Automático</h3>
+                <p style="margin: 5px 0 0 0; opacity: 0.9;">Envio automático sem abrir novas abas</p>
+              </div>
             </div>
             
             <!-- Configurações Evolution API -->

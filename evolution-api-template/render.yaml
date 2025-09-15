@@ -1,0 +1,40 @@
+# Render Configuration for Evolution API - Escola Jupiara
+# Este arquivo configura automaticamente o deploy no Render.com
+
+services:
+  - type: web
+    name: evolution-api-escola-jupiara
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: AUTHENTICATION_API_KEY
+        value: escola_jupiara_2025_secure_key
+      - key: SERVER_TYPE  
+        value: http
+      - key: SERVER_PORT
+        value: 10000
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: DEL_INSTANCE
+        value: "false"
+      - key: DATABASE_ENABLED
+        value: "true"
+      - key: CONFIG_SESSION_PHONE_CLIENT
+        value: "Escola Jupiara"
+      - key: CONFIG_SESSION_PHONE_NAME
+        value: "Sistema Disciplinar"
+      - key: LOG_LEVEL
+        value: "ERROR"
+      - key: WEBHOOK_GLOBAL_ENABLED
+        value: "false"
+      - key: AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES
+        value: "false"
+    
+    # Configurações específicas do Render
+    autoDeploy: true
+    branch: main
+    dockerfilePath: ./Dockerfile

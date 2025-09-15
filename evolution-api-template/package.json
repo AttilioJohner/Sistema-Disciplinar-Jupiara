@@ -1,0 +1,51 @@
+{
+  "name": "evolution-api-escola-jupiara",
+  "version": "2.0.0",
+  "description": "Evolution API para Escola Estadual Cívico-Militar Jupiara - Sistema de Comunicação Automática",
+  "main": "dist/src/main.js",
+  "scripts": {
+    "build": "npx tsc",
+    "start": "node dist/src/main.js",
+    "dev": "npx tsx watch src/main.ts",
+    "docker:build": "docker build -t evolution-api .",
+    "db:generate": "npx prisma generate",
+    "db:push": "npx prisma db push",
+    "db:studio": "npx prisma studio"
+  },
+  "dependencies": {
+    "@adiwajshing/baileys": "^6.6.0",
+    "@prisma/client": "^5.7.1",
+    "@types/qrcode": "^1.5.5",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "qrcode": "^1.5.3",
+    "winston": "^3.11.0",
+    "dotenv": "^16.3.1",
+    "axios": "^1.6.2",
+    "moment": "^2.29.4"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.5",
+    "prisma": "^5.7.1",
+    "tsx": "^4.6.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AttilioJohner/evolution-api-escola-jupiara"
+  },
+  "keywords": [
+    "whatsapp",
+    "api",
+    "escola",
+    "comunicacao",
+    "evolution"
+  ],
+  "author": "Escola Jupiara",
+  "license": "MIT"
+}
