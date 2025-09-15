@@ -1,17 +1,28 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comunicação - Dashboard Disciplinar</title>
-    
-    <!-- CSS Externos -->
-    <link rel="stylesheet" href="../assets/css/style.css">
-    <link rel="stylesheet" href="../assets/css/components.css">
-    <link rel="stylesheet" href="../assets/css/dashboard.css">
-    
-    <!-- Scripts do Sistema -->
-    <script src="../assets/js/populate-db.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Comunicação - Dashboard Disciplinar</title>
+
+  <!-- CSS do seu projeto -->
+  <link rel="stylesheet" href="/assets/css/style.css?v=20250915">
+  <link rel="stylesheet" href="/assets/css/components.css?v=20250915">
+  <link rel="stylesheet" href="/assets/css/dashboard.css?v=20250915">
+  <link rel="stylesheet" href="/assets/css/modern-layout.css?v=20250915">
+  
+  <!-- Script para corrigir cor dos emojis nos títulos -->
+  <script src="/assets/js/fix-emoji-titles.js?v=20250915"></script>
+  
+  <!-- Script para barra superior moderna -->
+  <script src="/assets/js/modern-topbar.js?v=20250915"></script>
+
+  <!-- SISTEMA DE AUTENTICAÇÃO UNIFICADO -->
+  <script src="/netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
+  <script src="/assets/js/env-config.js?v=20250915"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/assets/js/unified-auth.js?v=20250915"></script>
+  <script src="/assets/js/supabase-only.js?v=20250915"></script>
 </head>
 
 <body>
@@ -36,71 +47,32 @@
     <!-- LAYOUT PRINCIPAL -->
     <div class="main-layout">
         
-        <!-- SIDEBAR -->
-        <div class="sidebar">
-            <div class="sidebar-section">
-                <div class="sidebar-title">Módulos Principais</div>
-                
-                <a href="../index.html" class="sidebar-item">
-                    <span class="sidebar-icon">🏠</span>
-                    <span class="sidebar-text">Dashboard</span>
-                </a>
-                
-                
-                <a href="gestao-alunos.html" class="sidebar-item">
-                    <span class="sidebar-icon">👥</span>
-                    <span class="sidebar-text">Gestão de Alunos</span>
-                </a>
-                
-                <a href="medidas-disciplinares.html" class="sidebar-item">
-                    <span class="sidebar-icon">📋</span>
-                    <span class="sidebar-text">Medidas Disciplinares</span>
-                </a>
-                
-                <a href="frequencia.html" class="sidebar-item">
-                    <span class="sidebar-icon">📅</span>
-                    <span class="sidebar-text">Controle de Frequência</span>
-                </a>
-                
-                <a href="relatorios.html" class="sidebar-item">
-                    <span class="sidebar-icon">📊</span>
-                    <span class="sidebar-text">Relatórios</span>
-                </a>
-                
-                <a href="analises.html" class="sidebar-item">
-                    <span class="sidebar-icon">📈</span>
-                    <span class="sidebar-text">Análises</span>
-                </a>
-            </div>
-            
-            <div class="sidebar-section">
-                <div class="sidebar-title">Ferramentas</div>
-                
-                <a href="configuracoes.html" class="sidebar-item">
-                    <span class="sidebar-icon">⚙️</span>
-                    <span class="sidebar-text">Configurações</span>
-                </a>
-                
-                <a href="comunicacao.html" class="sidebar-item active">
-                    <span class="sidebar-icon">📱</span>
-                    <span class="sidebar-text">Comunicação</span>
-                </a>
-                
-                <a href="login.html" class="sidebar-item">
-                    <span class="sidebar-icon">🔐</span>
-                    <span class="sidebar-text">Login/Logout</span>
-                </a>
-            </div>
-        </div>
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Módulos Principais</div>
+        <a href="/index.html" class="sidebar-item"><span class="sidebar-icon">🏠</span><span class="sidebar-text">Dashboard</span></a>
+        <a href="/pages/gestao-alunos.html" class="sidebar-item"><span class="sidebar-icon">👥</span><span class="sidebar-text">Gestão de Alunos</span></a>
+        <a href="/pages/medidas-disciplinares.html" class="sidebar-item"><span class="sidebar-icon">📋</span><span class="sidebar-text">Medidas Disciplinares</span></a>
+        <a href="/pages/consulta-ficha.html" class="sidebar-item"><span class="sidebar-icon">👤</span><span class="sidebar-text">Ficha Disciplinar</span></a>
+        <a href="/pages/frequencia.html" class="sidebar-item"><span class="sidebar-icon">📅</span><span class="sidebar-text">Controle de Frequência</span></a>
+        <a href="/pages/relatorios.html" class="sidebar-item"><span class="sidebar-icon">📊</span><span class="sidebar-text">Relatórios</span></a>
+        <a href="/pages/analises.html" class="sidebar-item"><span class="sidebar-icon">📈</span><span class="sidebar-text">Análises</span></a>
+      </div>
 
-        <!-- ÁREA DE CONTEÚDO -->
-        <div class="content-area">
-            <div class="main-content">
-                
-                <!-- TÍTULO -->
-                <div class="module-title">
-                    📱 Módulo de Comunicação
-                </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Ferramentas</div>
+        <a href="/pages/configuracoes.html" class="sidebar-item"><span class="sidebar-icon">⚙️</span><span class="sidebar-text">Configurações</span></a>
+        <a href="/pages/comunicacao.html" class="sidebar-item active"><span class="sidebar-icon">📱</span><span class="sidebar-text">Comunicação</span></a>
+        <a href="/pages/login.html" class="sidebar-item"><span class="sidebar-icon">🔐</span><span class="sidebar-text">Login/Logout</span></a>
+      </div>
+    </div>
+
+    <!-- CONTEÚDO -->
+    <div class="content-area">
+      <div class="main-content">
+        <!-- TÍTULO -->
+        <div class="module-title">📱 Comunicação</div>
 
                 <!-- AVISO DE FUNCIONALIDADE -->
                 <div class="management-section">
@@ -331,54 +303,50 @@
         </div>
     </div>
 
-    <!-- JAVASCRIPT -->
-    
-    <script src="../assets/js/main.js" defer></script>
-    
-    <script>
-        // Inicialização da página
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('📱 Página de Comunicação carregada');
-        });
+  <!-- SISTEMA DE MENSAGENS -->
+  <script src="/assets/js/messages.js?v=20250915"></script>
+  
+  <script>
+    // Inicialização da página
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('📱 Página de Comunicação carregada');
+    });
 
-        function enviarFeedback() {
-            const feedback = document.getElementById('feedbackText').value.trim();
-            
-            if (!feedback) {
-                showMessage('Por favor, digite sua sugestão', 'error');
-                return;
-            }
-            
-            // Simular envio de feedback
-            showMessage('✅ Obrigado pela sugestão! Ela será considerada no desenvolvimento.', 'success');
-            document.getElementById('feedbackText').value = '';
-        }
-
-        // Função global
-        window.enviarFeedback = enviarFeedback;
-    </script>
-    <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    // Espera o Sistema estar carregado
-    const wait = setInterval(() => {
-      if (window.localDb && window.localDb.loaded) {
-        clearInterval(wait);
-
-        // Verifica usuário logado
-        window.localAuth.onAuthStateChanged(user => {
-          if (!user) {
-            // Se não está logado → volta para login
-            window.location.href = 'login.html'; 
-          } else {
-            console.log("Usuário logado:", user.email);
-            // Aqui você pode chamar funções de carregamento da página
-            // Exemplo: carregarAlunos();
-          }
-        });
+    function enviarFeedback() {
+      const feedback = document.getElementById('feedbackText').value.trim();
+      
+      if (!feedback) {
+        showMessage('Por favor, digite sua sugestão', 'error');
+        return;
       }
-    }, 100);
-  });
-</script>
+      
+      // Simular envio de feedback
+      showMessage('✅ Obrigado pela sugestão! Ela será considerada no desenvolvimento.', 'success');
+      document.getElementById('feedbackText').value = '';
+    }
+
+    // Função global
+    window.enviarFeedback = enviarFeedback;
+  </script>
+  
+  <!-- AUTENTICAÇÃO -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Espera o Sistema estar carregado
+      const wait = setInterval(() => {
+        if (window.supabaseClient) {
+          clearInterval(wait);
+          
+          // Verifica autenticação
+          window.supabaseClient.auth.getSession().then(({ data: { session } }) => {
+            if (!session) {
+              window.location.href = '/pages/login.html';
+            }
+          });
+        }
+      }, 100);
+    });
+  </script>
 
 </body>
 </html>
