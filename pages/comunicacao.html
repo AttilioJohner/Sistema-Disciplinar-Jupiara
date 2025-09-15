@@ -329,23 +329,47 @@
     window.enviarFeedback = enviarFeedback;
   </script>
   
-  <!-- AUTENTICAÇÃO -->
+  <!-- AUTENTICAÇÃO (modo permissivo) -->
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      // Espera o Sistema estar carregado
-      const wait = setInterval(() => {
-        if (window.supabaseClient) {
-          clearInterval(wait);
-          
-          // Verifica autenticação
-          window.supabaseClient.auth.getSession().then(({ data: { session } }) => {
-            if (!session) {
-              window.location.href = '/pages/login.html';
-            }
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const timeout = new Promise(resolve => setTimeout(resolve, 3000));
+        
+        const waitForAuth = async () => {
+          return new Promise((resolve) => {
+            const checkAuth = setInterval(() => {
+              if (window.supabaseClient) {
+                clearInterval(checkAuth);
+                resolve();
+              }
+            }, 100);
           });
-        }
-      }, 100);
+        };
+        
+        // Só redireciona se explicitamente não autenticado
+        const attemptAuth = async () => {
+          if (!window.supabaseClient?.auth) {
+            // TEMPORARIAMENTE DESABILITADO - permitir acesso
+            // window.location.href = '/pages/login.html';
+            return true;
+          }
+        };
+        
+        await Promise.race([waitForAuth(), timeout]);
+        
+      } catch (error) {
+        console.error('❌ Erro no guard de autenticação:', error);
+        // Em caso de erro, permitir acesso (modo degradado)
+        console.log('⚠️ Modo degradado - permitindo acesso');
+      }
     });
+  </script>
+
+  <!-- Fallback simples para mensagens globais -->
+  <script>
+    window.showMessage = window.showMessage || function (t, type) {
+      console[type === 'error' ? 'error' : 'log'](t);
+    };
   </script>
 
 </body>

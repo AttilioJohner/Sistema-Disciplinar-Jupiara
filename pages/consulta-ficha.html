@@ -5,11 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consulta de Ficha Disciplinar - E.E.C.M. Jupiara</title>
     
+    <!-- CSS do projeto -->
+    <link rel="stylesheet" href="/assets/css/style.css?v=20250915">
+    <link rel="stylesheet" href="/assets/css/components.css?v=20250915">
+    <link rel="stylesheet" href="/assets/css/dashboard.css?v=20250915">
+    <link rel="stylesheet" href="/assets/css/modern-layout.css?v=20250915">
+    
+    <!-- Scripts modernos -->
+    <script src="/assets/js/fix-emoji-titles.js?v=20250915"></script>
+    <script src="/assets/js/modern-topbar.js?v=20250915"></script>
+
     <!-- Supabase e configurações -->
-    <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
-    <script src="../assets/js/env-config.js"></script>
+    <script src="/netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
+    <script src="/assets/js/env-config.js?v=20250915"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script src="../assets/js/supabase-only.js"></script>
+    <script src="/assets/js/unified-auth.js?v=20250915"></script>
+    <script src="/assets/js/supabase-only.js?v=20250915"></script>
     
     <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -17,11 +28,6 @@
     <!-- html2canvas e jsPDF para exportação PDF -->
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-    
-    <!-- Services removidos para evitar erros de export -->
-    
-    <!-- Main CSS -->
-    <link rel="stylesheet" href="../assets/css/style.css">
     
     <style>
         * {
