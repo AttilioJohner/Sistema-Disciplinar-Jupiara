@@ -128,6 +128,15 @@
             border-bottom: 2px solid var(--primary-color);
         }
         
+        /* Ocultar conteúdo inicialmente - só mostra após pesquisa */
+        .ficha-aluno {
+            display: none;
+        }
+        
+        .ficha-aluno.visible {
+            display: block;
+        }
+        
         @media print {
             .sidebar, .top-bar, .btn, button {
                 display: none !important;
@@ -931,7 +940,7 @@
           </div>
         </div>
             
-        <!-- Ficha do Aluno -->
+        <!-- Ficha do Aluno (inicialmente oculta) -->
         <div id="fichaAluno" class="ficha-aluno">
           <!-- Cabeçalho para PDF -->
           <div class="pdf-header">
@@ -1207,7 +1216,7 @@
                 btnConsultar.innerHTML = '⏳ Carregando...';
                 
                 // Mostrar ficha com loading
-                document.getElementById('fichaAluno').style.display = 'block';
+                document.getElementById('fichaAluno').classList.add('visible');
                 
                 // Habilitar botão de exportar PDF
                 document.getElementById('btnExportarPDF').disabled = false;
@@ -1248,7 +1257,7 @@
                 await carregarAnalisesComparativas(parseInt(codigoAluno), aluno.turma);
                 
                 // Mostrar ficha
-                document.getElementById('fichaAluno').style.display = 'block';
+                document.getElementById('fichaAluno').classList.add('visible');
                 
                 console.log('✅ Ficha carregada com sucesso');
                 
