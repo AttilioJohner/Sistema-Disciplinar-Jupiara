@@ -30,30 +30,113 @@
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        /* Estilos específicos para ficha disciplinar mantendo funcionalidade */
+        .ficha-container {
+            padding: 24px;
         }
         
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            background-attachment: fixed;
-            min-height: 100vh;
-            color: #2c3e50;
-            overflow-x: hidden;
+        .search-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         }
         
-        /* Layout Principal com Sidebar */
-        .main-wrapper {
+        .student-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .student-header {
             display: flex;
-            min-height: 100vh;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 24px;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 12px;
+            color: white;
         }
         
-        /* Sidebar */
-        .sidebar {
-            width: 250px;
+        .student-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+        
+        .student-details h2 {
+            margin: 0 0 8px 0;
+            font-size: 1.5rem;
+        }
+        
+        .student-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            opacity: 0.9;
+        }
+        
+        .meta-item {
+            background: rgba(255,255,255,0.1);
+            padding: 12px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .records-table {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+        
+        .search-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            align-items: end;
+        }
+        
+        .pdf-header {
+            text-align: center;
+            margin-bottom: 24px;
+            padding: 20px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+        
+        @media print {
+            .sidebar, .top-bar, .btn, button {
+                display: none !important;
+            }
+            .content-area {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+        }
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
@@ -769,98 +852,122 @@
     </style>
 </head>
 <body>
-    <div class="main-wrapper">
-        <!-- Sidebar -->
-        <nav class="sidebar">
-            <div class="sidebar-header">
-                <h2>📊 Sistema Disciplinar</h2>
-                <p>E.E.C.M. Jupiara</p>
+  <!-- BARRA SUPERIOR -->
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <div class="app-launcher">
+        <span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+      </div>
+      <span class="app-name">Dashboard Disciplinar</span>
+    </div>
+    <div class="top-bar-center">
+      <input id="busca" type="text" class="search-box" placeholder="Pesquisar alunos...">
+    </div>
+    <div class="top-bar-right">
+      <div class="user-profile">A</div>
+    </div>
+  </div>
+
+  <!-- LAYOUT PRINCIPAL -->
+  <div class="main-layout">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Módulos Principais</div>
+        <a href="/index.html" class="sidebar-item"><span class="sidebar-icon">🏠</span><span class="sidebar-text">Dashboard</span></a>
+        <a href="/pages/gestao-alunos.html" class="sidebar-item"><span class="sidebar-icon">👥</span><span class="sidebar-text">Gestão de Alunos</span></a>
+        <a href="/pages/medidas-disciplinares.html" class="sidebar-item"><span class="sidebar-icon">📋</span><span class="sidebar-text">Medidas Disciplinares</span></a>
+        <a href="/pages/consulta-ficha.html" class="sidebar-item active"><span class="sidebar-icon">👤</span><span class="sidebar-text">Ficha Disciplinar</span></a>
+        <a href="/pages/frequencia.html" class="sidebar-item"><span class="sidebar-icon">📅</span><span class="sidebar-text">Controle de Frequência</span></a>
+        <a href="/pages/relatorios.html" class="sidebar-item"><span class="sidebar-icon">📊</span><span class="sidebar-text">Relatórios</span></a>
+        <a href="/pages/analises.html" class="sidebar-item"><span class="sidebar-icon">📈</span><span class="sidebar-text">Análises</span></a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Ferramentas</div>
+        <a href="/pages/configuracoes.html" class="sidebar-item"><span class="sidebar-icon">⚙️</span><span class="sidebar-text">Configurações</span></a>
+        <a href="/pages/comunicacao.html" class="sidebar-item"><span class="sidebar-icon">📱</span><span class="sidebar-text">Comunicação</span></a>
+        <a href="/pages/login.html" class="sidebar-item"><span class="sidebar-icon">🔐</span><span class="sidebar-text">Login/Logout</span></a>
+      </div>
+    </div>
+
+    <!-- CONTEÚDO -->
+    <div class="content-area">
+      <div class="main-content">
+        <!-- TÍTULO -->
+        <div class="module-title">👤 Ficha Disciplinar</div>
+            
+        <!-- Formulário de Busca -->
+        <div class="management-section">
+          <div class="management-title">🔍 Buscar Aluno</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="turmaSelect" class="form-label">Turma</label>
+              <select id="turmaSelect" class="form-select">
+                <option value="">Selecione uma turma...</option>
+              </select>
             </div>
             
-            <div class="sidebar-nav">
-                <a href="../index.html" class="nav-item">
-                    <i>🏠</i> Dashboard
-                </a>
-                <a href="medidas-disciplinares.html" class="nav-item">
-                    <i>📋</i> Medidas Disciplinares
-                </a>
-                <a href="consulta-ficha.html" class="nav-item active">
-                    <i>👤</i> Ficha Disciplinar
-                </a>
-                <a href="relatorios.html" class="nav-item">
-                    <i>📈</i> Relatórios
-                </a>
-                <a href="frequencia.html" class="nav-item">
-                    <i>📅</i> Frequência
-                </a>
-                <a href="notas-disciplinares.html" class="nav-item">
-                    <i>⭐</i> Notas Disciplinares
-                </a>
-            </div>
-        </nav>
-        
-        <!-- Conteúdo Principal -->
-        <main class="main-content">
-            <!-- Header -->
-            <div class="page-header">
-                <h1 class="page-title">👤 Consulta de Ficha Disciplinar</h1>
-                <p class="page-description">
-                    Consulte informações detalhadas sobre histórico disciplinar, medidas aplicadas e estatísticas dos alunos
-                </p>
+            <div class="form-group">
+              <label for="alunoSelect" class="form-label">Aluno</label>
+              <select id="alunoSelect" class="form-select" disabled>
+                <option value="">Selecione um aluno...</option>
+              </select>
             </div>
             
-            <!-- Formulário de Busca -->
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="card-title">🔍 Buscar Aluno</h2>
-                    <p>Selecione a turma e o aluno para consultar sua ficha disciplinar</p>
-                </div>
-                <div class="card-body">
-                    <div class="search-form">
-                        <div class="form-group">
-                            <label for="turmaSelect" class="form-label">Turma</label>
-                            <select id="turmaSelect" class="form-select">
-                                <option value="">Selecione uma turma...</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="alunoSelect" class="form-label">Aluno</label>
-                            <select id="alunoSelect" class="form-select" disabled>
-                                <option value="">Selecione um aluno...</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <button id="btnConsultar" class="btn" disabled onclick="consultarFicha()">
-                                🔍 Consultar Ficha
-                            </button>
-                        </div>
-                        
-                        <div class="form-group">
-                            <button id="btnExportarPDF" class="btn" style="background: linear-gradient(135deg, #dc2626, #b91c1c);" disabled onclick="exportarParaPDF()">
-                                📄 Exportar PDF
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            <div class="form-group">
+              <button id="btnConsultar" class="btn btn-primary" disabled onclick="consultarFicha()">
+                🔍 Consultar Ficha
+              </button>
             </div>
             
-            <!-- Ficha do Aluno -->
-            <div id="fichaAluno" class="ficha-aluno">
-                <!-- Cabeçalho para PDF -->
-                <div class="pdf-header">
-                    <div class="pdf-title">Ficha Disciplinar do Aluno</div>
-                    <div class="pdf-subtitle">E.E.C.M. Jupiara - Sistema de Gestão Escolar</div>
-                    <div class="pdf-date" id="pdfDate"></div>
+            <div class="form-group">
+              <button id="btnExportarPDF" class="btn btn-secondary" disabled onclick="exportarParaPDF()">
+                📄 Exportar PDF
+              </button>
+            </div>
+          </div>
+        </div>
+            
+        <!-- Ficha do Aluno -->
+        <div id="fichaAluno" class="ficha-aluno">
+          <!-- Cabeçalho para PDF -->
+          <div class="pdf-header">
+            <div class="pdf-title">Ficha Disciplinar do Aluno</div>
+            <div class="pdf-subtitle">E.E.C.M. Jupiara - Sistema de Gestão Escolar</div>
+            <div class="pdf-date" id="pdfDate"></div>
+          </div>
+          
+          <!-- Informações do Aluno -->
+          <div class="management-section">
+            <div class="management-title">📋 Informações do Aluno</div>
+            <div class="student-header">
+              <div class="student-avatar" id="studentPhoto">👤</div>
+              <div class="student-details">
+                <h2 id="studentName">Nome do Aluno</h2>
+                <div class="student-meta">
+                  <div class="meta-item">
+                    <strong>🎯 Código:</strong> <span id="studentCode">-</span>
+                  </div>
+                  <div class="meta-item">
+                    <strong>🎓 Turma:</strong> <span id="studentClass">-</span>
+                  </div>
+                  <div class="meta-item">
+                    <strong>📅 Período:</strong> <span id="studentPeriod">-</span>
+                  </div>
+                  <div class="meta-item">
+                    <strong>📊 Situação:</strong> <span id="studentStatus">-</span>
+                  </div>
                 </div>
-                <!-- Informações do Aluno -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">📋 Informações do Aluno</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="student-info">
+              </div>
+              <div class="nota-disciplinar" id="notaDisciplinar">
+                <div class="nota-valor" id="notaValor">8.0</div>
+                <div>Nota Disciplinar</div>
+              </div>
+            </div>
+          </div>
                             <div class="student-photo placeholder" id="studentPhoto">
                                 👤
                             </div>
