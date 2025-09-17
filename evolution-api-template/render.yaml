@@ -34,7 +34,7 @@ services:
       - key: AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES
         value: "false"
       - key: DATABASE_URL
-        value: "postgresql://postgres.rvppxdhrahcwiwrrwwaz:Jupiara2025@db.rvppxdhrahcwiwrrwwaz.supabase.co:5432/postgres?sslmode=require"
+        value: "postgresql://postgres.rvppxdhrahcwiwrrwwaz:Jupiara2025@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require"
       - key: DIRECT_URL
         value: "postgresql://postgres.rvppxdhrahcwiwrrwwaz:Jupiara2025@db.rvppxdhrahcwiwrrwwaz.supabase.co:5432/postgres?sslmode=require"
       - key: DATABASE_CONNECTION_CLIENT_NAME
