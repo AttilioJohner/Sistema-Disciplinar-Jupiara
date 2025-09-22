@@ -733,8 +733,8 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       els.tbody.innerHTML = lista
         .map((a) => {
           const isEditing = editingRows.has(a.id);
-          const deleteButton = isEditing 
-            ? '<button type="button" class="btn btn-small btn-danger" data-action="delete" data-id="' + encodeURIComponent(a.id) + '">Excluir</button>'
+          const deleteButton = isEditing
+            ? '<button type="button" class="btn btn-small btn-danger" style="background: #dc3545; color: white; border: 1px solid #c82333;" data-action="delete" data-id="' + encodeURIComponent(a.id) + '">🗑️ Excluir</button>'
             : '';
           
           const statusClass = a.status === 'ativo' ? 'text-success' : 'text-muted';
@@ -749,9 +749,9 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
               '<td>' + escapeHtml(a.responsavel || '') + '</td>' +
               '<td>' + escapeHtml(a.telefone1 || '') + '</td>' +
               '<td>' + escapeHtml(a.telefone2 || '') + '</td>' +
-              '<td id="foto-cell-' + escapeHtml(a.id) + '"><button type="button" class="btn btn-small btn-foto" data-aluno-id="' + escapeHtml(a.id) + '">Ver Foto</button></td>' +
+              '<td id="foto-cell-' + escapeHtml(a.id) + '"><button type="button" class="btn btn-small btn-info" style="background: #6f42c1; color: white; border: 1px solid #5e35a8;" data-aluno-id="' + escapeHtml(a.id) + '">📷 Ver Foto</button></td>' +
               '<td style="white-space:nowrap">' +
-                '<button type="button" class="btn btn-small" data-action="edit" data-id="' + encodeURIComponent(a.id) + '">Editar</button>' +
+                '<button type="button" class="btn btn-small btn-primary" style="background: #6f42c1; color: white; border: 1px solid #5e35a8;" data-action="edit" data-id="' + encodeURIComponent(a.id) + '">✏️ Editar</button>' +
                 deleteButton +
               '</td>' +
             '</tr>'

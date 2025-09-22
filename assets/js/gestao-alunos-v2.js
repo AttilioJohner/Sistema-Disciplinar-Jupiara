@@ -257,15 +257,56 @@ async function handleDelete() {
 function handleTableClick(event) {
     const btn = event.target.closest('[data-action]');
     if (!btn) return;
-    
+
     const action = btn.dataset.action;
     const codigo = btn.dataset.codigo;
-    
+
     if (action === 'edit') {
         handleEdit(codigo);
     } else if (action === 'delete') {
         editingId = codigo;
         handleDelete();
+    } else if (action === 'photo') {
+        handleShowPhoto(codigo);
+    }
+}
+
+async function handleShowPhoto(codigo) {
+    try {
+        const aluno = alunosCache.find(a => a.codigo == codigo);
+        if (!aluno) {
+            showToast('Aluno não encontrado', 'error');
+            return;
+        }
+
+        // Buscar foto do aluno
+        if (aluno.foto_url) {
+            // Se há foto, mostrar em modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.8); display: flex; align-items: center;
+                justify-content: center; z-index: 10000;
+            `;
+            modal.innerHTML = `
+                <div style="background: white; padding: 20px; border-radius: 8px; max-width: 400px; text-align: center;">
+                    <h3>${aluno.nome}</h3>
+                    <img src="${aluno.foto_url}" style="max-width: 100%; max-height: 400px; border-radius: 8px; border: 2px solid #ddd;">
+                    <br><br>
+                    <button onclick="this.closest('[style*=\"fixed\"]').remove()" class="btn btn-primary">Fechar</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+        } else {
+            showToast('Este aluno não possui foto cadastrada', 'info');
+        }
+
+    } catch (error) {
+        console.error('Erro ao mostrar foto:', error);
+        showToast('Erro ao carregar foto', 'error');
     }
 }
 
@@ -333,7 +374,7 @@ function renderTable() {
     if (filtered.length === 0) {
         els.tbody.innerHTML = `
             <tr>
-                <td colspan="8" style="text-align: center; padding: 20px; color: #666;">
+                <td colspan="9" style="text-align: center; padding: 20px; color: #666;">
                     Nenhum aluno encontrado
                 </td>
             </tr>
@@ -342,7 +383,7 @@ function renderTable() {
         els.tbody.innerHTML = filtered.map(aluno => {
             const statusClass = aluno.status === 'ativo' ? 'text-success' : 'text-muted';
             const statusIcon = aluno.status === 'ativo' ? '✓' : '✗';
-            
+
             return `
                 <tr data-codigo="${aluno.codigo}">
                     <td>${aluno.codigo || ''}</td>
@@ -352,11 +393,16 @@ function renderTable() {
                     <td>${aluno.responsavel || ''}</td>
                     <td>${aluno.telefone1 || ''}</td>
                     <td>${aluno.telefone2 || ''}</td>
+                    <td style="text-align: center;">
+                        <button class="btn btn-small btn-info" style="background: #6f42c1; color: white; border: 1px solid #5e35a8;" data-action="photo" data-codigo="${aluno.codigo}">
+                            📷 Foto
+                        </button>
+                    </td>
                     <td style="white-space: nowrap">
-                        <button class="btn btn-small btn-primary" data-action="edit" data-codigo="${aluno.codigo}">
+                        <button class="btn btn-small btn-primary" style="background: #6f42c1; color: white; border: 1px solid #5e35a8;" data-action="edit" data-codigo="${aluno.codigo}">
                             ✏️ Editar
                         </button>
-                        <button class="btn btn-small btn-danger" data-action="delete" data-codigo="${aluno.codigo}">
+                        <button class="btn btn-small btn-danger" style="background: #dc3545; color: white; border: 1px solid #c82333;" data-action="delete" data-codigo="${aluno.codigo}">
                             🗑️ Excluir
                         </button>
                     </td>
