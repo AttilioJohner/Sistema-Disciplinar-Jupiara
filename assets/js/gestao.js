@@ -218,29 +218,9 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     }
 
     if (els.tbody) {
-      // Delegação para Editar/Excluir/Foto
+      // Delegação para Editar/Excluir (fotos agora são exibidas diretamente)
       els.tbody.addEventListener('click', async (e) => {
-        // Botão de foto
-        const btnFoto = e.target.closest('.btn-foto');
-        if (btnFoto) {
-          const alunoId = btnFoto.dataset.alunoId;
-          if (alunoId) {
-            visualizarFoto(alunoId);
-          }
-          return;
-        }
-        
-        // Botão de ocultar foto
-        const btnOcultar = e.target.closest('.btn-ocultar-foto');
-        if (btnOcultar) {
-          const alunoId = btnOcultar.dataset.alunoId;
-          if (alunoId) {
-            ocultarFoto(alunoId);
-          }
-          return;
-        }
-        
-        // Outros botões com data-action
+        // Botões com data-action (editar/excluir)
         const btn = e.target.closest('[data-action]');
         if (!btn) return;
         const action = btn.dataset.action;
@@ -741,7 +721,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     });
 
     if (lista.length === 0) {
-      els.tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #666;">Nenhum aluno encontrado</td></tr>';
+      els.tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #666;">Nenhum aluno encontrado</td></tr>';
       console.log('⚠️ Nenhum aluno na lista filtrada');
     } else {
       els.tbody.innerHTML = lista
@@ -753,7 +733,12 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
           
           const statusClass = a.status === 'ativo' ? 'text-success' : 'text-muted';
           const statusIcon = a.status === 'ativo' ? '✓' : '✗';
-          
+
+          // Preparar célula da foto
+          const fotoCell = a.foto_url
+            ? '<img src="' + escapeHtml(a.foto_url) + '" alt="Foto" style="width: 50px; height: 65px; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">'
+            : '<span style="color: #999; font-size: 12px;">Sem foto</span>';
+
           return (
             '<tr data-id="' + escapeHtml(a.id) + '">' +
               '<td>' + escapeHtml(a.codigo || a.id || '') + '</td>' +
@@ -763,7 +748,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
               '<td>' + escapeHtml(a.responsavel || '') + '</td>' +
               '<td>' + escapeHtml(a.telefone1 || '') + '</td>' +
               '<td>' + escapeHtml(a.telefone2 || '') + '</td>' +
-              '<td id="foto-cell-' + escapeHtml(a.id) + '"><button type="button" class="btn btn-small btn-foto" style="background: #6f42c1; color: white; border: 1px solid #5e35a8;" data-aluno-id="' + escapeHtml(a.id) + '">📷 Ver Foto</button></td>' +
+              '<td style="text-align: center; padding: 8px;">' + fotoCell + '</td>' +
               '<td style="white-space:nowrap">' +
                 '<button type="button" class="btn btn-small btn-primary" style="background: #6f42c1; color: white; border: 1px solid #5e35a8;" data-action="edit" data-id="' + encodeURIComponent(a.id) + '">✏️ Editar</button>' +
                 deleteButton +
@@ -1111,66 +1096,16 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     }
   };
 
-  // Função visualizarFoto já existe mais abaixo - mantém a original
-  
-  window.visualizarFoto = async function(alunoId) {
-    try {
-      console.log('📸 Visualizando foto para aluno:', alunoId);
+  // Funções de foto desabilitadas - fotos agora são exibidas diretamente na tabela
 
-      // Primeiro, tentar buscar no cache local (mais rápido)
-      let dadosAluno = alunosCache.find(a => a.id === alunoId || a.codigo === alunoId);
-
-      // Se não encontrou no cache, buscar no Supabase
-      if (!dadosAluno) {
-        console.log('💾 Aluno não encontrado no cache, buscando no Supabase...');
-        const alunoCompleto = await window.supabaseSystem.db.alunos.doc(alunoId).get();
-
-        if (!alunoCompleto.exists) {
-          console.error('❌ Aluno não encontrado com ID:', alunoId);
-          toast('Aluno não encontrado', 'erro');
-          return;
-        }
-
-        dadosAluno = alunoCompleto.data();
-      } else {
-        console.log('⚡ Usando dados do cache local (mais rápido)');
-      }
-      
-      // Se não tem foto, informar
-      if (!dadosAluno.foto_url) {
-        toast('Este aluno não possui foto cadastrada', 'info');
-        return;
-      }
-      
-      // Mostrar foto na própria célula da tabela
-      const fotoCell = document.getElementById('foto-cell-' + alunoId);
-      if (fotoCell) {
-        fotoCell.innerHTML = `
-          <div style="text-align: center;">
-            <img src="${dadosAluno.foto_url}" alt="Foto do aluno" style="width: 60px; height: 80px; object-fit: cover; border-radius: 4px; margin-bottom: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-            <br>
-            <button type="button" class="btn btn-small btn-ocultar-foto" data-aluno-id="${alunoId}" style="font-size: 11px; padding: 2px 6px;">Ocultar</button>
-          </div>
-        `;
-        toast('Foto carregada individualmente', 'ok');
-      } else {
-        toast('Erro ao exibir foto', 'erro');
-      }
-      
-    } catch (error) {
-      console.error('Erro ao carregar aluno:', error);
-      toast('Erro ao carregar dados do aluno', 'erro');
-    }
+  window.visualizarFoto = function(alunoId) {
+    // Função desabilitada - fotos são exibidas automaticamente na tabela
+    console.log('📸 Função visualizarFoto desabilitada - fotos exibidas diretamente');
   }
-  
+
   window.ocultarFoto = function(alunoId) {
-    const fotoCell = document.getElementById('foto-cell-' + alunoId);
-    if (fotoCell) {
-      fotoCell.innerHTML = `
-        <button type="button" class="btn btn-small btn-foto" data-aluno-id="${alunoId}">Ver Foto</button>
-      `;
-      toast('Foto ocultada', 'ok');
-    }
+    // Função desabilitada - fotos são exibidas automaticamente na tabela
+    console.log('📸 Função ocultarFoto desabilitada - fotos exibidas diretamente');
   }
 
   // =====================
