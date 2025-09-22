@@ -1500,8 +1500,8 @@
                     <div class="records-title">📋 Registros de Faltas</div>
                     <div class="records-grid">
                         ${faltasDetalhes.map(falta => {
-                            const data = new Date(falta.data_aula).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-                            const classe = falta.status === 'A' ? 'abonada' : 
+                            const data = falta.data_aula.split('T')[0].split('-').reverse().join('/').substring(0, 5);
+                            const classe = falta.status === 'A' ? 'abonada' :
                                          falta.status === 'FC' ? 'compensada' : '';
                             return `<div class="record-item ${classe}">${data}</div>`;
                         }).join('')}
@@ -1551,7 +1551,7 @@
             }
             
             container.innerHTML = medidas.map(medida => {
-                const data = new Date(medida.data).toLocaleDateString('pt-BR');
+                const data = medida.data.split('T')[0].split('-').reverse().join('/');
                 const tipoClass = medida.tipo_medida.toLowerCase().includes('advertência') ? 'advertencia' :
                                 medida.tipo_medida.toLowerCase().includes('suspensão') ? 'suspensao' :
                                 medida.tipo_medida.toLowerCase().includes('elogio') ? 'elogio' : 'advertencia';
