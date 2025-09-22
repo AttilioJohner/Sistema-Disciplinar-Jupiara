@@ -810,7 +810,10 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     } else {
       els.tbody.innerHTML = lista
         .map((a) => {
-          const isEditing = editingRows.has(a.id);
+          const alunoId = a.id || a.codigo;
+          const isEditing = editingRows.has(alunoId) || editingRows.has(a.id) || editingRows.has(a.codigo);
+
+          console.log(`🔍 Verificando edição para aluno ${alunoId}: isEditing=${isEditing}, editingRows:`, Array.from(editingRows));
 
           if (isEditing) {
             return renderEditableRow(a);
