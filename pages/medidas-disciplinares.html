@@ -3425,6 +3425,22 @@
             }
         }
 
+        // Função auxiliar para formatar datas corretamente (evitar problema de timezone)
+        function formatarDataCorreta(dataInput) {
+            if (!dataInput) return 'Data não informada';
+
+            if (typeof dataInput === 'string') {
+                // Se é string, extrair apenas a parte da data (YYYY-MM-DD)
+                const dateStr = dataInput.split('T')[0];
+                const [ano, mes, dia] = dateStr.split('-');
+                return `${dia}/${mes}/${ano}`;
+            } else {
+                // Se é objeto Date, usar toLocaleDateString mas forçar UTC
+                const utcDate = new Date(dataInput.getTime() + (dataInput.getTimezoneOffset() * 60000));
+                return utcDate.toLocaleDateString('pt-BR');
+            }
+        }
+
         // Carregar registros recentes de medidas
         async function carregarRegistrosRecentes() {
             try {
@@ -3466,7 +3482,9 @@
                 
                 let html = '<div class="records-list">';
                 medidas.forEach(medida => {
-                    const dataFormatada = new Date(medida.criado_em).toLocaleDateString('pt-BR');
+                    // Usar data da ocorrência (não criado_em) e corrigir timezone
+                    const dataOcorrencia = medida.data || medida.criado_em;
+                    const dataFormatada = formatarDataCorreta(dataOcorrencia);
                     const horaFormatada = new Date(medida.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                     
                     html += `
@@ -4044,7 +4062,7 @@
             `;
             
             medidas.forEach(medida => {
-                const dataFormatada = new Date(medida.data_registro).toLocaleDateString('pt-BR');
+                const dataFormatada = formatarDataCorreta(medida.data_registro || medida.data);
                 const tipoMedida = medida.tipo_medida || 'N/A';
                 const diasSuspensao = medida.dias_suspensao || 1;
                 const pontos = calcularPontosMedidaExibicao(tipoMedida, diasSuspensao);
@@ -4904,7 +4922,7 @@
             `;
             
             medidasNegativasData.forEach(medida => {
-                const dataFormatada = new Date(medida.data || medida.criado_em).toLocaleDateString('pt-BR');
+                const dataFormatada = formatarDataCorreta(medida.data || medida.criado_em);
                 
                 html += `
                     <tr>
@@ -4946,7 +4964,7 @@
             `;
             
             medidasPositivasData.forEach(medida => {
-                const dataFormatada = new Date(medida.data || medida.criado_em).toLocaleDateString('pt-BR');
+                const dataFormatada = formatarDataCorreta(medida.data || medida.criado_em);
                 
                 html += `
                     <tr>
@@ -5051,7 +5069,7 @@
             `;
             
             dados.forEach(medida => {
-                const dataFormatada = new Date(medida.data || medida.criado_em).toLocaleDateString('pt-BR');
+                const dataFormatada = formatarDataCorreta(medida.data || medida.criado_em);
                 
                 html += `
                     <tr>
