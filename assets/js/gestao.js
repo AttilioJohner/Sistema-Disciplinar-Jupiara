@@ -233,6 +233,10 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
           onDelete(id);
         } else if (action === 'toggle-edit') {
           toggleRowEditMode(id);
+        } else if (action === 'save-edit') {
+          await onSaveInlineEdit(id);
+        } else if (action === 'cancel-edit') {
+          onCancelInlineEdit(id);
         }
       });
     }
@@ -575,9 +579,109 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     if (editingRows.has(id)) {
       editingRows.delete(id);
     } else {
+      // Permitir apenas uma linha em edição por vez
+      editingRows.clear();
       editingRows.add(id);
     }
     renderTable();
+  }
+
+  function onCancelInlineEdit(id) {
+    editingRows.delete(id);
+    renderTable();
+    toast('Edição cancelada', 'info');
+  }
+
+  async function onSaveInlineEdit(id) {
+    try {
+      console.log('💾 Salvando edição inline para aluno:', id);
+
+      // Buscar a linha sendo editada
+      const row = document.querySelector(`tr[data-id="${CSS.escape(id)}"]`);
+      if (!row) {
+        toast('Erro: linha não encontrada', 'erro');
+        return;
+      }
+
+      // Extrair dados dos campos de input
+      const data = {
+        id: id,
+        nome: row.querySelector('[data-field="nome"]')?.value || '',
+        turma: row.querySelector('[data-field="turma"]')?.value || '',
+        responsavel: row.querySelector('[data-field="responsavel"]')?.value || '',
+        telefone1: row.querySelector('[data-field="telefone1"]')?.value || '',
+        telefone2: row.querySelector('[data-field="telefone2"]')?.value || ''
+      };
+
+      // Processar foto se foi selecionada
+      const fotoInput = row.querySelector('[data-field="foto"]');
+      if (fotoInput && fotoInput.files && fotoInput.files[0]) {
+        const file = fotoInput.files[0];
+
+        // Validar arquivo
+        if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type)) {
+          toast('Formato inválido. Use JPG, PNG ou WebP.', 'erro');
+          return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          toast('Arquivo muito grande. Máximo: 5MB', 'erro');
+          return;
+        }
+
+        // Converter para base64
+        data.foto_url = await fileToBase64(file);
+      }
+
+      console.log('💾 Dados para salvar:', data);
+
+      // Validar campos obrigatórios
+      if (!data.nome.trim()) {
+        toast('Nome é obrigatório', 'erro');
+        return;
+      }
+      if (!data.turma.trim()) {
+        toast('Turma é obrigatória', 'erro');
+        return;
+      }
+
+      // Salvar no banco
+      await updateAluno(id, data);
+
+      // Atualizar cache local
+      const alunoIndex = alunosCache.findIndex(a => a.id === id || a.codigo === id);
+      if (alunoIndex !== -1) {
+        alunosCache[alunoIndex] = {
+          ...alunosCache[alunoIndex],
+          nome: data.nome,
+          nome_completo: data.nome,
+          turma: data.turma,
+          responsavel: data.responsavel,
+          telefone1: data.telefone1,
+          telefone2: data.telefone2,
+          foto_url: data.foto_url || alunosCache[alunoIndex].foto_url
+        };
+      }
+
+      // Sair do modo de edição
+      editingRows.delete(id);
+      renderTable();
+
+      toast('Aluno atualizado com sucesso!', 'ok');
+
+    } catch (error) {
+      console.error('💾 Erro ao salvar edição inline:', error);
+      toast('Erro ao salvar: ' + (error.message || 'Erro desconhecido'), 'erro');
+    }
+  }
+
+  // Função helper para converter arquivo para base64
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   }
   
   function updateClassFilter() {
@@ -727,34 +831,12 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       els.tbody.innerHTML = lista
         .map((a) => {
           const isEditing = editingRows.has(a.id);
-          const deleteButton = isEditing
-            ? '<button type="button" class="btn btn-small btn-danger" style="background: #dc3545; color: white; border: 1px solid #c82333;" data-action="delete" data-id="' + encodeURIComponent(a.id) + '">🗑️ Excluir</button>'
-            : '';
-          
-          const statusClass = a.status === 'ativo' ? 'text-success' : 'text-muted';
-          const statusIcon = a.status === 'ativo' ? '✓' : '✗';
 
-          // Preparar célula da foto
-          const fotoCell = a.foto_url
-            ? '<img src="' + escapeHtml(a.foto_url) + '" alt="Foto" style="width: 50px; height: 65px; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">'
-            : '<span style="color: #999; font-size: 12px;">Sem foto</span>';
-
-          return (
-            '<tr data-id="' + escapeHtml(a.id) + '">' +
-              '<td>' + escapeHtml(a.codigo || a.id || '') + '</td>' +
-              '<td>' + escapeHtml(a.nome_completo || a.nome || '') + '</td>' +
-              '<td>' + escapeHtml(a.turma || '') + '</td>' +
-              '<td class="' + statusClass + '">' + statusIcon + ' ' + escapeHtml(a.status || 'ativo') + '</td>' +
-              '<td>' + escapeHtml(a.responsavel || '') + '</td>' +
-              '<td>' + escapeHtml(a.telefone1 || '') + '</td>' +
-              '<td>' + escapeHtml(a.telefone2 || '') + '</td>' +
-              '<td style="text-align: center; padding: 8px;">' + fotoCell + '</td>' +
-              '<td style="white-space:nowrap">' +
-                '<button type="button" class="btn btn-small btn-primary" style="background: #6f42c1; color: white; border: 1px solid #5e35a8;" data-action="edit" data-id="' + encodeURIComponent(a.id) + '">✏️ Editar</button>' +
-                deleteButton +
-              '</td>' +
-            '</tr>'
-          );
+          if (isEditing) {
+            return renderEditableRow(a);
+          } else {
+            return renderViewRow(a);
+          }
         })
         .join('');
     }
@@ -762,6 +844,66 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     if (els.total) {
       els.total.textContent = String(lista.length);
     }
+  }
+
+  // =====================
+  // RENDER FUNCTIONS
+  // =====================
+  function renderViewRow(a) {
+    const statusClass = a.status === 'ativo' ? 'text-success' : 'text-muted';
+    const statusIcon = a.status === 'ativo' ? '✓' : '✗';
+
+    // Preparar célula da foto
+    const fotoCell = a.foto_url
+      ? '<img src="' + escapeHtml(a.foto_url) + '" alt="Foto" style="width: 50px; height: 65px; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">'
+      : '<span style="color: #999; font-size: 12px;">Sem foto</span>';
+
+    return (
+      '<tr data-id="' + escapeHtml(a.id) + '">' +
+        '<td>' + escapeHtml(a.codigo || a.id || '') + '</td>' +
+        '<td>' + escapeHtml(a.nome_completo || a.nome || '') + '</td>' +
+        '<td>' + escapeHtml(a.turma || '') + '</td>' +
+        '<td class="' + statusClass + '">' + statusIcon + ' ' + escapeHtml(a.status || 'ativo') + '</td>' +
+        '<td>' + escapeHtml(a.responsavel || '') + '</td>' +
+        '<td>' + escapeHtml(a.telefone1 || '') + '</td>' +
+        '<td>' + escapeHtml(a.telefone2 || '') + '</td>' +
+        '<td style="text-align: center; padding: 8px;">' + fotoCell + '</td>' +
+        '<td style="white-space:nowrap">' +
+          '<button type="button" class="btn btn-small btn-primary" style="background: #6f42c1; color: white; border: 1px solid #5e35a8;" data-action="toggle-edit" data-id="' + encodeURIComponent(a.id) + '">✏️ Editar</button>' +
+        '</td>' +
+      '</tr>'
+    );
+  }
+
+  function renderEditableRow(a) {
+    // Opções de turma para o select
+    const turmaOptions = [
+      '1B', '1C', '2A', '6A', '6B', '7A', '7B', '8A', '8B', '9A', '9B', '9E'
+    ].map(turma =>
+      '<option value="' + turma + '"' + (turma === a.turma ? ' selected' : '') + '>' + turma + '</option>'
+    ).join('');
+
+    // Foto editável
+    const fotoCell = a.foto_url
+      ? '<img src="' + escapeHtml(a.foto_url) + '" alt="Foto" style="width: 40px; height: 52px; object-fit: cover; border-radius: 4px; margin-bottom: 4px;"><br><input type="file" accept="image/*" style="font-size: 10px; width: 100%;" data-field="foto">'
+      : '<input type="file" accept="image/*" style="font-size: 10px; width: 100%;" data-field="foto">';
+
+    return (
+      '<tr data-id="' + escapeHtml(a.id) + '" class="editing-row" style="background-color: #f8f9fa; border: 2px solid #007bff;">' +
+        '<td style="font-weight: bold; color: #007bff;">' + escapeHtml(a.codigo || a.id || '') + '</td>' +
+        '<td><input type="text" value="' + escapeHtml(a.nome_completo || a.nome || '') + '" data-field="nome" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 3px;"></td>' +
+        '<td><select data-field="turma" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 3px;">' + turmaOptions + '</select></td>' +
+        '<td><span style="color: #28a745;">✓ Ativo</span></td>' +
+        '<td><input type="text" value="' + escapeHtml(a.responsavel || '') + '" data-field="responsavel" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 3px;"></td>' +
+        '<td><input type="text" value="' + escapeHtml(a.telefone1 || '') + '" data-field="telefone1" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 3px;"></td>' +
+        '<td><input type="text" value="' + escapeHtml(a.telefone2 || '') + '" data-field="telefone2" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 3px;"></td>' +
+        '<td style="text-align: center; padding: 4px;">' + fotoCell + '</td>' +
+        '<td style="white-space:nowrap">' +
+          '<button type="button" class="btn btn-small btn-success" style="background: #28a745; color: white; border: 1px solid #1e7e34; margin-right: 4px;" data-action="save-edit" data-id="' + encodeURIComponent(a.id) + '">✅ Salvar</button>' +
+          '<button type="button" class="btn btn-small btn-secondary" style="background: #6c757d; color: white; border: 1px solid #545b62;" data-action="cancel-edit" data-id="' + encodeURIComponent(a.id) + '">❌ Cancelar</button>' +
+        '</td>' +
+      '</tr>'
+    );
   }
 
   // =====================
