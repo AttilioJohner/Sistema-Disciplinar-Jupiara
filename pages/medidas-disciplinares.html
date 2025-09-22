@@ -2415,7 +2415,10 @@
             const motivo = document.getElementById('motivoMedida').value;
             let acoes = document.getElementById('acoesMedida').value;
             const diasSuspensao = document.getElementById('diasSuspensao').value;
-            const prazoAssinatura = window.prazoCalculado || null;
+
+            // Só definir prazo para medidas que requerem assinatura
+            const medidasComPrazo = ['Advertência Verbal', 'Advertência Escrita', 'Suspensão', 'Ação Educativa'];
+            const prazoAssinatura = medidasComPrazo.includes(tipoMedida) ? (window.prazoCalculado || null) : null;
             
             if (!alunoId) {
                 alert('Selecione um aluno');
@@ -3094,6 +3097,7 @@
                         .select('id, codigo_matricula, nome_completo, tipo_medida, especificacao, prazo_assinatura, prazo_status, data')
                         .not('prazo_assinatura', 'is', null)
                         .neq('prazo_status', 'entregue')
+                        .in('tipo_medida', ['Advertência Verbal', 'Advertência Escrita', 'Suspensão', 'Ação Educativa'])
                         .order('prazo_assinatura', { ascending: true });
 
                     if (error) {
@@ -5260,16 +5264,33 @@
         }
 
         function calcularPrazoAutomatico() {
+            // Verificar se o campo de prazo deve estar visível
+            const campoPrazo = document.getElementById('prazoAssinaturaInfo');
+            const tipoMedida = document.getElementById('tipoMedida').value;
+
+            const medidasComPrazo = [
+                'Advertência Verbal',
+                'Advertência Escrita',
+                'Suspensão',
+                'Ação Educativa'
+            ];
+
+            // Só calcular se o tipo de medida requer prazo
+            if (!medidasComPrazo.includes(tipoMedida)) {
+                console.log(`❌ Tipo de medida "${tipoMedida}" não requer prazo - não calculando`);
+                return;
+            }
+
             const dataOcorrencia = document.getElementById('dataMedida').value;
             const prazoDisplay = document.getElementById('prazoDataDisplay');
-            
+
             if (!dataOcorrencia || !prazoDisplay) return;
-            
+
             try {
                 const dataOcorr = new Date(dataOcorrencia);
                 // 3 dias úteis após a ocorrência
                 const dataPrazo = adicionarDiasUteis(dataOcorr, 3);
-                
+
                 // Formatar para exibição brasileira
                 const prazoFormatado = dataPrazo.toLocaleDateString('pt-BR', {
                     weekday: 'long',
@@ -5277,13 +5298,13 @@
                     month: 'long',
                     day: 'numeric'
                 });
-                
+
                 prazoDisplay.innerHTML = `📅 ${prazoFormatado}`;
                 console.log(`✅ Prazo calculado: ${prazoFormatado}`);
-                
+
                 // Salvar data formatada para ISO para uso no salvamento
                 window.prazoCalculado = dataPrazo.toISOString().split('T')[0];
-                
+
             } catch (error) {
                 console.error('Erro ao calcular prazo:', error);
                 prazoDisplay.innerHTML = '❌ Erro ao calcular prazo';
