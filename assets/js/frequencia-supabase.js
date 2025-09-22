@@ -2610,6 +2610,10 @@ async function carregarProvidenciasSalvas(problemasEncontrados, mes, ano) {
                 const dataInput = document.getElementById(`data-prazo-${codigoAluno}`);
                 if (dataInput && prov.prazo_resposta) {
                     dataInput.value = prov.prazo_resposta;
+                    // Atualizar exibição visual com a data salva
+                    if (prov.status_ficai === 'aguardando') {
+                        atualizarPrazoCustomizado(codigoAluno);
+                    }
                 }
 
                 console.log('📋 PROVIDÊNCIAS: Dados carregados para aluno', codigoAluno);
