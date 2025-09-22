@@ -1968,9 +1968,9 @@
                                 ></textarea>
                             </div>
                             
-                            <div class="form-group">
+                            <div class="form-group" id="prazoAssinaturaInfo" style="display: none;">
                                 <label class="form-label">📅 Prazo para Assinatura (Automático)</label>
-                                <div id="prazoAssinaturaInfo" class="prazo-automatico">
+                                <div class="prazo-automatico">
                                     <div class="prazo-display">
                                         <strong id="prazoDataDisplay">📅 Será calculado após selecionar a data</strong>
                                     </div>
@@ -2567,16 +2567,47 @@
             const selectCategoria = document.getElementById('categoriaMedida');
             const selectFalta = document.getElementById('faltaEspecifica');
             const textareaMotivo = document.getElementById('motivoMedida');
-            
-            // Medidas que requerem seleção de falta categorizada
-            const medidasComCategoria = [
-                'Fato Observado Negativo',
-                'Advertência Verbal', 
+
+            // Controlar exibição do campo de prazo
+            const campoPrazo = document.getElementById('prazoAssinaturaInfo');
+            const campoStatusPrazo = document.getElementById('diasRestantesInfo');
+            const medidasComPrazo = [
+                'Advertência Verbal',
                 'Advertência Escrita',
                 'Suspensão',
                 'Ação Educativa'
             ];
-            
+
+            // Controlar campo de prazo principal
+            if (campoPrazo) {
+                if (medidasComPrazo.includes(tipoMedida)) {
+                    campoPrazo.style.display = 'block';
+                    console.log(`✅ Campo de prazo exibido para: ${tipoMedida}`);
+                } else {
+                    campoPrazo.style.display = 'none';
+                    console.log(`❌ Campo de prazo oculto para: ${tipoMedida}`);
+                }
+            }
+
+            // Controlar campo de status do prazo
+            if (campoStatusPrazo) {
+                if (medidasComPrazo.includes(tipoMedida)) {
+                    // Manter lógica existente para quando mostrar status
+                    // (será controlado por outras funções conforme necessário)
+                } else {
+                    campoStatusPrazo.style.display = 'none';
+                }
+            }
+
+            // Medidas que requerem seleção de falta categorizada
+            const medidasComCategoria = [
+                'Fato Observado Negativo',
+                'Advertência Verbal',
+                'Advertência Escrita',
+                'Suspensão',
+                'Ação Educativa'
+            ];
+
             // Medidas positivas que também usam seleção de categoria
             const medidasPositivas = [
                 'Elogio Individual',
