@@ -373,21 +373,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     console.log('📊 Processando dados da turma:', turma, '(' + data.length + ' alunos)');
     
     // Mapear dados para o formato esperado
-    alunosCache = data.map((item, index) => {
-      // Debug temporário dos primeiros 3 alunos para ver estrutura
-      if (index < 3) {
-        console.log(`🔍 Debug aluno ${index + 1}:`, {
-          codigo: item['código (matrícula)'] || item.codigo,
-          nome: item['Nome completo'] || item.nome_completo || item.nome,
-          responsavel: item.responsavel,
-          telefone1: item.telefone1,
-          telefone2: item.telefone2,
-          telefone: item.telefone,
-          telefone_responsavel: item.telefone_responsavel,
-          'todos_campos': Object.keys(item)
-        });
-      }
-
+    alunosCache = data.map((item) => {
       // Estrutura vinda do Supabase otimizado
       return {
         id: item['código (matrícula)'] || item.codigo || '',
@@ -396,9 +382,9 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         nome_completo: item['Nome completo'] || item.nome_completo || item.nome || '',
         turma: item.turma || '',
         status: item.status || 'ativo',
-        responsavel: item.responsavel || '',
-        telefone1: item.telefone1 || item.telefone_responsavel || item.telefone || '',
-        telefone2: item.telefone2 || '',
+        responsavel: item.responsável || item.responsavel || '',
+        telefone1: item['Telefone do responsável'] || item.telefone1 || item.telefone_responsavel || item.telefone || '',
+        telefone2: item['Telefone do responsável 2'] || item.telefone2 || '',
         createdAt: item.created_at || item.createdAt,
         updatedAt: item.updated_at || item.updatedAt
       };
@@ -453,11 +439,11 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
           turno: turno,
           status: status,
           nascimento: data.nascimento || '',
-          responsavel: data.responsavel || '',
+          responsavel: data.responsável || data.responsavel || '',
           cpf: data.cpf_responsavel || data.cpf || '',
           telefone: data.telefone_responsavel || data.telefone || '',
-          telefone1: data.telefone1 || data.telefone_responsavel || data.telefone || '',
-          telefone2: data.telefone2 || '',
+          telefone1: data['Telefone do responsável'] || data.telefone1 || data.telefone_responsavel || data.telefone || '',
+          telefone2: data['Telefone do responsável 2'] || data.telefone2 || '',
           email: data.email || '',
           ...data // Manter campos originais também
         };
