@@ -373,7 +373,21 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     console.log('📊 Processando dados da turma:', turma, '(' + data.length + ' alunos)');
     
     // Mapear dados para o formato esperado
-    alunosCache = data.map(item => {
+    alunosCache = data.map((item, index) => {
+      // Debug temporário dos primeiros 3 alunos para ver estrutura
+      if (index < 3) {
+        console.log(`🔍 Debug aluno ${index + 1}:`, {
+          codigo: item['código (matrícula)'] || item.codigo,
+          nome: item['Nome completo'] || item.nome_completo || item.nome,
+          responsavel: item.responsavel,
+          telefone1: item.telefone1,
+          telefone2: item.telefone2,
+          telefone: item.telefone,
+          telefone_responsavel: item.telefone_responsavel,
+          'todos_campos': Object.keys(item)
+        });
+      }
+
       // Estrutura vinda do Supabase otimizado
       return {
         id: item['código (matrícula)'] || item.codigo || '',
