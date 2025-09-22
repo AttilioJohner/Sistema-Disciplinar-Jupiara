@@ -385,6 +385,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         responsavel: item.responsável || item.responsavel || '',
         telefone1: item['Telefone do responsável'] || item.telefone1 || item.telefone_responsavel || item.telefone || '',
         telefone2: item['Telefone do responsável 2'] || item.telefone2 || '',
+        foto_url: item.foto_url || '', // Incluir foto no cache
         createdAt: item.created_at || item.createdAt,
         updatedAt: item.updated_at || item.updatedAt
       };
@@ -558,19 +559,32 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
 
   async function onEdit(id) {
     try {
-      const ref = db.doc(id);
-      const snap = await ref.get();
-      if (!snap.exists) {
-        toast('Registro não encontrado.', 'erro');
-        return;
+      console.log('✏️ Editando aluno:', id);
+
+      // Primeiro, tentar buscar no cache local (muito mais rápido)
+      let alunoData = alunosCache.find(a => a.id === id || a.codigo === id);
+
+      if (alunoData) {
+        console.log('⚡ Usando dados do cache local para edição (instantâneo)');
+        // Garantir que o ID está correto
+        alunoData = { id: id, ...alunoData };
+      } else {
+        console.log('💾 Aluno não encontrado no cache, buscando no Supabase...');
+        const ref = db.doc(id);
+        const snap = await ref.get();
+        if (!snap.exists) {
+          toast('Registro não encontrado.', 'erro');
+          return;
+        }
+        alunoData = { id: id, ...snap.data() };
       }
-      const alunoData = { id: id, ...snap.data() };
+
       fillForm(alunoData);
       editingId = id;
       toggleFormMode('edit');
       scrollIntoViewSmooth(els.form);
-      
-      debugLog('EDIT load', { id: id });
+
+      debugLog('EDIT load', { id: id, source: alunoData.id ? 'cache' : 'database' });
     } catch (err) {
       console.error(err);
       toast('Falha ao carregar aluno para edição.', 'erro');
@@ -749,7 +763,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
               '<td>' + escapeHtml(a.responsavel || '') + '</td>' +
               '<td>' + escapeHtml(a.telefone1 || '') + '</td>' +
               '<td>' + escapeHtml(a.telefone2 || '') + '</td>' +
-              '<td id="foto-cell-' + escapeHtml(a.id) + '"><button type="button" class="btn btn-small btn-info" style="background: #6f42c1; color: white; border: 1px solid #5e35a8;" data-aluno-id="' + escapeHtml(a.id) + '">📷 Ver Foto</button></td>' +
+              '<td id="foto-cell-' + escapeHtml(a.id) + '"><button type="button" class="btn btn-small btn-foto" style="background: #6f42c1; color: white; border: 1px solid #5e35a8;" data-aluno-id="' + escapeHtml(a.id) + '">📷 Ver Foto</button></td>' +
               '<td style="white-space:nowrap">' +
                 '<button type="button" class="btn btn-small btn-primary" style="background: #6f42c1; color: white; border: 1px solid #5e35a8;" data-action="edit" data-id="' + encodeURIComponent(a.id) + '">✏️ Editar</button>' +
                 deleteButton +
@@ -780,8 +794,12 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     if (data.nome != null) data.nome = cleanSpaces(data.nome);
     if (data.turma != null) data.turma = cleanSpaces(data.turma).toUpperCase();
     if (data.cpf != null) data.cpf = data.cpf.replace(/\D/g, '');
-    if (data.telefone != null) data.telefone = data.telefone.trim();
+    if (data.telefone1 != null) data.telefone1 = data.telefone1.trim();
+    if (data.telefone2 != null) data.telefone2 = data.telefone2.trim();
     if (data.email != null) data.email = data.email.trim().toLowerCase();
+
+    // Manter compatibilidade com telefone (telefone1)
+    if (data.telefone1) data.telefone = data.telefone1;
     
     // Processar foto: converter File para base64 URL
     const fotoInput = els.form.querySelector('input[name="foto"]');
@@ -812,8 +830,8 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       turma: data.turma || '',
       status: data.status || 'ativo',
       responsavel: data.responsavel || '',
-      telefone: data.telefone || data.telefone_responsavel || '',
-      telefone2: data.telefone2 || ''
+      telefone1: data.telefone1 || data['Telefone do responsável'] || data.telefone_responsavel || data.telefone || '',
+      telefone2: data.telefone2 || data['Telefone do responsável 2'] || ''
     };
     
     for (const k in mappedData) {
@@ -886,17 +904,22 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     // Campos opcionais
     if (data.status) out.status = String(data.status).trim();
     if (data.responsavel) out.responsavel = String(data.responsavel).trim();
-    if (data.telefone) out.telefone = String(data.telefone).trim();
+    if (data.telefone1) out.telefone1 = String(data.telefone1).trim();
     if (data.telefone2) out.telefone2 = String(data.telefone2).trim();
     if (data.foto_url) out.foto_url = String(data.foto_url).trim();
+
+    // Campos para compatibilidade
+    if (data.telefone1) out.telefone = String(data.telefone1).trim();
+    if (data.telefone1) out.telefone_responsavel = String(data.telefone1).trim();
+    if (data.telefone1) out['Telefone do responsável'] = String(data.telefone1).trim();
+    if (data.telefone2) out['Telefone do responsável 2'] = String(data.telefone2).trim();
     
     // DEBUG: ver resultado
     console.log('🧹 SANITIZE - Dados sanitizados:', out);
     console.log('🧹 SANITIZE - foto_url no out:', out.foto_url);
-    
-    // Campos para compatibilidade
-    if (data.telefone) out.telefone_responsavel = String(data.telefone).trim();
-    const telefones = [data.telefone, data.telefone2].filter(t => t && t.trim()).join(' / ');
+
+    // Campo telefone combinado
+    const telefones = [data.telefone1, data.telefone2].filter(t => t && t.trim()).join(' / ');
     if (telefones) out.telefone_combinado = telefones;
     
     // Garantir que status seja sempre definido
@@ -1093,17 +1116,25 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   window.visualizarFoto = async function(alunoId) {
     try {
       console.log('📸 Visualizando foto para aluno:', alunoId);
-      
-      // Buscar aluno completo com foto do Supabase
-      const alunoCompleto = await window.supabaseSystem.db.alunos.doc(alunoId).get();
-      
-      if (!alunoCompleto.exists) {
-        console.error('❌ Aluno não encontrado com ID:', alunoId);
-        toast('Aluno não encontrado', 'erro');
-        return;
+
+      // Primeiro, tentar buscar no cache local (mais rápido)
+      let dadosAluno = alunosCache.find(a => a.id === alunoId || a.codigo === alunoId);
+
+      // Se não encontrou no cache, buscar no Supabase
+      if (!dadosAluno) {
+        console.log('💾 Aluno não encontrado no cache, buscando no Supabase...');
+        const alunoCompleto = await window.supabaseSystem.db.alunos.doc(alunoId).get();
+
+        if (!alunoCompleto.exists) {
+          console.error('❌ Aluno não encontrado com ID:', alunoId);
+          toast('Aluno não encontrado', 'erro');
+          return;
+        }
+
+        dadosAluno = alunoCompleto.data();
+      } else {
+        console.log('⚡ Usando dados do cache local (mais rápido)');
       }
-      
-      const dadosAluno = alunoCompleto.data();
       
       // Se não tem foto, informar
       if (!dadosAluno.foto_url) {
