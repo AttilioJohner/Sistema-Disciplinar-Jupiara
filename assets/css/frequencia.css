@@ -543,6 +543,35 @@
   display: block;
 }
 
+.ficai-data-group {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.ficai-data-group .form-label {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.ficai-data-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.ficai-data-input:focus {
+  outline: none;
+  border-color: #6f42c1;
+  box-shadow: 0 0 0 0.2rem rgba(111, 66, 193, 0.25);
+}
+
 .providencias-textarea {
   width: 100%;
   min-height: 60px;

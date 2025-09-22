@@ -2289,7 +2289,13 @@ function renderizarCardAlerta(problema, mes, ano) {
                     <div id="ficai-prazo-${codigo}" class="ficai-prazo">
                         <!-- Prazo será mostrado aqui quando "aguardando" for selecionado -->
                     </div>
-                    
+
+                    <div id="ficai-data-${codigo}" class="ficai-data-group" style="display: none; margin: 10px 0;">
+                        <label class="form-label">📅 Data limite para resposta:</label>
+                        <input type="date" id="data-prazo-${codigo}" class="ficai-data-input" onchange="atualizarPrazoCustomizado('${codigo}')">
+                        <small style="color: #666; display: block; margin-top: 5px;">Selecione a data limite para a família apresentar justificativa</small>
+                    </div>
+
                     <textarea 
                         id="providencias-${codigo}" 
                         class="providencias-textarea" 
@@ -2312,53 +2318,60 @@ function renderizarCardAlerta(problema, mes, ano) {
 
 function mostrarPrazoFicai(codigoAluno) {
     console.log('📅 FICAI: Mostrando prazo para aluno', codigoAluno);
-    
+
     const select = document.getElementById(`ficai-status-${codigoAluno}`);
     const prazoDiv = document.getElementById(`ficai-prazo-${codigoAluno}`);
-    
-    if (!select || !prazoDiv) {
+    const dataDiv = document.getElementById(`ficai-data-${codigoAluno}`);
+    const dataInput = document.getElementById(`data-prazo-${codigoAluno}`);
+
+    if (!select || !prazoDiv || !dataDiv || !dataInput) {
         console.error('❌ FICAI: Elementos não encontrados para aluno', codigoAluno);
         return;
     }
-    
+
     const status = select.value;
-    
+
     if (status === 'aguardando') {
-        // Calcular prazo (30 dias a partir de hoje)
-        const hoje = new Date();
-        const prazoFinal = new Date(hoje);
-        prazoFinal.setDate(prazoFinal.getDate() + 30);
-        
-        const prazoFormatado = prazoFinal.toLocaleDateString('pt-BR');
-        
-        prazoDiv.innerHTML = `
-            <strong>⏰ Prazo para resposta:</strong> ${prazoFormatado}<br>
-            <small>A família tem 30 dias para apresentar justificativa</small>
-        `;
-        prazoDiv.classList.add('show');
+        // Mostrar campo de data
+        dataDiv.style.display = 'block';
+
+        // Se não há data selecionada, definir padrão de 30 dias
+        if (!dataInput.value) {
+            const hoje = new Date();
+            const prazoFinal = new Date(hoje);
+            prazoFinal.setDate(prazoFinal.getDate() + 30);
+            dataInput.value = prazoFinal.toISOString().split('T')[0];
+        }
+
+        // Atualizar exibição do prazo
+        atualizarPrazoCustomizado(codigoAluno);
         
     } else if (status === 'resolvido') {
+        dataDiv.style.display = 'none';
         prazoDiv.innerHTML = `
             <strong>✅ Situação resolvida</strong><br>
             <small>Problema solucionado pela equipe escolar</small>
         `;
         prazoDiv.classList.add('show');
-        
+
     } else if (status === 'conselho') {
+        dataDiv.style.display = 'none';
         prazoDiv.innerHTML = `
             <strong>⚖️ Em andamento no Conselho Tutelar</strong><br>
             <small>Caso encaminhado para o órgão competente</small>
         `;
         prazoDiv.classList.add('show');
-        
+
     } else if (status === 'cancelado') {
+        dataDiv.style.display = 'none';
         prazoDiv.innerHTML = `
             <strong>❌ Cancelado pela escola</strong><br>
             <small>FICAI cancelada por decisão da equipe escolar</small>
         `;
         prazoDiv.classList.add('show');
-        
+
     } else {
+        dataDiv.style.display = 'none';
         prazoDiv.classList.remove('show');
         prazoDiv.innerHTML = '';
     }
@@ -2387,20 +2400,59 @@ function mostrarPrazoFicai(codigoAluno) {
     }
 }
 
+// Nova função para atualizar o prazo customizado
+function atualizarPrazoCustomizado(codigoAluno) {
+    const dataInput = document.getElementById(`data-prazo-${codigoAluno}`);
+    const prazoDiv = document.getElementById(`ficai-prazo-${codigoAluno}`);
+
+    if (!dataInput || !prazoDiv) return;
+
+    const dataSelecionada = new Date(dataInput.value);
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0); // Reset hours for accurate comparison
+
+    if (dataSelecionada && !isNaN(dataSelecionada)) {
+        const prazoFormatado = dataSelecionada.toLocaleDateString('pt-BR');
+
+        // Calcular diferença de dias
+        const diffTime = dataSelecionada.getTime() - hoje.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        let statusTexto = '';
+        if (diffDays > 7) {
+            statusTexto = '<span style="color: #28a745;">✅ Dentro do prazo</span>';
+        } else if (diffDays > 0) {
+            statusTexto = '<span style="color: #ffc107;">⚠️ Próximo do vencimento</span>';
+        } else if (diffDays === 0) {
+            statusTexto = '<span style="color: #dc3545;">⏰ Vence hoje</span>';
+        } else {
+            statusTexto = '<span style="color: #dc3545;">❌ Prazo vencido</span>';
+        }
+
+        prazoDiv.innerHTML = `
+            <strong>⏰ Prazo para resposta:</strong> ${prazoFormatado} ${statusTexto}<br>
+            <small>Data limite para a família apresentar justificativa (${diffDays > 0 ? diffDays + ' dias restantes' : Math.abs(diffDays) + ' dias em atraso'})</small>
+        `;
+        prazoDiv.classList.add('show');
+    }
+}
+
 async function salvarProvidencias(codigoAluno) {
     console.log('💾 PROVIDÊNCIAS: Salvando para aluno', codigoAluno);
     
     const statusSelect = document.getElementById(`ficai-status-${codigoAluno}`);
     const providenciasTextarea = document.getElementById(`providencias-${codigoAluno}`);
+    const dataInput = document.getElementById(`data-prazo-${codigoAluno}`);
     const botaoSalvar = document.querySelector(`button[onclick="salvarProvidencias('${codigoAluno}')"]`);
-    
+
     if (!statusSelect || !providenciasTextarea) {
         showErrorToast('Erro: Elementos do formulário não encontrados');
         return;
     }
-    
+
     const status = statusSelect.value;
     const providencias = providenciasTextarea.value.trim();
+    const prazoResposta = dataInput?.value || null;
     
     if (!status && !providencias) {
         showWarningToast('Preencha pelo menos o status FICAI ou as providências');
@@ -2426,9 +2478,10 @@ async function salvarProvidencias(codigoAluno) {
             turma: turmaAluno,
             mes: mesReferencia,
             status,
-            providencias
+            providencias,
+            prazoResposta
         });
-        
+
         // Preparar dados para inserção/atualização
         const dadosFicai = {
             codigo_matricula: codigoAluno,
@@ -2437,6 +2490,7 @@ async function salvarProvidencias(codigoAluno) {
             mes_referencia: mesReferencia,
             status_ficai: status || null,
             providencias: providencias || null,
+            prazo_resposta: prazoResposta || null,
             data_abertura_ficai: new Date().toISOString().split('T')[0] // YYYY-MM-DD
         };
         
@@ -2455,6 +2509,7 @@ async function salvarProvidencias(codigoAluno) {
                 .update({
                     status_ficai: dadosFicai.status_ficai,
                     providencias: dadosFicai.providencias,
+                    prazo_resposta: dadosFicai.prazo_resposta,
                     atualizado_em: new Date().toISOString()
                 })
                 .eq('codigo_matricula', codigoAluno)
@@ -2550,7 +2605,13 @@ async function carregarProvidenciasSalvas(problemasEncontrados, mes, ano) {
                 if (providenciasTextarea && prov.providencias) {
                     providenciasTextarea.value = prov.providencias;
                 }
-                
+
+                // Preencher campo de data do prazo
+                const dataInput = document.getElementById(`data-prazo-${codigoAluno}`);
+                if (dataInput && prov.prazo_resposta) {
+                    dataInput.value = prov.prazo_resposta;
+                }
+
                 console.log('📋 PROVIDÊNCIAS: Dados carregados para aluno', codigoAluno);
             });
         }
