@@ -549,17 +549,19 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   }
   
   function toggleRowEditMode(id) {
-    console.log('🔧 toggleRowEditMode chamado para ID:', id);
+    const stringId = String(id); // Garantir que sempre seja string
+    console.log('🔧 toggleRowEditMode chamado para ID:', id, 'tipo:', typeof id);
+    console.log('🔧 stringId:', stringId, 'tipo:', typeof stringId);
     console.log('🔧 editingRows antes:', Array.from(editingRows));
 
-    if (editingRows.has(id)) {
-      editingRows.delete(id);
-      console.log('🔧 Removido do modo edição:', id);
+    if (editingRows.has(stringId)) {
+      editingRows.delete(stringId);
+      console.log('🔧 Removido do modo edição:', stringId);
     } else {
       // Permitir apenas uma linha em edição por vez
       editingRows.clear();
-      editingRows.add(id);
-      console.log('🔧 Adicionado ao modo edição:', id);
+      editingRows.add(stringId);
+      console.log('🔧 Adicionado ao modo edição:', stringId);
     }
 
     console.log('🔧 editingRows depois:', Array.from(editingRows));
@@ -567,7 +569,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   }
 
   function onCancelInlineEdit(id) {
-    editingRows.delete(id);
+    editingRows.delete(String(id));
     renderTable();
     toast('Edição cancelada', 'info');
   }
@@ -643,7 +645,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       }
 
       // Sair do modo de edição
-      editingRows.delete(id);
+      editingRows.delete(String(id));
       renderTable();
 
       toast('Aluno atualizado com sucesso!', 'ok');
@@ -810,10 +812,11 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     } else {
       els.tbody.innerHTML = lista
         .map((a) => {
-          const alunoId = a.id || a.codigo;
-          const isEditing = editingRows.has(alunoId) || editingRows.has(a.id) || editingRows.has(a.codigo);
+          const alunoId = String(a.id || a.codigo);
+          const isEditing = editingRows.has(alunoId) || editingRows.has(String(a.id)) || editingRows.has(String(a.codigo));
 
           console.log(`🔍 Verificando edição para aluno ${alunoId}: isEditing=${isEditing}, editingRows:`, Array.from(editingRows));
+          console.log(`🔍 Tipos: alunoId=${typeof alunoId}, a.id=${typeof a.id}, a.codigo=${typeof a.codigo}`);
 
           if (isEditing) {
             return renderEditableRow(a);
