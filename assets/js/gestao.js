@@ -192,9 +192,10 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         searchTimeout = setTimeout(() => renderTable(), 300);
       });
     }
-    if (els.filtroTurma) {
-      els.filtroTurma.addEventListener('change', () => renderTable());
-    }
+    // Removido listener automático - usuário precisa clicar em "Carregar Alunos"
+    // if (els.filtroTurma) {
+    //   els.filtroTurma.addEventListener('change', () => renderTable());
+    // }
     
     console.log('✅ Listeners reativados com throttling');
 
@@ -542,37 +543,9 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   }
 
   async function onEdit(id) {
-    try {
-      console.log('✏️ Editando aluno:', id);
-
-      // Primeiro, tentar buscar no cache local (muito mais rápido)
-      let alunoData = alunosCache.find(a => a.id === id || a.codigo === id);
-
-      if (alunoData) {
-        console.log('⚡ Usando dados do cache local para edição (instantâneo)');
-        // Garantir que o ID está correto
-        alunoData = { id: id, ...alunoData };
-      } else {
-        console.log('💾 Aluno não encontrado no cache, buscando no Supabase...');
-        const ref = db.doc(id);
-        const snap = await ref.get();
-        if (!snap.exists) {
-          toast('Registro não encontrado.', 'erro');
-          return;
-        }
-        alunoData = { id: id, ...snap.data() };
-      }
-
-      fillForm(alunoData);
-      editingId = id;
-      toggleFormMode('edit');
-      scrollIntoViewSmooth(els.form);
-
-      debugLog('EDIT load', { id: id, source: alunoData.id ? 'cache' : 'database' });
-    } catch (err) {
-      console.error(err);
-      toast('Falha ao carregar aluno para edição.', 'erro');
-    }
+    // Função antiga desabilitada - agora usa edição inline
+    console.log('📝 Função onEdit desabilitada - usando edição inline');
+    toast('Use o botão "Editar" na linha da tabela para edição inline', 'info');
   }
   
   function toggleRowEditMode(id) {
@@ -1389,10 +1362,10 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         }
       };
       
-      // Criar novo botão limpar
+      // Criar novo botão para nova busca
       const botaoLimpar = document.createElement('button');
       botaoLimpar.id = 'btnLimparLista';
-      botaoLimpar.innerHTML = '🗑️ Limpar Lista';
+      botaoLimpar.innerHTML = '🔄 Nova Busca';
       botaoLimpar.className = 'btn btn-secondary';
       botaoLimpar.style.cssText = 'margin-left: 10px; padding: 8px 16px; font-size: 14px;';
       botaoLimpar.onclick = limparListaAlunos;
@@ -1405,28 +1378,48 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   window.limparListaAlunos = function() {
     // Limpar cache de alunos
     alunosCache = [];
-    
-    // Resetar filtro de turma para o padrão original
-    if (els.filtroTurma) {
-      els.filtroTurma.innerHTML = '<option value="todos">Todos os alunos</option>';
-      els.filtroTurma.value = 'todos';
-    }
-    
+
+    // NÃO resetar filtro de turma - permitir trocar facilmente
+    // Manter turma selecionada para facilitar troca
+
     // Remover botões de ação
     const botaoLimpar = document.getElementById('btnLimparLista');
     if (botaoLimpar) botaoLimpar.remove();
     const botaoAtualizar = document.getElementById('btnAtualizarDados');
     if (botaoAtualizar) botaoAtualizar.remove();
-    
+
     // Mostrar novamente o botão de carregamento
-    adicionarBotaoCarregamento();
-    
+    const tableActions = document.querySelector('.table-actions');
+    if (tableActions && !document.getElementById('btnCarregarAlunos')) {
+      const botaoCarregar = document.createElement('button');
+      botaoCarregar.id = 'btnCarregarAlunos';
+      botaoCarregar.innerHTML = '🚀 Carregar Alunos';
+      botaoCarregar.className = 'btn btn-primary';
+      botaoCarregar.style.cssText = 'margin-left: 10px; padding: 8px 16px; font-size: 14px;';
+      botaoCarregar.onclick = carregarAlunosPorTurma;
+      tableActions.appendChild(botaoCarregar);
+    }
+
+    // Mostrar mensagem inicial
+    if (els.tbody) {
+      els.tbody.innerHTML = `
+        <tr>
+          <td colspan="9" style="text-align: center; padding: 40px;">
+            <div style="color: #666;">
+              <h4 style="margin: 0 0 15px 0;">🎯 Selecione uma turma específica</h4>
+              <p style="margin: 0;">Escolha uma turma no filtro acima e clique em <strong>"🚀 Carregar Alunos"</strong></p>
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
     // Resetar total
     if (els.total) {
       els.total.textContent = '0';
     }
-    
-    console.log('🗑️ Lista de alunos limpa');
+
+    console.log('🗑️ Lista de alunos limpa (filtro mantido)');
   }
 
   // =====================
