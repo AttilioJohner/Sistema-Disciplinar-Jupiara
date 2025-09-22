@@ -361,13 +361,13 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         nome: item['Nome completo'] || item.nome_completo || item.nome || '',
         nome_completo: item['Nome completo'] || item.nome_completo || item.nome || '',
         turma: item.turma || '',
-        status: item.status || 'ativo',
+        status: 'ativo', // Campo fixo já que não existe na tabela
         responsavel: item.responsável || item.responsavel || '',
         telefone1: item['Telefone do responsável'] || item.telefone1 || item.telefone_responsavel || item.telefone || '',
         telefone2: item['Telefone do responsável 2'] || item.telefone2 || '',
         foto_url: item.foto_url || '', // Incluir foto no cache
-        createdAt: item.created_at || item.createdAt,
-        updatedAt: item.updated_at || item.updatedAt
+        createdAt: new Date().toISOString(), // Campo fixo já que não existe na tabela
+        updatedAt: new Date().toISOString() // Campo fixo já que não existe na tabela
       };
     });
     
