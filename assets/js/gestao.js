@@ -549,13 +549,20 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   }
   
   function toggleRowEditMode(id) {
+    console.log('🔧 toggleRowEditMode chamado para ID:', id);
+    console.log('🔧 editingRows antes:', Array.from(editingRows));
+
     if (editingRows.has(id)) {
       editingRows.delete(id);
+      console.log('🔧 Removido do modo edição:', id);
     } else {
       // Permitir apenas uma linha em edição por vez
       editingRows.clear();
       editingRows.add(id);
+      console.log('🔧 Adicionado ao modo edição:', id);
     }
+
+    console.log('🔧 editingRows depois:', Array.from(editingRows));
     renderTable();
   }
 
@@ -570,7 +577,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       console.log('💾 Salvando edição inline para aluno:', id);
 
       // Buscar a linha sendo editada
-      const row = document.querySelector(`tr[data-id="${CSS.escape(id)}"]`);
+      const row = document.querySelector(`tr[data-id="${cssEscape(id)}"]`);
       if (!row) {
         toast('Erro: linha não encontrada', 'erro');
         return;
@@ -823,6 +830,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   // RENDER FUNCTIONS
   // =====================
   function renderViewRow(a) {
+    console.log('📋 renderViewRow para aluno:', a.id || a.codigo);
     const statusClass = a.status === 'ativo' ? 'text-success' : 'text-muted';
     const statusIcon = a.status === 'ativo' ? '✓' : '✗';
 
@@ -849,6 +857,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   }
 
   function renderEditableRow(a) {
+    console.log('✏️ renderEditableRow para aluno:', a.id || a.codigo);
     // Opções de turma para o select
     const turmaOptions = [
       '1B', '1C', '2A', '6A', '6B', '7A', '7B', '8A', '8B', '9A', '9B', '9E'
