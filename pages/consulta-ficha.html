@@ -1372,9 +1372,10 @@
         
         // Processar dados de frequência brutos
         function processarFrequencia(dados) {
+            console.log('🔍 Dados brutos de frequência:', dados.slice(0, 3)); // Debug: mostra os 3 primeiros registros
             const mesesData = {};
             const faltas = [];
-            
+
             dados.forEach(registro => {
                 const data = new Date(registro.data);
                 const ano = data.getFullYear();
@@ -1500,7 +1501,18 @@
                     <div class="records-title">📋 Registros de Faltas</div>
                     <div class="records-grid">
                         ${faltasDetalhes.map(falta => {
-                            const data = falta.data_aula.split('T')[0].split('-').reverse().join('/').substring(0, 5);
+                            console.log('🔍 Processando falta:', falta.data_aula);
+                            let data;
+                            if (typeof falta.data_aula === 'string') {
+                                // Se é string, extrair apenas a parte da data (YYYY-MM-DD)
+                                const dateStr = falta.data_aula.split('T')[0];
+                                const [ano, mes, dia] = dateStr.split('-');
+                                data = `${dia}/${mes}`;
+                            } else {
+                                // Se é objeto Date, usar toLocaleDateString mas forçar UTC
+                                const utcDate = new Date(falta.data_aula.getTime() + (falta.data_aula.getTimezoneOffset() * 60000));
+                                data = utcDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                            }
                             const classe = falta.status === 'A' ? 'abonada' :
                                          falta.status === 'FC' ? 'compensada' : '';
                             return `<div class="record-item ${classe}">${data}</div>`;
@@ -1551,7 +1563,18 @@
             }
             
             container.innerHTML = medidas.map(medida => {
-                const data = medida.data.split('T')[0].split('-').reverse().join('/');
+                console.log('🔍 Processando medida:', medida.data);
+                let data;
+                if (typeof medida.data === 'string') {
+                    // Se é string, extrair apenas a parte da data (YYYY-MM-DD)
+                    const dateStr = medida.data.split('T')[0];
+                    const [ano, mes, dia] = dateStr.split('-');
+                    data = `${dia}/${mes}/${ano}`;
+                } else {
+                    // Se é objeto Date, usar toLocaleDateString mas forçar UTC
+                    const utcDate = new Date(medida.data.getTime() + (medida.data.getTimezoneOffset() * 60000));
+                    data = utcDate.toLocaleDateString('pt-BR');
+                }
                 const tipoClass = medida.tipo_medida.toLowerCase().includes('advertência') ? 'advertencia' :
                                 medida.tipo_medida.toLowerCase().includes('suspensão') ? 'suspensao' :
                                 medida.tipo_medida.toLowerCase().includes('elogio') ? 'elogio' : 'advertencia';
