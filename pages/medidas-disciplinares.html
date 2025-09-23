@@ -2551,6 +2551,16 @@
 
                 console.log('📋 Dados da medida armazenados para WhatsApp:', window.ultimaMedidaSalva);
 
+                // ⚡ VERIFICAR CHECKBOX ANTES DE LIMPAR FORMULÁRIO
+                const checkboxElement = document.getElementById('enviarWhatsAppAuto');
+                const enviarAuto = checkboxElement?.checked;
+
+                console.log('🔍 Debug checkbox WhatsApp (ANTES do reset):', {
+                    elemento: !!checkboxElement,
+                    checked: enviarAuto,
+                    valor: checkboxElement?.checked
+                });
+
                 // Atualizar nota disciplinar do aluno
                 if (typeof window.atualizarNotaDisciplinar === 'function') {
                     await window.atualizarNotaDisciplinar(alunoId, dadosAluno);
@@ -2571,26 +2581,17 @@
                 // Mostrar mensagem de sucesso
                 showMessage('✅ Medida disciplinar salva com sucesso!', 'success');
 
-                // Verificar se deve enviar WhatsApp automaticamente
-                const checkboxElement = document.getElementById('enviarWhatsAppAuto');
-                const enviarAuto = checkboxElement?.checked;
-
-                console.log('🔍 Debug checkbox WhatsApp:', {
-                    elemento: !!checkboxElement,
-                    checked: enviarAuto,
-                    valor: checkboxElement?.checked
-                });
-
+                // ✅ PROCESSAR ENVIO WHATSAPP (checkbox já verificado antes do reset)
                 if (enviarAuto) {
                     // Enviar WhatsApp automaticamente
-                    console.log('📱 ✅ CHECKBOX MARCADO - Enviando WhatsApp automaticamente...');
+                    console.log('📱 ✅ CHECKBOX ESTAVA MARCADO - Enviando WhatsApp automaticamente...');
                     showMessage('📱 Enviando WhatsApp...', 'info');
                     setTimeout(() => {
                         console.log('📱 ⏰ Timeout executado - chamando enviarWhatsAppMedida()');
                         enviarWhatsAppMedida();
                     }, 1000); // Pequeno delay para garantir que dados estão prontos
                 } else {
-                    console.log('📱 ❌ CHECKBOX NÃO MARCADO - não enviando WhatsApp');
+                    console.log('📱 ❌ CHECKBOX NÃO ESTAVA MARCADO - não enviando WhatsApp');
                 }
 
                 // Recarregar registros recentes
