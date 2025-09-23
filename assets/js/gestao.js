@@ -694,10 +694,14 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
           nome_completo: data.nome_completo,
           turma: data.turma,
           responsavel: data.responsavel,
+          "responsável": data.responsavel, // Campo com acento usado no Supabase
           telefone1: data.telefone1,
           telefone2: data.telefone2,
+          "Telefone do responsável": data.telefone1,
+          "Telefone secundário": data.telefone2,
           foto_url: data.foto_url || alunosCache[alunoIndex].foto_url
         };
+        console.log('✅ Cache local atualizado:', alunosCache[alunoIndex]);
       }
 
       // Sair do modo de edição
