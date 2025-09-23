@@ -34,11 +34,15 @@ services:
       - key: AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES
         value: "false"
       - key: DATABASE_URL
-        value: "postgresql://postgres.rvppxdhrahcwiwrrwwaz:Jupiara2025@db.rvppxdhrahcwiwrrwwaz.supabase.co:5432/postgres?sslmode=require"
+        value: "postgresql://postgres.rvppxdhrahcwiwrrwwaz:EECMjupiara25@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
       - key: DIRECT_URL
-        value: "postgresql://postgres.rvppxdhrahcwiwrrwwaz:Jupiara2025@db.rvppxdhrahcwiwrrwwaz.supabase.co:5432/postgres?sslmode=require"
+        value: "postgresql://postgres.rvppxdhrahcwiwrrwwaz:EECMjupiara25@db.rvppxdhrahcwiwrrwwaz.supabase.co:5432/postgres"
       - key: DATABASE_CONNECTION_CLIENT_NAME
         value: "evolution_escola_jupiara"
+      - key: NODE_OPTIONS
+        value: "--dns-result-order=ipv4first"
+      - key: FORCE_IPV4
+        value: "true"
     
     # Configurações específicas do Render
     autoDeploy: true

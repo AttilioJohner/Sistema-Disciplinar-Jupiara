@@ -235,7 +235,25 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         } else if (action === 'toggle-edit') {
           toggleRowEditMode(id);
         } else if (action === 'save-edit') {
-          await onSaveInlineEdit(id);
+          // Mostrar indicador de salvamento
+          const saveBtn = document.querySelector(`button[data-action="save-edit"][data-id="${cssEscape(id)}"]`);
+          if (saveBtn) {
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '⏳ Salvando...';
+            saveBtn.disabled = true;
+
+            try {
+              await onSaveInlineEdit(id);
+            } finally {
+              // Restaurar botão mesmo se houver erro
+              if (saveBtn) {
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+              }
+            }
+          } else {
+            await onSaveInlineEdit(id);
+          }
         } else if (action === 'cancel-edit') {
           onCancelInlineEdit(id);
         }
@@ -588,7 +606,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       // Extrair dados dos campos de input
       const data = {
         id: id,
-        nome: row.querySelector('[data-field="nome"]')?.value || '',
+        nome_completo: row.querySelector('[data-field="nome"]')?.value || '',
         turma: row.querySelector('[data-field="turma"]')?.value || '',
         responsavel: row.querySelector('[data-field="responsavel"]')?.value || '',
         telefone1: row.querySelector('[data-field="telefone1"]')?.value || '',
@@ -617,7 +635,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       console.log('💾 Dados para salvar:', data);
 
       // Validar campos obrigatórios
-      if (!data.nome.trim()) {
+      if (!data.nome_completo.trim()) {
         toast('Nome é obrigatório', 'erro');
         return;
       }
@@ -634,8 +652,8 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       if (alunoIndex !== -1) {
         alunosCache[alunoIndex] = {
           ...alunosCache[alunoIndex],
-          nome: data.nome,
-          nome_completo: data.nome,
+          "Nome completo": data.nome_completo,
+          nome_completo: data.nome_completo,
           turma: data.turma,
           responsavel: data.responsavel,
           telefone1: data.telefone1,

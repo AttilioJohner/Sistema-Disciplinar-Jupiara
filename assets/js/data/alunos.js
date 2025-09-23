@@ -96,6 +96,18 @@ export async function updateAluno(codigo, updates) {
         if (updates.codigo_matricula !== undefined) {
             payload["código (matrícula)"] = BigInt(updates.codigo_matricula);
         }
+        if (updates.responsavel !== undefined) {
+            payload.responsavel = updates.responsavel;
+        }
+        if (updates.telefone1 !== undefined) {
+            payload.telefone1 = updates.telefone1;
+        }
+        if (updates.telefone2 !== undefined) {
+            payload.telefone2 = updates.telefone2;
+        }
+        if (updates.foto_url !== undefined) {
+            payload.foto_url = updates.foto_url;
+        }
 
         const { data, error } = await supabase
             .from('alunos')

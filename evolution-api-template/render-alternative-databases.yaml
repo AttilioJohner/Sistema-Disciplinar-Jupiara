@@ -1,0 +1,136 @@
+# RENDER + ALTERNATIVE DATABASES
+# Configurações para bancos alternativos caso Supabase não funcione
+
+# ===========================================
+# OPÇÃO 1: RAILWAY POSTGRESQL (RECOMENDADO)
+# ===========================================
+# 1. Criar conta no Railway.app
+# 2. Criar projeto PostgreSQL
+# 3. Usar connection string fornecida
+
+# services:
+#   - type: web
+#     name: evolution-api-escola-jupiara
+#     env: node
+#     region: oregon
+#     plan: free
+#     buildCommand: npm install && npm run build
+#     startCommand: npm start
+#     healthCheckPath: /
+#     envVars:
+#       - key: DATABASE_URL
+#         value: "postgresql://postgres:PASSWORD@HOST:PORT/railway"
+#       - key: DIRECT_URL
+#         value: "postgresql://postgres:PASSWORD@HOST:PORT/railway"
+#       # ... outras configurações ...
+
+# ===========================================
+# OPÇÃO 2: NEON DATABASE (SERVERLESS)
+# ===========================================
+# 1. Criar conta no Neon.tech
+# 2. Criar projeto PostgreSQL
+# 3. Usar connection string pooled
+
+# services:
+#   - type: web
+#     name: evolution-api-escola-jupiara
+#     env: node
+#     region: oregon
+#     plan: free
+#     buildCommand: npm install && npm run build
+#     startCommand: npm start
+#     healthCheckPath: /
+#     envVars:
+#       - key: DATABASE_URL
+#         value: "postgresql://USER:PASSWORD@ENDPOINT/DATABASE?sslmode=require"
+#       - key: DIRECT_URL
+#         value: "postgresql://USER:PASSWORD@ENDPOINT/DATABASE?sslmode=require"
+#       # ... outras configurações ...
+
+# ===========================================
+# OPÇÃO 3: RENDER POSTGRESQL (PAGO MAS CONFIÁVEL)
+# ===========================================
+# 1. No dashboard Render, criar PostgreSQL service
+# 2. Conectar ao web service
+# 3. Usar internal connection (mais rápido)
+
+services:
+  - type: web
+    name: evolution-api-escola-jupiara
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: AUTHENTICATION_API_KEY
+        value: escola_jupiara_2025_secure_key
+      - key: SERVER_TYPE
+        value: http
+      - key: SERVER_PORT
+        value: 10000
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: DEL_INSTANCE
+        value: "false"
+      - key: DATABASE_ENABLED
+        value: "true"
+      - key: CONFIG_SESSION_PHONE_CLIENT
+        value: "Escola Jupiara"
+      - key: CONFIG_SESSION_PHONE_NAME
+        value: "Sistema Disciplinar"
+      - key: LOG_LEVEL
+        value: "ERROR"
+      - key: WEBHOOK_GLOBAL_ENABLED
+        value: "false"
+      - key: AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES
+        value: "false"
+
+      # RENDER POSTGRESQL (substitua pelos valores reais)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: evolution-api-db
+          property: connectionString
+      - key: DIRECT_URL
+        fromDatabase:
+          name: evolution-api-db
+          property: connectionString
+
+      - key: DATABASE_CONNECTION_CLIENT_NAME
+        value: "evolution_escola_jupiara"
+
+    autoDeploy: true
+    branch: main
+    dockerfilePath: ./Dockerfile
+
+# Database service (adicionar se usar Render PostgreSQL)
+  - type: pserv
+    name: evolution-api-db
+    env: postgresql
+    plan: starter  # $7/month
+    region: oregon
+    databases:
+      - name: evolution_api
+        user: evolution_user
+
+# ===========================================
+# OPÇÃO 4: SQLITE (DESENVOLVIMENTO/TESTE)
+# ===========================================
+# Para testes rápidos sem dependência externa
+
+# services:
+#   - type: web
+#     name: evolution-api-escola-jupiara
+#     env: node
+#     region: oregon
+#     plan: free
+#     buildCommand: npm install && npm run build
+#     startCommand: npm start
+#     healthCheckPath: /
+#     envVars:
+#       - key: DATABASE_URL
+#         value: "file:./database.sqlite"
+#       - key: DIRECT_URL
+#         value: "file:./database.sqlite"
+#       # ... outras configurações ...
