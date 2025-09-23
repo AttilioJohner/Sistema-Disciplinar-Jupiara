@@ -1,9 +1,16 @@
 [build]
   # Diretório de publicação
   publish = "."
-  
+
+  # Diretório das funções serverless
+  functions = "netlify/functions"
+
   # Comando de build (variáveis já estão no arquivo)
   command = "echo 'Build concluído - usando netlify-env.js existente'"
+
+# Configuração das funções serverless
+[functions]
+  directory = "netlify/functions"
 
 # Cabeçalhos de segurança
 [[headers]]
@@ -76,3 +83,22 @@
 
 [context.branch-deploy]
   environment = { NODE_ENV = "development" }
+
+# Redirects para as funções serverless
+[[redirects]]
+  from = "/api/webhook"
+  to = "/.netlify/functions/webhook"
+  status = 200
+
+[[redirects]]
+  from = "/webhook"
+  to = "/.netlify/functions/webhook"
+  status = 200
+
+# Headers específicos para webhook (CORS)
+[[headers]]
+  for = "/.netlify/functions/webhook"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+    Access-Control-Allow-Methods = "POST, GET, OPTIONS"
