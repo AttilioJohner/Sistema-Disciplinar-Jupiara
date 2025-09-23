@@ -644,8 +644,29 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         return;
       }
 
-      // Salvar no banco
-      await updateAluno(id, data);
+      // Salvar no banco usando a API do supabase-only.js
+      console.log('🚀 Chamando updateAluno via supabaseSystem com:', { id, data });
+
+      // Usar diretamente a API do Supabase
+      if (window.supabaseSystem && window.supabaseSystem.db && window.supabaseSystem.db.alunos) {
+        const resultado = await window.supabaseSystem.db.alunos.update(id, {
+          "Nome completo": data.nome_completo,
+          turma: data.turma,
+          responsavel: data.responsavel,
+          telefone1: data.telefone1,
+          telefone2: data.telefone2,
+          foto_url: data.foto_url
+        });
+        console.log('📝 Resultado direto Supabase:', resultado);
+      } else {
+        console.log('🚀 Usando função updateAluno local');
+        const resultado = await updateAluno(id, data);
+        console.log('📝 Resultado updateAluno local:', resultado);
+      }
+
+      if (resultado && resultado.error) {
+        throw resultado.error;
+      }
 
       // Atualizar cache local
       const alunoIndex = alunosCache.findIndex(a => a.id === id || a.codigo === id);
@@ -1032,6 +1053,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     // Campos obrigatórios
     if (data.id) out.codigo = String(data.id).trim();
     if (data.nome) out.nome_completo = String(data.nome).trim();
+    if (data.nome_completo) out.nome_completo = String(data.nome_completo).trim();
     if (data.turma) out.turma = String(data.turma).trim();
     
     // Campos opcionais
