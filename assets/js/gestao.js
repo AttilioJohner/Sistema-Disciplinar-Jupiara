@@ -686,8 +686,16 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       }
 
       // Atualizar cache local
-      const alunoIndex = alunosCache.findIndex(a => a.id === id || a.codigo === id);
+      console.log('🔍 Buscando aluno no cache. ID:', id, 'Tipo:', typeof id);
+      console.log('🔍 Cache atual tem', alunosCache.length, 'alunos');
+      const alunoIndex = alunosCache.findIndex(a => {
+        console.log('🔍 Comparando:', a.id, '===', id, '?', a.id === id, '||', a.codigo, '===', id, '?', a.codigo === id);
+        return a.id === id || a.codigo === id;
+      });
+      console.log('🔍 Índice encontrado:', alunoIndex);
+
       if (alunoIndex !== -1) {
+        console.log('🔄 Atualizando cache para aluno:', alunosCache[alunoIndex]);
         alunosCache[alunoIndex] = {
           ...alunosCache[alunoIndex],
           "Nome completo": data.nome_completo,
@@ -702,6 +710,8 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
           foto_url: data.foto_url || alunosCache[alunoIndex].foto_url
         };
         console.log('✅ Cache local atualizado:', alunosCache[alunoIndex]);
+      } else {
+        console.log('❌ Aluno não encontrado no cache!');
       }
 
       // Sair do modo de edição
