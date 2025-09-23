@@ -2017,9 +2017,6 @@
                             <button type="submit" class="btn btn-warning" id="btnSalvarMedida">
                                 ⚠️ Salvar Medida
                             </button>
-                            <button type="button" id="btnEnviarWhatsApp" class="btn btn-success" onclick="enviarWhatsAppMedida()" style="display: none;">
-                                📱 Enviar WhatsApp
-                            </button>
                         </div>
                         </form>
                     </div>
@@ -2579,12 +2576,10 @@
                 if (enviarAuto) {
                     // Enviar WhatsApp automaticamente
                     console.log('📱 Enviando WhatsApp automaticamente...');
+                    showMessage('📱 Enviando WhatsApp...', 'info');
                     setTimeout(() => {
                         enviarWhatsAppMedida();
                     }, 1000); // Pequeno delay para garantir que dados estão prontos
-                } else {
-                    // Mostrar botão WhatsApp manual
-                    mostrarBotaoWhatsApp();
                 }
 
                 // Recarregar registros recentes
@@ -5398,16 +5393,8 @@
         // 📱 WHATSAPP INTEGRATION FUNCTIONS
         // ========================================
 
-        // Mostrar botão WhatsApp após salvar medida
-        function mostrarBotaoWhatsApp() {
-            const btnWhatsApp = document.getElementById('btnEnviarWhatsApp');
-            if (btnWhatsApp) {
-                btnWhatsApp.style.display = 'inline-flex';
-                btnWhatsApp.innerHTML = '📱 Enviar WhatsApp';
-                btnWhatsApp.disabled = false;
-                console.log('📱 Botão WhatsApp exibido e resetado');
-            }
-        }
+        // FUNÇÃO REMOVIDA: mostrarBotaoWhatsApp()
+        // Agora usamos apenas envio automático via checkbox
 
         // Enviar notificação WhatsApp
         async function enviarWhatsAppMedida() {
@@ -5432,12 +5419,6 @@
                     return;
                 }
 
-                // Desabilitar botão durante envio
-                const btnWhatsApp = document.getElementById('btnEnviarWhatsApp');
-                const textOriginal = btnWhatsApp.innerHTML;
-                btnWhatsApp.innerHTML = '📤 Enviando...';
-                btnWhatsApp.disabled = true;
-
                 console.log('📱 Enviando WhatsApp:', { dadosAluno, medida });
 
                 // Enviar via WhatsApp Sender
@@ -5445,24 +5426,13 @@
 
                 if (resultado.success) {
                     showMessage('✅ WhatsApp enviado com sucesso!', 'success');
-                    // Esconder botão após envio bem-sucedido
-                    btnWhatsApp.style.display = 'none';
                 } else {
                     showMessage(`❌ Erro ao enviar WhatsApp: ${resultado.error}`, 'error');
-                    btnWhatsApp.innerHTML = textOriginal;
-                    btnWhatsApp.disabled = false;
                 }
 
             } catch (error) {
                 console.error('❌ Erro ao enviar WhatsApp:', error);
                 showMessage('❌ Erro ao enviar WhatsApp: ' + error.message, 'error');
-
-                // Restaurar botão em caso de erro
-                const btnWhatsApp = document.getElementById('btnEnviarWhatsApp');
-                if (btnWhatsApp) {
-                    btnWhatsApp.innerHTML = '📱 Enviar WhatsApp';
-                    btnWhatsApp.disabled = false;
-                }
             }
         }
 
@@ -5484,12 +5454,11 @@
                 if (form) form.reset();
             }
 
-            // Resetar botão WhatsApp
-            const btnWhatsApp = document.getElementById('btnEnviarWhatsApp');
-            if (btnWhatsApp) {
-                btnWhatsApp.style.display = 'none';
-                btnWhatsApp.innerHTML = '📱 Enviar WhatsApp';
-                btnWhatsApp.disabled = false;
+            // Resetar botão de salvar para estado padrão
+            const btnSalvar = document.getElementById('btnSalvarMedida');
+            if (btnSalvar) {
+                btnSalvar.innerHTML = '⚠️ Salvar Medida';
+                btnSalvar.className = 'btn btn-warning';
             }
 
             // Limpar checkbox WhatsApp
@@ -5509,15 +5478,8 @@
         window.ultimoAlunoSalvo = null;
         window.ultimaMedidaSalva = null;
 
-        // Função para resetar botão WhatsApp quando formulário é modificado
-        function resetarBotaoWhatsApp() {
-            const btnWhatsApp = document.getElementById('btnEnviarWhatsApp');
-            if (btnWhatsApp && btnWhatsApp.style.display !== 'none') {
-                btnWhatsApp.innerHTML = '📱 Enviar WhatsApp';
-                btnWhatsApp.disabled = false;
-                console.log('🔄 Botão WhatsApp resetado por mudança no formulário');
-            }
-        }
+        // FUNÇÃO REMOVIDA: resetarBotaoWhatsApp()
+        // Não precisamos mais resetar botão separado
 
         // Função para atualizar texto do botão salvar baseado no checkbox
         function atualizarTextoBotaoSalvar() {
@@ -5535,28 +5497,16 @@
             }
         }
 
-        // Adicionar listeners para resetar botão quando formulário mudar
+        // Adicionar listener para atualizar texto do botão
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
-                // Resetar botão quando aluno mudar
-                const alunoSelect = document.getElementById('alunoMedida');
-                if (alunoSelect) {
-                    alunoSelect.addEventListener('change', resetarBotaoWhatsApp);
-                }
-
-                // Resetar botão quando tipo de medida mudar
-                const tipoSelect = document.getElementById('tipoMedida');
-                if (tipoSelect) {
-                    tipoSelect.addEventListener('change', resetarBotaoWhatsApp);
-                }
-
                 // Listener para atualizar texto do botão ao marcar/desmarcar checkbox
                 const checkboxWhatsApp = document.getElementById('enviarWhatsAppAuto');
                 if (checkboxWhatsApp) {
                     checkboxWhatsApp.addEventListener('change', atualizarTextoBotaoSalvar);
                 }
 
-                console.log('👂 Listeners de reset do botão WhatsApp adicionados');
+                console.log('👂 Listener do checkbox WhatsApp adicionado');
             }, 1500);
         });
 
