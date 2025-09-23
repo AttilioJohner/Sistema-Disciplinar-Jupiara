@@ -2572,14 +2572,25 @@
                 showMessage('✅ Medida disciplinar salva com sucesso!', 'success');
 
                 // Verificar se deve enviar WhatsApp automaticamente
-                const enviarAuto = document.getElementById('enviarWhatsAppAuto')?.checked;
+                const checkboxElement = document.getElementById('enviarWhatsAppAuto');
+                const enviarAuto = checkboxElement?.checked;
+
+                console.log('🔍 Debug checkbox WhatsApp:', {
+                    elemento: !!checkboxElement,
+                    checked: enviarAuto,
+                    valor: checkboxElement?.checked
+                });
+
                 if (enviarAuto) {
                     // Enviar WhatsApp automaticamente
-                    console.log('📱 Enviando WhatsApp automaticamente...');
+                    console.log('📱 ✅ CHECKBOX MARCADO - Enviando WhatsApp automaticamente...');
                     showMessage('📱 Enviando WhatsApp...', 'info');
                     setTimeout(() => {
+                        console.log('📱 ⏰ Timeout executado - chamando enviarWhatsAppMedida()');
                         enviarWhatsAppMedida();
                     }, 1000); // Pequeno delay para garantir que dados estão prontos
+                } else {
+                    console.log('📱 ❌ CHECKBOX NÃO MARCADO - não enviando WhatsApp');
                 }
 
                 // Recarregar registros recentes
@@ -5398,6 +5409,7 @@
 
         // Enviar notificação WhatsApp
         async function enviarWhatsAppMedida() {
+            console.log('🚀 FUNÇÃO enviarWhatsAppMedida() CHAMADA!');
             try {
                 // Verificar se WhatsApp Sender está disponível
                 if (!window.whatsappSender) {
