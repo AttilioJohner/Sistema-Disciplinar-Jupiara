@@ -1,0 +1,31 @@
+# 🏫 EECM - Sistema Disciplinar - WAHA API no Koyeb
+apiVersion: koyeb.com/v1
+kind: App
+metadata:
+  name: eecm-waha-api
+spec:
+  services:
+  - name: waha
+    docker:
+      image: devlikeapro/waha:latest
+    ports:
+    - port: 3000
+      protocol: http
+    env:
+    - key: WAHA_API_KEY
+      value: "97a72da8bab850a7bb9898f126f923a17fcfc553d23b2bca59815fcba0fc77a1"
+    - key: WAHA_PRINT_QR
+      value: "false"
+    - key: WAHA_SESSION_STORE_TYPE
+      value: "file"
+    - key: NODE_ENV
+      value: "production"
+    # Variáveis Supabase (serão configuradas depois)
+    - key: SUPABASE_URL
+      value: "https://rvppxdhrahcwiwrrwwaz.supabase.co"
+    - key: SUPABASE_ANON_KEY
+      value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2cHB4ZGhyYWhjd2l3cnJ3d2F6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0MDUyMzAsImV4cCI6MjA3MTk4MTIzMH0.JhNGeLdbaRiL_CHCLiVcExc62Hd7MYhLeycJSQyr9nM"
+    instance_type: free
+    scaling:
+      min: 1
+      max: 1

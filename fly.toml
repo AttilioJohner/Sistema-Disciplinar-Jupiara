@@ -1,0 +1,28 @@
+# 🏫 EECM - Sistema Disciplinar - API WAHA no Fly.io
+app = "eecm-waha-api"
+primary_region = "gru"  # São Paulo, Brasil
+
+[build]
+  image = "devlikeapro/waha:latest"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = false  # Manter sempre ativo
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512
+
+[env]
+  WAHA_PRINT_QR = "false"  # Não imprimir QR em produção
+  WAHA_SESSION_STORE_TYPE = "file"
+  NODE_ENV = "production"
+
+# Volume para persistir sessões WhatsApp
+[[mounts]]
+  source = "waha_sessions"
+  destination = "/tmp/whatsapp-files"
