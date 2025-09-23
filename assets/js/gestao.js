@@ -671,12 +671,13 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       console.log('🧹 Payload filtrado:', updatePayload);
 
       // Usar diretamente a API do Supabase
+      let resultado;
       if (window.supabaseSystem && window.supabaseSystem.db && window.supabaseSystem.db.alunos) {
-        const resultado = await window.supabaseSystem.db.alunos.update(id, updatePayload);
+        resultado = await window.supabaseSystem.db.alunos.update(id, updatePayload);
         console.log('📝 Resultado direto Supabase:', resultado);
       } else {
         console.log('🚀 Usando função updateAluno local');
-        const resultado = await updateAluno(id, data);
+        resultado = await updateAluno(id, data);
         console.log('📝 Resultado updateAluno local:', resultado);
       }
 
