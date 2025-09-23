@@ -218,7 +218,7 @@ function formatStudentInfo(student) {
 // Enviar mensagem via WAHA
 async function sendWhatsAppMessage(phoneNumber, message) {
   try {
-    const wahaUrl = 'https://sunny-transformation-production.up.railway.app';
+    const wahaUrl = 'https://waha-production-7ba4.up.railway.app';
     const endpoint = `${wahaUrl}/api/sendText`;
 
     const payload = {
