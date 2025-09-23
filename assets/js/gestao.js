@@ -647,16 +647,32 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       // Salvar no banco usando a API do supabase-only.js
       console.log('🚀 Chamando updateAluno via supabaseSystem com:', { id, data });
 
+      // Filtrar campos vazios/undefined para evitar erro bigint
+      const updatePayload = {};
+      if (data.nome_completo && data.nome_completo.trim()) {
+        updatePayload["Nome completo"] = data.nome_completo.trim();
+      }
+      if (data.turma && data.turma.trim()) {
+        updatePayload.turma = data.turma.trim();
+      }
+      if (data.responsavel && data.responsavel.trim()) {
+        updatePayload.responsavel = data.responsavel.trim();
+      }
+      if (data.telefone1 && data.telefone1.trim()) {
+        updatePayload.telefone1 = data.telefone1.trim();
+      }
+      if (data.telefone2 && data.telefone2.trim()) {
+        updatePayload.telefone2 = data.telefone2.trim();
+      }
+      if (data.foto_url && data.foto_url.trim()) {
+        updatePayload.foto_url = data.foto_url.trim();
+      }
+
+      console.log('🧹 Payload filtrado:', updatePayload);
+
       // Usar diretamente a API do Supabase
       if (window.supabaseSystem && window.supabaseSystem.db && window.supabaseSystem.db.alunos) {
-        const resultado = await window.supabaseSystem.db.alunos.update(id, {
-          "Nome completo": data.nome_completo,
-          turma: data.turma,
-          responsavel: data.responsavel,
-          telefone1: data.telefone1,
-          telefone2: data.telefone2,
-          foto_url: data.foto_url
-        });
+        const resultado = await window.supabaseSystem.db.alunos.update(id, updatePayload);
         console.log('📝 Resultado direto Supabase:', resultado);
       } else {
         console.log('🚀 Usando função updateAluno local');
