@@ -1,5 +1,6 @@
 // 📱 Webhook para receber mensagens do WhatsApp via WAHA
 // Integração com Sistema Disciplinar EECM Jupiara
+// v2.0 - Deploy forçado
 
 const https = require('https');
 
