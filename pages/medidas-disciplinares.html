@@ -1999,11 +1999,22 @@
                             </div>
                         </div>
                         
+                        <!-- Opção de envio automático por WhatsApp -->
+                        <div style="margin: 15px 0; padding: 12px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #28a745;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 500;">
+                                <input type="checkbox" id="enviarWhatsAppAuto" style="transform: scale(1.2);">
+                                📱 Enviar WhatsApp automaticamente aos responsáveis após salvar
+                            </label>
+                            <small style="color: #666; margin-left: 28px; display: block; margin-top: 4px;">
+                                Notificação será enviada para: 556699138335 (número de teste)
+                            </small>
+                        </div>
+
                         <div class="form-actions">
                             <button type="button" class="btn btn-secondary" onclick="limparFormMedida()">
                                 🔄 Limpar
                             </button>
-                            <button type="submit" class="btn btn-warning">
+                            <button type="submit" class="btn btn-warning" id="btnSalvarMedida">
                                 ⚠️ Salvar Medida
                             </button>
                             <button type="button" id="btnEnviarWhatsApp" class="btn btn-success" onclick="enviarWhatsAppMedida()" style="display: none;">
@@ -2522,26 +2533,7 @@
                     }
                 }
                 
-                // Atualizar nota disciplinar do aluno
-                if (typeof window.atualizarNotaDisciplinar === 'function') {
-                    await window.atualizarNotaDisciplinar(alunoId, dadosAluno);
-                }
-                
-                // Limpar formulário
-                form.reset();
-                const campoSuspensao = document.getElementById('campoSuspensao');
-                const diasSuspensao = document.getElementById('diasSuspensao');
-                const campoSelecaoFalta = document.getElementById('campoSelecaoFalta');
-                const campoMotivoOriginal = document.getElementById('campoMotivoOriginal');
-                
-                if (campoSuspensao) campoSuspensao.style.display = 'none';
-                if (diasSuspensao) diasSuspensao.required = false;
-                if (campoSelecaoFalta) campoSelecaoFalta.style.display = 'none';
-                if (campoMotivoOriginal) campoMotivoOriginal.style.display = 'block';
-                
-                // Mostrar mensagem de sucesso
-                showMessage('✅ Medida disciplinar salva com sucesso!', 'success');
-
+                // ARMAZENAR DADOS ANTES DE LIMPAR FORMULÁRIO
                 // Armazenar dados do aluno para WhatsApp
                 window.ultimoAlunoSalvo = {
                     id: dadosAluno.codigo,
@@ -2551,8 +2543,49 @@
                     telefone2: null
                 };
 
-                // Mostrar botão WhatsApp após salvar
-                mostrarBotaoWhatsApp();
+                // Armazenar dados da medida para WhatsApp
+                window.ultimaMedidaSalva = {
+                    tipo: tipoMedida,
+                    especificacao: especificacao, // Usar especificação real que foi salva (faltas selecionadas ou motivo)
+                    motivo: motivo,
+                    providencias: acoes,
+                    data: data ? new Date(data).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR')
+                };
+
+                console.log('📋 Dados da medida armazenados para WhatsApp:', window.ultimaMedidaSalva);
+
+                // Atualizar nota disciplinar do aluno
+                if (typeof window.atualizarNotaDisciplinar === 'function') {
+                    await window.atualizarNotaDisciplinar(alunoId, dadosAluno);
+                }
+
+                // Limpar formulário
+                form.reset();
+                const campoSuspensao = document.getElementById('campoSuspensao');
+                const diasSuspensao = document.getElementById('diasSuspensao');
+                const campoSelecaoFalta = document.getElementById('campoSelecaoFalta');
+                const campoMotivoOriginal = document.getElementById('campoMotivoOriginal');
+
+                if (campoSuspensao) campoSuspensao.style.display = 'none';
+                if (diasSuspensao) diasSuspensao.required = false;
+                if (campoSelecaoFalta) campoSelecaoFalta.style.display = 'none';
+                if (campoMotivoOriginal) campoMotivoOriginal.style.display = 'block';
+
+                // Mostrar mensagem de sucesso
+                showMessage('✅ Medida disciplinar salva com sucesso!', 'success');
+
+                // Verificar se deve enviar WhatsApp automaticamente
+                const enviarAuto = document.getElementById('enviarWhatsAppAuto')?.checked;
+                if (enviarAuto) {
+                    // Enviar WhatsApp automaticamente
+                    console.log('📱 Enviando WhatsApp automaticamente...');
+                    setTimeout(() => {
+                        enviarWhatsAppMedida();
+                    }, 1000); // Pequeno delay para garantir que dados estão prontos
+                } else {
+                    // Mostrar botão WhatsApp manual
+                    mostrarBotaoWhatsApp();
+                }
 
                 // Recarregar registros recentes
                 await carregarRegistrosRecentes();
@@ -5370,7 +5403,9 @@
             const btnWhatsApp = document.getElementById('btnEnviarWhatsApp');
             if (btnWhatsApp) {
                 btnWhatsApp.style.display = 'inline-flex';
-                console.log('📱 Botão WhatsApp exibido');
+                btnWhatsApp.innerHTML = '📱 Enviar WhatsApp';
+                btnWhatsApp.disabled = false;
+                console.log('📱 Botão WhatsApp exibido e resetado');
             }
         }
 
@@ -5390,10 +5425,10 @@
                     return;
                 }
 
-                // Obter dados da medida do formulário
-                const medida = obterDadosMedidaFormulario();
+                // Obter dados da medida armazenados
+                const medida = window.ultimaMedidaSalva;
                 if (!medida) {
-                    showMessage('❌ Dados da medida não encontrados', 'error');
+                    showMessage('❌ Dados da medida não encontrados. Salve uma medida primeiro.', 'error');
                     return;
                 }
 
@@ -5431,65 +5466,11 @@
             }
         }
 
-        // Obter dados da medida do formulário
-        function obterDadosMedidaFormulario() {
-            try {
-                const tipo = document.getElementById('tipoMedida')?.value;
-                const especificacao = obterEspecificacaoMedida();
-                const motivo = document.getElementById('motivoMedida')?.value;
-                const providencias = document.getElementById('providenciasMedida')?.value;
-                const data = document.getElementById('dataMedida')?.value;
+        // FUNÇÃO REMOVIDA: obterDadosMedidaFormulario()
+        // Agora usamos os dados que foram armazenados em window.ultimaMedidaSalva
 
-                if (!tipo) {
-                    console.warn('⚠️ Tipo de medida não encontrado');
-                    return null;
-                }
-
-                return {
-                    tipo: tipo,
-                    especificacao: especificacao || '',
-                    motivo: motivo || '',
-                    providencias: providencias || '',
-                    data: data ? new Date(data).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR')
-                };
-            } catch (error) {
-                console.error('❌ Erro ao obter dados da medida:', error);
-                return null;
-            }
-        }
-
-        // Obter especificação baseada no tipo de medida
-        function obterEspecificacaoMedida() {
-            const tipo = document.getElementById('tipoMedida')?.value;
-            if (!tipo) return '';
-
-            // Mapeamento de especificações conforme regulamento
-            const especificacoesPadrao = {
-                'Orientação': 'Conforme Art. 12 do Regulamento Disciplinar - Orientação pedagógica',
-                'Advertência': 'Conforme Art. 15 do Regulamento Disciplinar - Comportamento inadequado',
-                'Suspensão': 'Conforme Art. 18 do Regulamento Disciplinar - Medida disciplinar aplicada',
-                'Termo de Adequação': 'Conforme Regulamento Disciplinar - Adequação de conduta necessária',
-                'Elogio': 'Reconhecimento por conduta exemplar e destaque positivo',
-                'Parabéns': 'Parabenização por atitude meritória e comportamento exemplar',
-                'Destaque': 'Destaque por desempenho diferenciado e postura exemplar'
-            };
-
-            // Verificar se existe especificação customizada no campo
-            const especificacaoCustom = document.getElementById('especificacaoMedida')?.value;
-            if (especificacaoCustom && especificacaoCustom.trim()) {
-                return especificacaoCustom.trim();
-            }
-
-            // Retornar especificação padrão baseada no tipo
-            for (const [tipoKey, especificacao] of Object.entries(especificacoesPadrao)) {
-                if (tipo.toLowerCase().includes(tipoKey.toLowerCase())) {
-                    return especificacao;
-                }
-            }
-
-            // Fallback genérico
-            return `Conforme Regulamento Disciplinar da EECM Jupiara - ${tipo}`;
-        }
+        // FUNÇÃO REMOVIDA: obterEspecificacaoMedida()
+        // Agora usamos a especificação real que foi salva no banco (faltas selecionadas ou motivo)
 
         // Atualizar função limparFormMedida para esconder botão WhatsApp
         const limparFormMedidaOriginal = window.limparFormMedida;
@@ -5503,20 +5484,81 @@
                 if (form) form.reset();
             }
 
-            // Esconder botão WhatsApp
+            // Resetar botão WhatsApp
             const btnWhatsApp = document.getElementById('btnEnviarWhatsApp');
             if (btnWhatsApp) {
                 btnWhatsApp.style.display = 'none';
+                btnWhatsApp.innerHTML = '📱 Enviar WhatsApp';
+                btnWhatsApp.disabled = false;
             }
 
-            // Limpar dados do último aluno
+            // Limpar checkbox WhatsApp
+            const checkboxWhatsApp = document.getElementById('enviarWhatsAppAuto');
+            if (checkboxWhatsApp) {
+                checkboxWhatsApp.checked = false;
+            }
+
+            // Limpar dados armazenados
             window.ultimoAlunoSalvo = null;
+            window.ultimaMedidaSalva = null;
 
             console.log('🔄 Formulário limpo e botão WhatsApp escondido');
         };
 
-        // Variable para armazenar dados do último aluno salvo
+        // Variables para armazenar dados da última medida salva
         window.ultimoAlunoSalvo = null;
+        window.ultimaMedidaSalva = null;
+
+        // Função para resetar botão WhatsApp quando formulário é modificado
+        function resetarBotaoWhatsApp() {
+            const btnWhatsApp = document.getElementById('btnEnviarWhatsApp');
+            if (btnWhatsApp && btnWhatsApp.style.display !== 'none') {
+                btnWhatsApp.innerHTML = '📱 Enviar WhatsApp';
+                btnWhatsApp.disabled = false;
+                console.log('🔄 Botão WhatsApp resetado por mudança no formulário');
+            }
+        }
+
+        // Função para atualizar texto do botão salvar baseado no checkbox
+        function atualizarTextoBotaoSalvar() {
+            const checkbox = document.getElementById('enviarWhatsAppAuto');
+            const btnSalvar = document.getElementById('btnSalvarMedida');
+
+            if (checkbox && btnSalvar) {
+                if (checkbox.checked) {
+                    btnSalvar.innerHTML = '⚠️📱 Salvar e Enviar WhatsApp';
+                    btnSalvar.className = 'btn btn-success';
+                } else {
+                    btnSalvar.innerHTML = '⚠️ Salvar Medida';
+                    btnSalvar.className = 'btn btn-warning';
+                }
+            }
+        }
+
+        // Adicionar listeners para resetar botão quando formulário mudar
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                // Resetar botão quando aluno mudar
+                const alunoSelect = document.getElementById('alunoMedida');
+                if (alunoSelect) {
+                    alunoSelect.addEventListener('change', resetarBotaoWhatsApp);
+                }
+
+                // Resetar botão quando tipo de medida mudar
+                const tipoSelect = document.getElementById('tipoMedida');
+                if (tipoSelect) {
+                    tipoSelect.addEventListener('change', resetarBotaoWhatsApp);
+                }
+
+                // Listener para atualizar texto do botão ao marcar/desmarcar checkbox
+                const checkboxWhatsApp = document.getElementById('enviarWhatsAppAuto');
+                if (checkboxWhatsApp) {
+                    checkboxWhatsApp.addEventListener('change', atualizarTextoBotaoSalvar);
+                }
+
+                console.log('👂 Listeners de reset do botão WhatsApp adicionados');
+            }, 1500);
+        });
 
         console.log('📱 Funções WhatsApp carregadas com sucesso');
 
