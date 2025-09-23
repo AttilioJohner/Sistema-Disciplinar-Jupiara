@@ -1,6 +1,8 @@
 // 📱 Webhook para receber mensagens do WhatsApp via WAHA
 // Integração com Sistema Disciplinar EECM Jupiara
 
+const https = require('https');
+
 exports.handler = async (event, context) => {
   // Headers CORS para permitir requisições do Railway
   const headers = {
@@ -228,18 +230,47 @@ async function sendWhatsAppMessage(phoneNumber, message) {
 
     console.log(`📤 Enviando resposta para ${phoneNumber}:`, message.substring(0, 100) + '...');
 
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
+    // Usar fetch se disponível, senão usar https nativo
+    if (typeof fetch !== 'undefined') {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
 
-    if (response.ok) {
-      console.log(`✅ Mensagem enviada com sucesso para ${phoneNumber}`);
+      if (response.ok) {
+        console.log(`✅ Mensagem enviada com sucesso para ${phoneNumber}`);
+      } else {
+        console.error(`❌ Erro ao enviar mensagem:`, await response.text());
+      }
     } else {
-      console.error(`❌ Erro ao enviar mensagem:`, await response.text());
+      // Fallback para Node.js nativo
+      const postData = JSON.stringify(payload);
+      const url = new URL(endpoint);
+
+      const options = {
+        hostname: url.hostname,
+        port: 443,
+        path: url.pathname,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData)
+        }
+      };
+
+      const req = https.request(options, (res) => {
+        console.log(`✅ Mensagem enviada - Status: ${res.statusCode}`);
+      });
+
+      req.on('error', (e) => {
+        console.error(`❌ Erro ao enviar mensagem:`, e);
+      });
+
+      req.write(postData);
+      req.end();
     }
 
   } catch (error) {
