@@ -685,12 +685,16 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         throw resultado.error;
       }
 
-      // Atualizar cache local
-      console.log('🔍 Buscando aluno no cache. ID:', id, 'Tipo:', typeof id);
+      // Atualizar cache local - converter ID para number para comparação
+      const idNumber = parseInt(id);
+      console.log('🔍 Buscando aluno no cache. ID original:', id, 'ID convertido:', idNumber);
       console.log('🔍 Cache atual tem', alunosCache.length, 'alunos');
       const alunoIndex = alunosCache.findIndex(a => {
-        console.log('🔍 Comparando:', a.id, '===', id, '?', a.id === id, '||', a.codigo, '===', id, '?', a.codigo === id);
-        return a.id === id || a.codigo === id;
+        const match = a.id === idNumber || a.codigo === idNumber || a.id === id || a.codigo === id;
+        if (match) {
+          console.log('✅ MATCH! a.id:', a.id, 'a.codigo:', a.codigo, 'buscando:', id, 'convertido:', idNumber);
+        }
+        return match;
       });
       console.log('🔍 Índice encontrado:', alunoIndex);
 
