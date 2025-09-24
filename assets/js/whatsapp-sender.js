@@ -45,28 +45,28 @@ class WhatsAppSender {
     }
   }
 
-  // Aguardar inicialização do banco de dados
-  async aguardarInicializacaoDB(timeout = 5000) {
+  // Aguardar inicialização do Supabase
+  async aguardarInicializacaoSupabase(timeout = 5000) {
     return new Promise((resolve) => {
       const startTime = Date.now();
 
-      const checkDB = () => {
-        if (window.db) {
-          console.log('✅ window.db inicializado com sucesso');
+      const checkSupabase = () => {
+        if (window.supabase) {
+          console.log('✅ Cliente Supabase inicializado com sucesso');
           resolve(true);
           return;
         }
 
         if (Date.now() - startTime >= timeout) {
-          console.error(`❌ Timeout aguardando window.db (${timeout}ms)`);
+          console.error(`❌ Timeout aguardando Supabase (${timeout}ms)`);
           resolve(false);
           return;
         }
 
-        setTimeout(checkDB, 100);
+        setTimeout(checkSupabase, 100);
       };
 
-      checkDB();
+      checkSupabase();
     });
   }
 
@@ -74,8 +74,11 @@ class WhatsAppSender {
   normalizarTelefone(telefone) {
     if (!telefone) return null;
 
+    // Converter para string se for number/bigint do Postgres
+    const telefoneStr = String(telefone);
+
     // Remover espaços, parênteses, traços
-    const numeroLimpo = telefone.replace(/[\s\(\)\-]/g, '');
+    const numeroLimpo = telefoneStr.replace(/[\s\(\)\-]/g, '');
 
     // Verificar se tem 13 dígitos (com o 9 extra)
     // Formato: 5566999138335 (13 dígitos)
@@ -102,36 +105,42 @@ class WhatsAppSender {
     return numeroLimpo;
   }
 
-  // Buscar telefone do responsável no banco de dados
+  // Buscar telefone do responsável usando Supabase diretamente
   async buscarTelefoneResponsavel(alunoId) {
     try {
       console.log(`🔍 Buscando telefone para aluno ID: ${alunoId}`);
 
-      // Verificar se window.db está inicializado
-      if (!window.db) {
-        console.error('❌ window.db não está inicializado');
-        console.log('🔄 Tentando aguardar inicialização...');
-
-        // Aguardar até 5 segundos pela inicialização
-        await this.aguardarInicializacaoDB(5000);
-
-        if (!window.db) {
-          throw new Error('Sistema de banco de dados não inicializado após aguardar. Recarregue a página.');
-        }
+      // Usar cliente Supabase diretamente (disponível globalmente)
+      if (!window.supabase) {
+        throw new Error('Cliente Supabase não inicializado. Verifique se a página carregou completamente.');
       }
 
-      // Buscar dados do aluno no banco
-      const alunoDoc = await window.db.collection('alunos').doc(alunoId).get();
+      console.log('🔗 Usando cliente Supabase diretamente');
 
-      if (!alunoDoc.exists) {
-        console.warn(`⚠️ Aluno não encontrado: ${alunoId}`);
+      // Buscar dados do aluno na tabela alunos
+      const { data: dadosAluno, error } = await window.supabase
+        .from('alunos')
+        .select('*')
+        .eq('codigo', parseInt(alunoId))
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          console.warn(`⚠️ Aluno não encontrado: ${alunoId}`);
+          return null;
+        }
+        throw error;
+      }
+
+      if (!dadosAluno) {
+        console.warn(`⚠️ Nenhum dado retornado para aluno: ${alunoId}`);
         return null;
       }
-
-      const dadosAluno = alunoDoc.data();
       console.log(`📋 Dados do aluno encontrados:`, {
         id: alunoId,
-        nome: dadosAluno.nome || dadosAluno.nome_completo,
+        nome: dadosAluno['Nome completo'] || dadosAluno.nome_completo || dadosAluno.nome,
+        'Telefone do responsável': dadosAluno['Telefone do responsável'],
+        'Telefone do responsável 2': dadosAluno['Telefone do responsável 2'],
         responsavel1: dadosAluno.responsavel1,
         telefone_responsavel: dadosAluno.telefone_responsavel,
         telefone1: dadosAluno.telefone1,
@@ -140,8 +149,10 @@ class WhatsAppSender {
         camposDisponiveis: Object.keys(dadosAluno)
       });
 
-      // Tentar diferentes campos de telefone
-      const telefoneResponsavel = dadosAluno.responsavel1 ||
+      // Tentar diferentes campos de telefone baseados no schema real
+      const telefoneResponsavel = dadosAluno['Telefone do responsável'] ||
+                                 dadosAluno['Telefone do responsável 2'] ||
+                                 dadosAluno.responsavel1 ||
                                  dadosAluno.telefone_responsavel ||
                                  dadosAluno.telefone1 ||
                                  dadosAluno.telefone;
