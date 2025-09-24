@@ -45,16 +45,85 @@ class WhatsAppSender {
     }
   }
 
+  // Normalizar número de telefone (remover 5º dígito se presente)
+  normalizarTelefone(telefone) {
+    if (!telefone) return null;
+
+    // Remover espaços, parênteses, traços
+    const numeroLimpo = telefone.replace(/[\s\(\)\-]/g, '');
+
+    // Verificar se tem 13 dígitos (com o 9 extra)
+    // Formato: 5566999138335 (13 dígitos)
+    // Resultado: 556699138335 (12 dígitos)
+    if (numeroLimpo.length === 13 && numeroLimpo.startsWith('55')) {
+      // Extrair: 55 + 66 + remover 9 + 99138335
+      const codigoPais = numeroLimpo.substring(0, 2);    // "55"
+      const codigoUF = numeroLimpo.substring(2, 4);      // "66"
+      const numeroReal = numeroLimpo.substring(5);       // "99138335" (remove o 5º dígito)
+
+      const numeroNormalizado = codigoPais + codigoUF + numeroReal;
+      console.log(`📞 Telefone normalizado: ${numeroLimpo} → ${numeroNormalizado}`);
+      return numeroNormalizado;
+    }
+
+    // Se já está no formato correto (12 dígitos), retornar como está
+    if (numeroLimpo.length === 12 && numeroLimpo.startsWith('55')) {
+      console.log(`📞 Telefone já no formato correto: ${numeroLimpo}`);
+      return numeroLimpo;
+    }
+
+    // Formato não reconhecido
+    console.warn(`⚠️ Formato de telefone não reconhecido: ${telefone}`);
+    return numeroLimpo;
+  }
+
+  // Buscar telefone do responsável no banco de dados
+  async buscarTelefoneResponsavel(alunoId) {
+    try {
+      console.log(`🔍 Buscando telefone para aluno ID: ${alunoId}`);
+
+      // Buscar dados do aluno no banco
+      const alunoDoc = await window.db.collection('alunos').doc(alunoId).get();
+
+      if (!alunoDoc.exists) {
+        console.warn(`⚠️ Aluno não encontrado: ${alunoId}`);
+        return null;
+      }
+
+      const dadosAluno = alunoDoc.data();
+      console.log(`📋 Dados do aluno encontrados:`, dadosAluno);
+
+      // Tentar diferentes campos de telefone
+      const telefoneResponsavel = dadosAluno.responsavel1 ||
+                                 dadosAluno.telefone_responsavel ||
+                                 dadosAluno.telefone1 ||
+                                 dadosAluno.telefone;
+
+      if (telefoneResponsavel) {
+        console.log(`📞 Telefone bruto encontrado: ${telefoneResponsavel}`);
+        return this.normalizarTelefone(telefoneResponsavel);
+      }
+
+      console.warn(`⚠️ Nenhum telefone encontrado para o aluno: ${dadosAluno.nome || alunoId}`);
+      return null;
+
+    } catch (error) {
+      console.error(`❌ Erro ao buscar telefone do aluno ${alunoId}:`, error);
+      return null;
+    }
+  }
+
   // Enviar notificação de medida disciplinar (nova versão)
   async notificarMedidaDisciplinar(dadosAluno, medida) {
-    // Para testes, sempre usar o celular pessoal
-    const telefone = '556699138335'; // dadosAluno.telefone1 || dadosAluno.telefone2;
+    // Buscar telefone real do responsável
+    const telefone = await this.buscarTelefoneResponsavel(dadosAluno.id || dadosAluno.codigo);
 
     if (!telefone) {
       console.warn('⚠️ Aluno sem telefone cadastrado:', dadosAluno.nome);
-      return { success: false, error: 'Telefone não cadastrado' };
+      return { success: false, error: 'Telefone não cadastrado para este aluno' };
     }
 
+    console.log(`📱 Enviando WhatsApp para: ${telefone}`);
     const mensagem = this.formatarMensagemMedidaDisciplinar(dadosAluno, medida);
     return await this.enviarMensagem(telefone, mensagem);
   }
@@ -225,10 +294,10 @@ window.testarWhatsApp = async function() {
 // Função de teste para medidas disciplinares
 window.testarMedidaDisciplinar = async function(tipoTeste = 'negativa') {
   const alunoTeste = {
-    id: '2025001',
+    id: '2025001', // Usar ID real de um aluno no banco
+    codigo: '2025001',
     nome: 'João Silva Santos',
-    turma: '8A',
-    telefone1: '556699138335'
+    turma: '8A'
   };
 
   let medidaTeste;
@@ -255,5 +324,24 @@ window.testarMedidaDisciplinar = async function(tipoTeste = 'negativa') {
   return await window.enviarMedidaDisciplinar(alunoTeste, medidaTeste);
 };
 
+// Função para testar normalização de telefones
+window.testarNormalizacaoTelefone = function() {
+  const exemplos = [
+    '5566999138335',    // Formato com 5º dígito extra
+    '556699138335',     // Formato correto
+    '55 66 9 99138335', // Com espaços
+    '(55) 66 9 9913-8335', // Formatado
+    '66999138335',      // Sem código do país
+    '99138335'          // Apenas número local
+  ];
+
+  console.log('🧪 Testando normalização de telefones:');
+  exemplos.forEach(tel => {
+    const normalizado = window.whatsappSender.normalizarTelefone(tel);
+    console.log(`📞 ${tel} → ${normalizado}`);
+  });
+};
+
 console.log('📱 WhatsApp Sender carregado - use: window.whatsappSender');
-console.log('🧪 Para testar: await testarMedidaDisciplinar("positiva") ou await testarMedidaDisciplinar("negativa")');
+console.log('🧪 Para testar medidas: await testarMedidaDisciplinar("positiva") ou await testarMedidaDisciplinar("negativa")');
+console.log('📞 Para testar telefones: testarNormalizacaoTelefone()');
