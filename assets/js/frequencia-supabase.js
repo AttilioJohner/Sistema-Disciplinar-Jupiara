@@ -138,13 +138,13 @@ class FrequenciaSupabaseManager {
           // Debug específico para registro 1250 e registros do dia 15/08/2025
           if (registro.id === 1250 || (registro.data && registro.data.includes('2025-08-15'))) {
             // console.log(`🔧 PROCESSAMENTO REGISTRO ${registro.id}:`, {
-              raw_data: registro.data,
-              parsed_date: dataObj,
-              mes: mes,
-              ano: ano,
-              dia: dia,
-              turma: registro.turma
-            });
+            //   raw_data: registro.data,
+            //   parsed_date: dataObj,
+            //   mes: mes,
+            //   ano: ano,
+            //   dia: dia,
+            //   turma: registro.turma
+            // });
           }
           
           const chave = `${registro.turma}_${mes}_${ano}`;
