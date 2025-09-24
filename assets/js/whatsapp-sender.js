@@ -285,7 +285,19 @@ class WhatsAppSender {
 
   // Formatar mensagem de frequência
   formatarMensagemFrequencia(aluno, dadosFalta) {
-    const dataFormatada = dadosFalta.data ? new Date(dadosFalta.data).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR');
+    let dataFormatada;
+    if (dadosFalta.data) {
+      // Se a data vem no formato YYYY-MM-DD (input HTML), criar data sem problemas de timezone
+      if (dadosFalta.data.includes('-') && dadosFalta.data.length === 10) {
+        const [ano, mes, dia] = dadosFalta.data.split('-');
+        const dataLocal = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia));
+        dataFormatada = dataLocal.toLocaleDateString('pt-BR');
+      } else {
+        dataFormatada = dadosFalta.data; // Se já está formatada, usar como está
+      }
+    } else {
+      dataFormatada = new Date().toLocaleDateString('pt-BR');
+    }
 
     let mensagem = `Bom dia!\n`;
     mensagem += `Prezados Pais e/ou Responsáveis, a Equipe de Gestão Cívico-Militar da EECM Jupiara informa:\n\n`;
