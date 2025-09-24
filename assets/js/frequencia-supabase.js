@@ -170,7 +170,7 @@ class FrequenciaSupabaseManager {
               nome: registro.nome_completo,
               dias: {}
             });
-            console.log(`👤 DEBUG - Novo aluno criado: ${codigoAluno} (${registro.nome_completo}) na turma ${registro.turma}`);
+            // Aluno criado silenciosamente
           }
           
           // Adicionar status do dia
@@ -178,14 +178,14 @@ class FrequenciaSupabaseManager {
           
           // Debug específico para sextas-feiras (dias 01, 08, 15, 22, 29)
           if (['01', '08', '15', '22', '29'].includes(dia)) {
-            console.log(`🔍 SEXTA-FEIRA ENCONTRADA: ${registro.turma} - Aluno ${codigoAluno} - Dia ${dia} (${registro.data}) = ${registro.status}`);
+            // Sexta-feira registrada silenciosamente
           }
           
           // Debug mais frequente para ver acumulação de dias
           if (Math.random() < 0.05) { // 5% dos registros
             const alunoAtual = grupo.alunos.get(codigoAluno);
             const totalDiasAluno = Object.keys(alunoAtual.dias).length;
-            console.log(`📅 DEBUG acumulação: ${registro.turma} - Aluno ${codigoAluno} agora tem ${totalDiasAluno} dias: [${Object.keys(alunoAtual.dias).sort().join(', ')}]`);
+            // Acumulação calculada silenciosamente
           }
           
           // Debug para ver como os dados estão sendo processados
