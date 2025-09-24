@@ -51,7 +51,7 @@ class WhatsAppSender {
       const startTime = Date.now();
 
       const checkSupabase = () => {
-        if (window.supabase) {
+        if (window.supabaseClient || window.supabase) {
           console.log('✅ Cliente Supabase inicializado com sucesso');
           resolve(true);
           return;
@@ -111,14 +111,18 @@ class WhatsAppSender {
       console.log(`🔍 Buscando telefone para aluno ID: ${alunoId}`);
 
       // Usar cliente Supabase diretamente (disponível globalmente)
-      if (!window.supabase) {
-        throw new Error('Cliente Supabase não inicializado. Verifique se a página carregou completamente.');
+      if (!window.supabaseClient) {
+        console.log('🔍 window.supabaseClient não encontrado, tentando window.supabase...');
+        if (!window.supabase) {
+          throw new Error('Cliente Supabase não inicializado. Verifique se a página carregou completamente.');
+        }
       }
 
-      console.log('🔗 Usando cliente Supabase diretamente');
+      const clienteSupabase = window.supabaseClient || window.supabase;
+      console.log('🔗 Usando cliente Supabase:', clienteSupabase ? 'Disponível' : 'Não disponível');
 
       // Buscar dados do aluno na tabela alunos
-      const { data: dadosAluno, error } = await window.supabase
+      const { data: dadosAluno, error } = await clienteSupabase
         .from('alunos')
         .select('*')
         .eq('codigo', parseInt(alunoId))
