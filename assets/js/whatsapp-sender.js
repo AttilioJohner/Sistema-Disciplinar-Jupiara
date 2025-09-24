@@ -269,40 +269,35 @@ class WhatsAppSender {
   }
 
   // Enviar aviso de frequência
-  async notificarFrequencia(dadosAluno, faltas) {
-    const telefone = dadosAluno.telefone1 || dadosAluno.telefone2;
+  async notificarFrequencia(dadosAluno, dadosFalta) {
+    // Buscar telefone real do responsável (igual nas medidas)
+    const telefone = await this.buscarTelefoneResponsavel(dadosAluno.id || dadosAluno.codigo);
 
     if (!telefone) {
-      return { success: false, error: 'Telefone não cadastrado' };
+      console.warn('⚠️ Aluno sem telefone cadastrado:', dadosAluno.nome);
+      return { success: false, error: 'Telefone não cadastrado para este aluno' };
     }
 
-    const mensagem = this.formatarMensagemFrequencia(dadosAluno, faltas);
+    console.log(`📱 Enviando WhatsApp de frequência para: ${telefone}`);
+    const mensagem = this.formatarMensagemFrequencia(dadosAluno, dadosFalta);
     return await this.enviarMensagem(telefone, mensagem);
   }
 
   // Formatar mensagem de frequência
-  formatarMensagemFrequencia(aluno, faltas) {
-    const data = new Date().toLocaleDateString('pt-BR');
+  formatarMensagemFrequencia(aluno, dadosFalta) {
+    const dataFormatada = dadosFalta.data ? new Date(dadosFalta.data).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR');
 
-    let mensagem = `🏫 *EECM Jupiara - Aviso de Frequência*\n\n`;
-    mensagem += `👤 *Aluno:* ${aluno.nome}\n`;
-    mensagem += `🏫 *Turma:* ${aluno.turma}\n`;
-    mensagem += `📅 *Data:* ${data}\n\n`;
+    let mensagem = `Bom dia!\n`;
+    mensagem += `Prezados Pais e/ou Responsáveis, a Equipe de Gestão Cívico-Militar da EECM Jupiara informa:\n\n`;
 
-    mensagem += `⚠️ *Faltas Acumuladas:* ${faltas} dias\n\n`;
+    mensagem += `👤 Aluno: ${aluno.nome}\n`;
+    mensagem += `🆔 Código: ${aluno.codigo || aluno.id}\n`;
+    mensagem += `🏫 Turma: ${aluno.turma}\n`;
+    mensagem += `📅 Data da Ocorrência: ${dataFormatada}\n\n`;
 
-    if (faltas >= 15) {
-      mensagem += `🚨 *ATENÇÃO:* Número de faltas próximo ao limite legal.\n`;
-      mensagem += `É necessário comparecer à escola para regularizar.\n\n`;
-    } else if (faltas >= 10) {
-      mensagem += `⚠️ *AVISO:* Número elevado de faltas.\n`;
-      mensagem += `Solicitamos maior atenção à frequência.\n\n`;
-    }
+    mensagem += `⚠️ Informo que o aluno não compareceu na escola na data especificada acima.\n\n`;
 
-    mensagem += `📞 *Contato da Escola:*\n`;
-    mensagem += `WhatsApp: (66) 98111-4366\n`;
-    mensagem += `Email: eecmjupiara@gmail.com\n\n`;
-    mensagem += `_Mensagem automática do Sistema Disciplinar_`;
+    mensagem += `📲 Essa é uma mensagem automática. Em caso de atestados médicos, justificativas e dúvidas, entre em contato com a Gestão Cívico-Militar pelo telefone ou WhatsApp: (66) 98111-4366.`;
 
     return mensagem;
   }

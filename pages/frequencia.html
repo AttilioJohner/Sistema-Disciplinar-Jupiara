@@ -29,6 +29,9 @@
     <script src="../assets/js/ui/toast.js"></script>
     <script src="../assets/js/main.js"></script>
     
+    <!-- WhatsApp Sender Integration -->
+    <script defer src="../assets/js/whatsapp-sender.js"></script>
+
     <!-- AVISO: Sistema legado - use pages/relatorios.html para frequência -->
     <!-- Sistema de Frequência OBSOLETO -->
     <script src="../assets/js/frequencia-supabase.js"></script>
@@ -186,15 +189,15 @@
                     
                     <div class="form-grid">
                         <div class="form-group">
+                            <label class="form-label">📅 Data da Frequência *</label>
+                            <input type="date" id="dataLancamento" class="form-input" required>
+                        </div>
+
+                        <div class="form-group">
                             <label class="form-label">🎯 Selecionar Turma *</label>
                             <select id="turmaLancamento" class="form-select" onchange="carregarAlunosLancamento()">
                                 <option value="">Selecione uma turma...</option>
                             </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">📅 Data da Frequência *</label>
-                            <input type="date" id="dataLancamento" class="form-input" required>
                         </div>
                         
                         <div class="form-group">
@@ -232,6 +235,17 @@
                             <!-- Alunos serão carregados aqui dinamicamente -->
                         </div>
                         
+                        <!-- Checkbox WhatsApp -->
+                        <div style="margin-top: 15px; padding: 12px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #28a745;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 500;">
+                                <input type="checkbox" id="enviarWhatsAppFrequencia" style="transform: scale(1.2);">
+                                📱 Notificar responsáveis dos alunos faltosos via WhatsApp
+                            </label>
+                            <small style="color: #666; margin-left: 28px; display: block; margin-top: 4px;">
+                                Mensagem será enviada apenas para alunos com Falta (F) ou Falta Controlada (FC)
+                            </small>
+                        </div>
+
                         <!-- Botões de Ação -->
                         <div class="form-actions" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e1dfdd;">
                             <button type="button" class="btn btn-success btn-large" onclick="salvarFrequenciaDiaria()" id="btnSalvarFrequencia" disabled>
@@ -324,6 +338,251 @@
             </div>
         </div>
     </div>
+
+    <!-- Script para WhatsApp na Frequência -->
+    <script>
+        // Modificar texto do botão baseado no checkbox
+        function atualizarTextoBotaoFrequencia() {
+            const checkbox = document.getElementById('enviarWhatsAppFrequencia');
+            const btnSalvar = document.getElementById('btnSalvarFrequencia');
+
+            if (checkbox && btnSalvar) {
+                if (checkbox.checked) {
+                    btnSalvar.innerHTML = '📱💾 Salvar e Enviar WhatsApp';
+                } else {
+                    btnSalvar.innerHTML = '💾 Salvar Frequência do Dia';
+                }
+            }
+        }
+
+        // Adicionar event listener quando a página carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkbox = document.getElementById('enviarWhatsAppFrequencia');
+            if (checkbox) {
+                checkbox.addEventListener('change', atualizarTextoBotaoFrequencia);
+            }
+        });
+
+        // Função para enviar WhatsApp para alunos faltosos
+        async function enviarWhatsAppFaltosos() {
+            console.log('🚀 Iniciando envio de WhatsApp para alunos faltosos');
+
+            try {
+                // Verificar se WhatsApp Sender está disponível
+                if (!window.whatsappSender) {
+                    throw new Error('Sistema WhatsApp não carregado');
+                }
+
+                // Obter dados da turma e data atual
+                const turmaSelect = document.getElementById('turmaLancamento');
+                const dataInput = document.getElementById('dataLancamento');
+
+                if (!turmaSelect.value || !dataInput.value) {
+                    throw new Error('Selecione uma turma e data primeiro');
+                }
+
+                const turma = turmaSelect.options[turmaSelect.selectedIndex].text;
+                const data = dataInput.value;
+
+                // Coletar alunos faltosos (F ou FC)
+                const alunosFaltosos = [];
+                const frequenciaInputs = document.querySelectorAll('select[id^="freq_"]');
+
+                frequenciaInputs.forEach(select => {
+                    if (select.value === 'F' || select.value === 'FC') {
+                        const alunoId = select.id.replace('freq_', '');
+                        const nomeElement = select.closest('tr').querySelector('td:first-child');
+                        const nome = nomeElement ? nomeElement.textContent.trim() : '';
+
+                        if (nome) {
+                            alunosFaltosos.push({
+                                id: alunoId,
+                                nome: nome,
+                                turma: turma,
+                                status: select.value === 'F' ? 'Falta' : 'Falta Controlada'
+                            });
+                        }
+                    }
+                });
+
+                if (alunosFaltosos.length === 0) {
+                    showMessage('ℹ️ Nenhum aluno faltoso encontrado para envio de WhatsApp', 'info');
+                    return;
+                }
+
+                console.log(`📱 ${alunosFaltosos.length} alunos faltosos encontrados:`, alunosFaltosos);
+
+                // Mostrar popup de progresso
+                const popup = mostrarPopupProgresso(alunosFaltosos.length);
+
+                let sucessos = 0;
+                let falhas = 0;
+
+                // Enviar mensagens sequencialmente
+                for (let i = 0; i < alunosFaltosos.length; i++) {
+                    const aluno = alunosFaltosos[i];
+
+                    // Atualizar popup
+                    atualizarPopupProgresso(popup, i + 1, aluno.nome);
+
+                    try {
+                        // Criar dados do aluno para compatibilidade
+                        const dadosAluno = {
+                            id: aluno.id,
+                            codigo: aluno.id,
+                            nome: aluno.nome,
+                            turma: aluno.turma
+                        };
+
+                        // Criar dados da "medida" (no caso, falta)
+                        const dadosFalta = {
+                            tipo: 'Falta Escolar',
+                            data: data,
+                            especificacao: `${aluno.status} - ${data}`,
+                            motivo: 'O aluno não compareceu na escola na data especificada',
+                            providencias: ''
+                        };
+
+                        // Enviar via WhatsApp Sender usando função de frequência
+                        const resultado = await window.whatsappSender.notificarFrequencia(dadosAluno, dadosFalta);
+
+                        if (resultado.success) {
+                            sucessos++;
+                            console.log(`✅ WhatsApp enviado para ${aluno.nome}`);
+                        } else {
+                            falhas++;
+                            console.error(`❌ Falha ao enviar para ${aluno.nome}:`, resultado.error);
+                        }
+
+                    } catch (error) {
+                        falhas++;
+                        console.error(`❌ Erro ao enviar para ${aluno.nome}:`, error);
+                    }
+
+                    // Pequeno delay para não sobrecarregar
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+
+                // Fechar popup e mostrar resultado
+                fecharPopupProgresso(popup);
+
+                const mensagem = `✅ Envio concluído!\n\n📱 Sucessos: ${sucessos}\n❌ Falhas: ${falhas}`;
+                showMessage(mensagem, sucessos > falhas ? 'success' : 'warning');
+
+            } catch (error) {
+                console.error('❌ Erro no envio de WhatsApp:', error);
+                showMessage('❌ Erro ao enviar WhatsApp: ' + error.message, 'error');
+            }
+        }
+
+        // Função para mostrar popup de progresso
+        function mostrarPopupProgresso(total) {
+            const popup = document.createElement('div');
+            popup.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: white;
+                padding: 30px;
+                border-radius: 12px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+                z-index: 10000;
+                text-align: center;
+                min-width: 300px;
+            `;
+
+            popup.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">📱</div>
+                    <h3 style="margin: 0; color: #333;">Enviando WhatsApp</h3>
+                    <p style="margin: 10px 0; color: #666;">Aguarde enquanto as mensagens são enviadas...</p>
+                </div>
+                <div style="background: #f0f0f0; border-radius: 10px; padding: 10px; margin-bottom: 20px;">
+                    <div id="progressoTexto" style="font-weight: bold; margin-bottom: 8px;">0 / ${total}</div>
+                    <div style="background: #ddd; border-radius: 5px; height: 8px; overflow: hidden;">
+                        <div id="progressoBarra" style="background: #28a745; height: 100%; width: 0%; transition: width 0.3s;"></div>
+                    </div>
+                </div>
+                <div id="alunoAtual" style="color: #666; font-size: 14px;">Preparando...</div>
+            `;
+
+            // Adicionar overlay
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 9999;
+            `;
+
+            document.body.appendChild(overlay);
+            document.body.appendChild(popup);
+
+            return { popup, overlay };
+        }
+
+        // Função para atualizar popup de progresso
+        function atualizarPopupProgresso(popupData, atual, nomeAluno) {
+            const progressoTexto = popupData.popup.querySelector('#progressoTexto');
+            const progressoBarra = popupData.popup.querySelector('#progressoBarra');
+            const alunoAtual = popupData.popup.querySelector('#alunoAtual');
+
+            const total = progressoTexto.textContent.split(' / ')[1];
+            const porcentagem = (atual / total) * 100;
+
+            progressoTexto.textContent = `${atual} / ${total}`;
+            progressoBarra.style.width = `${porcentagem}%`;
+            alunoAtual.textContent = `Enviando para: ${nomeAluno}`;
+        }
+
+        // Função para fechar popup de progresso
+        function fecharPopupProgresso(popupData) {
+            setTimeout(() => {
+                if (popupData.overlay.parentNode) {
+                    document.body.removeChild(popupData.overlay);
+                }
+                if (popupData.popup.parentNode) {
+                    document.body.removeChild(popupData.popup);
+                }
+            }, 1500);
+        }
+
+        // Interceptar função de salvar frequência original
+        const salvarFrequenciaDiariaOriginal = window.salvarFrequenciaDiaria;
+
+        window.salvarFrequenciaDiaria = async function() {
+            console.log('📋 Salvando frequência...');
+
+            // Verificar se checkbox WhatsApp está marcado
+            const checkboxWhatsApp = document.getElementById('enviarWhatsAppFrequencia');
+            const enviarWhatsApp = checkboxWhatsApp && checkboxWhatsApp.checked;
+
+            try {
+                // Chamar função original de salvamento
+                if (salvarFrequenciaDiariaOriginal) {
+                    await salvarFrequenciaDiariaOriginal();
+                }
+
+                // Se salvamento foi bem-sucedido e checkbox marcado, enviar WhatsApp
+                if (enviarWhatsApp) {
+                    console.log('📱 Checkbox WhatsApp marcado, enviando mensagens...');
+                    setTimeout(() => {
+                        enviarWhatsAppFaltosos();
+                    }, 1000);
+                } else {
+                    console.log('📱 Checkbox WhatsApp não marcado, apenas salvando');
+                }
+
+            } catch (error) {
+                console.error('❌ Erro ao salvar frequência:', error);
+                throw error;
+            }
+        };
+    </script>
 
 </body>
 </html>
