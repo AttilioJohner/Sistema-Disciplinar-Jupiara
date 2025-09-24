@@ -106,7 +106,7 @@ class FrequenciaSupabaseManager {
         
         if (frequenciasPagina && frequenciasPagina.length > 0) {
           todasFrequencias = todasFrequencias.concat(frequenciasPagina);
-          console.log(`✅ Página ${pagina + 1}: ${frequenciasPagina.length} registros (total: ${todasFrequencias.length})`);
+          // console.log(`✅ Página ${pagina + 1}: ${frequenciasPagina.length} registros (total: ${todasFrequencias.length})`);
           
           // Se recebemos menos que o tamanho da página, não há mais dados
           temMaisDados = frequenciasPagina.length === tamanhoPagina;
@@ -137,7 +137,7 @@ class FrequenciaSupabaseManager {
           
           // Debug específico para registro 1250 e registros do dia 15/08/2025
           if (registro.id === 1250 || (registro.data && registro.data.includes('2025-08-15'))) {
-            console.log(`🔧 PROCESSAMENTO REGISTRO ${registro.id}:`, {
+            // console.log(`🔧 PROCESSAMENTO REGISTRO ${registro.id}:`, {
               raw_data: registro.data,
               parsed_date: dataObj,
               mes: mes,
@@ -150,7 +150,7 @@ class FrequenciaSupabaseManager {
           const chave = `${registro.turma}_${mes}_${ano}`;
           
           if (!gruposDados.has(chave)) {
-            console.log(`📅 Novo período encontrado: ${chave} (${registro.turma} - ${mes}/${ano})`);
+            // console.log(`📅 Novo período encontrado: ${chave} (${registro.turma} - ${mes}/${ano})`);
             gruposDados.set(chave, {
               turma: registro.turma,
               mes: mes,
@@ -190,7 +190,7 @@ class FrequenciaSupabaseManager {
           
           // Debug para ver como os dados estão sendo processados
           if (Math.random() < 0.01) { // 1% dos registros para não poluir o log
-            console.log(`🔍 Debug processamento: ${registro.turma} - Aluno ${codigoAluno} - Dia ${dia} = ${registro.status}`);
+            // console.log(`🔍 Debug processamento: ${registro.turma} - Aluno ${codigoAluno} - Dia ${dia} = ${registro.status}`);
           }
         });
         
@@ -199,12 +199,12 @@ class FrequenciaSupabaseManager {
           const alunosArray = Array.from(grupo.alunos.values());
           
           // Debug: mostrar quantos dias cada aluno tem
-          console.log(`📊 DEBUG FINAL - Turma ${grupo.turma} (${chave}): ${alunosArray.length} alunos`);
+          // console.log(`📊 DEBUG FINAL - Turma ${grupo.turma} (${chave}): ${alunosArray.length} alunos`);
           alunosArray.forEach((aluno, index) => {
             const diasCount = Object.keys(aluno.dias).length;
             const diasList = Object.keys(aluno.dias).sort().join(', ');
             if (index < 3) { // Mostrar apenas os primeiros 3 alunos para não poluir
-              console.log(`  👤 Aluno ${aluno.codigo} (${aluno.nome}): ${diasCount} dias [${diasList}]`);
+              // console.log(`  👤 Aluno ${aluno.codigo} (${aluno.nome}): ${diasCount} dias [${diasList}]`);
             }
           });
           
@@ -417,9 +417,9 @@ class FrequenciaSupabaseManager {
     // Filtro de alunos
     const filtroAluno = document.getElementById('filtro-aluno');
     if (filtroAluno) {
-      console.log('✅ Elemento filtro-aluno encontrado, configurando event listener');
+      // console.log('✅ Elemento filtro-aluno encontrado, configurando event listener');
       filtroAluno.addEventListener('change', (e) => {
-        console.log(`🔄 Filtro aluno changed: ${e.target.value}`);
+        // console.log(`🔄 Filtro aluno changed: ${e.target.value}`);
         this.mostrarEstatisticasAluno(e.target.value);
       });
     } else {
@@ -441,7 +441,7 @@ class FrequenciaSupabaseManager {
   }
 
   atualizarListaAlunos(turma) {
-    console.log(`🔍 DEBUG - atualizarListaAlunos chamado com turma: ${turma}`);
+    // console.log(`🔍 DEBUG - atualizarListaAlunos chamado com turma: ${turma}`);
     
     const selectAluno = document.getElementById('filtro-aluno');
     if (!selectAluno) {
@@ -449,25 +449,25 @@ class FrequenciaSupabaseManager {
       return;
     }
     
-    console.log(`✅ Elemento filtro-aluno encontrado`);
+    // console.log(`✅ Elemento filtro-aluno encontrado`);
     selectAluno.innerHTML = '<option value="">Selecione um aluno...</option>';
     
     if (!turma) {
       selectAluno.disabled = true;
-      console.log('⚠️ Turma vazia, desabilitando select de alunos');
+      // console.log('⚠️ Turma vazia, desabilitando select de alunos');
       return;
     }
     
-    console.log(`🔍 Procurando alunos da turma ${turma} em ${this.dadosFrequencia.size} períodos`);
+    // console.log(`🔍 Procurando alunos da turma ${turma} em ${this.dadosFrequencia.size} períodos`);
     
     const alunosUnicos = new Map();
     let periodosEncontrados = 0;
     
     this.dadosFrequencia.forEach((periodo, chave) => {
-      console.log(`📊 Verificando período: ${chave} - Turma: ${periodo.turma}`);
+      // console.log(`📊 Verificando período: ${chave} - Turma: ${periodo.turma}`);
       if (periodo.turma === turma) {
         periodosEncontrados++;
-        console.log(`✅ Período compatível encontrado: ${chave} com ${periodo.alunos.length} alunos`);
+        // console.log(`✅ Período compatível encontrado: ${chave} com ${periodo.alunos.length} alunos`);
         periodo.alunos.forEach(aluno => {
           if (!alunosUnicos.has(aluno.codigo)) {
             alunosUnicos.set(aluno.codigo, { codigo: aluno.codigo, nome: aluno.nome });
@@ -476,18 +476,18 @@ class FrequenciaSupabaseManager {
       }
     });
     
-    console.log(`📊 Total períodos encontrados para turma ${turma}: ${periodosEncontrados}`);
-    console.log(`👥 Total alunos únicos encontrados: ${alunosUnicos.size}`);
+    // console.log(`📊 Total períodos encontrados para turma ${turma}: ${periodosEncontrados}`);
+    // console.log(`👥 Total alunos únicos encontrados: ${alunosUnicos.size}`);
     
     if (alunosUnicos.size === 0) {
       selectAluno.innerHTML = '<option value="">Nenhum aluno encontrado</option>';
       selectAluno.disabled = true;
-      console.log('❌ Nenhum aluno encontrado para a turma');
+      // console.log('❌ Nenhum aluno encontrado para a turma');
       return;
     }
     
     const alunosOrdenados = Array.from(alunosUnicos.values()).sort((a, b) => a.nome.localeCompare(b.nome));
-    console.log(`📝 Primeiros 3 alunos:`, alunosOrdenados.slice(0, 3));
+    // console.log(`📝 Primeiros 3 alunos:`, alunosOrdenados.slice(0, 3));
     
     alunosOrdenados.forEach(aluno => {
       const option = document.createElement('option');
@@ -497,7 +497,7 @@ class FrequenciaSupabaseManager {
     });
     
     selectAluno.disabled = false;
-    console.log(`✅ Select de alunos atualizado com ${alunosOrdenados.length} alunos`);
+    // console.log(`✅ Select de alunos atualizado com ${alunosOrdenados.length} alunos`);
   }
 
   mostrarEstatisticasAluno(codigoAluno) {
@@ -645,7 +645,7 @@ class FrequenciaSupabaseManager {
   }
 
   async carregarAlunosLancamento(turma) {
-    console.log(`🔍 Carregando alunos da turma ${turma} para lançamento...`);
+    // console.log(`🔍 Carregando alunos da turma ${turma} para lançamento...`);
     
     const containerLista = document.getElementById('containerListaAlunos');
     const tituloTurmaData = document.getElementById('tituloTurmaData');
@@ -678,7 +678,7 @@ class FrequenciaSupabaseManager {
         return;
       }
 
-      console.log(`✅ ${alunos.length} alunos encontrados na turma ${turma}:`, alunos.map(a => `${a.codigo} - ${a['Nome completo']}`));
+      // console.log(`✅ ${alunos.length} alunos encontrados na turma ${turma}:`, alunos.map(a => `${a.codigo} - ${a['Nome completo']}`));
 
       // BUSCAR FREQUÊNCIA EXISTENTE PARA A DATA E TURMA
       console.log(`🔍 Buscando frequência existente para ${turma} em ${dataLancamento}...`);
@@ -779,7 +779,7 @@ class FrequenciaSupabaseManager {
     radiosPresenca.forEach(radio => {
       radio.checked = true;
     });
-    console.log(`✅ ${radiosPresenca.length} alunos marcados como presentes`);
+    // console.log(`✅ ${radiosPresenca.length} alunos marcados como presentes`);
   }
 
   limparMarcacoes() {
@@ -823,7 +823,7 @@ class FrequenciaSupabaseManager {
       }
     });
 
-    console.log(`📊 Coletados dados de ${dadosFrequencia.length} alunos`);
+    // console.log(`📊 Coletados dados de ${dadosFrequencia.length} alunos`);
 
     // Mostrar loading
     statusContainer.innerHTML = `
@@ -987,7 +987,7 @@ class FrequenciaSupabaseManager {
       }
     });
 
-    console.log(`⚠️ Encontrados ${alunosComProblemas.length} alunos com problemas de frequência`);
+    // console.log(`⚠️ Encontrados ${alunosComProblemas.length} alunos com problemas de frequência`);
 
     if (alunosComProblemas.length === 0) {
       container.innerHTML = `
@@ -1155,7 +1155,7 @@ class FrequenciaSupabaseManager {
   }
 
   mostrarResumoAlunos() {
-    console.log('🔍 DEBUG mostrarResumoAlunos - Iniciando compilação estatística...');
+    // console.log('🔍 DEBUG mostrarResumoAlunos - Iniciando compilação estatística...');
     
     if (!this.turmaAtual) {
       console.warn('⚠️ DEBUG - Turma não selecionada');
@@ -1170,7 +1170,7 @@ class FrequenciaSupabaseManager {
     // Ocultar tabela de dias
     if (tabelaContainer) tabelaContainer.style.display = 'none';
     
-    console.log(`🎯 DEBUG - Compilando TODOS os dados para turma: ${this.turmaAtual}`);
+    // console.log(`🎯 DEBUG - Compilando TODOS os dados para turma: ${this.turmaAtual}`);
     
     // Compilar TODOS os dados da turma (todos os meses/anos)
     const alunosDaTurma = new Map();
@@ -1178,7 +1178,7 @@ class FrequenciaSupabaseManager {
     // Percorrer todos os períodos carregados
     this.dadosFrequencia.forEach((periodo, chave) => {
       if (periodo.turma === this.turmaAtual) {
-        console.log(`📊 DEBUG - Processando período: ${chave} com ${periodo.alunos.length} alunos`);
+        // console.log(`📊 DEBUG - Processando período: ${chave} com ${periodo.alunos.length} alunos`);
         
         periodo.alunos.forEach(aluno => {
           // Se aluno não existe no Map, criar
@@ -1206,7 +1206,7 @@ class FrequenciaSupabaseManager {
       }
     });
     
-    console.log(`👥 DEBUG - Total de alunos únicos na turma ${this.turmaAtual}: ${alunosDaTurma.size}`);
+    // console.log(`👥 DEBUG - Total de alunos únicos na turma ${this.turmaAtual}: ${alunosDaTurma.size}`);
     
     if (alunosDaTurma.size === 0) {
       container.innerHTML = `
@@ -1224,7 +1224,7 @@ class FrequenciaSupabaseManager {
         ? ((aluno.totais.P / aluno.totalRegistros) * 100).toFixed(1) 
         : 0;
       
-      console.log(`👤 DEBUG - ${aluno.nome}: ${aluno.totais.P}P, ${aluno.totais.F}F, ${aluno.totais.A}A, ${aluno.totais.FC}FC = ${percentualPresenca}% (${aluno.totalRegistros} registros)`);
+      // console.log(`👤 DEBUG - ${aluno.nome}: ${aluno.totais.P}P, ${aluno.totais.F}F, ${aluno.totais.A}A, ${aluno.totais.FC}FC = ${percentualPresenca}% (${aluno.totalRegistros} registros)`);
       
       return {
         ...aluno,
@@ -1275,12 +1275,12 @@ class FrequenciaSupabaseManager {
       </div>
     `;
     
-    console.log(`✅ DEBUG - Tabela compilada renderizada para ${alunosComTotais.length} alunos da turma ${this.turmaAtual}`);
+    // console.log(`✅ DEBUG - Tabela compilada renderizada para ${alunosComTotais.length} alunos da turma ${this.turmaAtual}`);
     showToast(`Estatísticas compiladas: ${alunosComTotais.length} alunos da turma ${this.turmaAtual}`, 'success');
   }
 
   mostrarTabelaDias(mesEscolhido = null, anoEscolhido = null) {
-    console.log('🔍 DEBUG - mostrarTabelaDias() iniciado - Substituindo por visualização diária');
+    // console.log('🔍 DEBUG - mostrarTabelaDias() iniciado - Substituindo por visualização diária');
     
     if (!this.turmaAtual) {
       console.warn('⚠️ DEBUG - Turma não selecionada');
@@ -1298,7 +1298,7 @@ class FrequenciaSupabaseManager {
     const mesVisualizacao = mesEscolhido || '08';
     const anoVisualizacao = anoEscolhido || '2025';
     
-    console.log(`🎯 DEBUG - Compilando visualização diária para turma: ${this.turmaAtual} - ${mesVisualizacao}/${anoVisualizacao}`);
+    // console.log(`🎯 DEBUG - Compilando visualização diária para turma: ${this.turmaAtual} - ${mesVisualizacao}/${anoVisualizacao}`);
     
     // Encontrar períodos disponíveis para esta turma
     const periodosDisponiveis = [];
@@ -1346,11 +1346,11 @@ class FrequenciaSupabaseManager {
     
     // Gerar todos os dias úteis do mês (seg-sex)
     const diasUteis = this.gerarDiasUteis(parseInt(mesVisualizacao), parseInt(anoVisualizacao));
-    console.log(`📅 DEBUG - Dias úteis de ${mesVisualizacao}/${anoVisualizacao}:`, diasUteis.map(d => `${d.dia}(${d.diaSemana})`).join(', '));
+    // console.log(`📅 DEBUG - Dias úteis de ${mesVisualizacao}/${anoVisualizacao}:`, diasUteis.map(d => `${d.dia}(${d.diaSemana})`).join(', '));
     
     // Debug: verificar quais dias têm dados reais na base
     const diasComDados = new Set();
-    console.log(`🔍 DEBUG - dadosPeriodo.alunos tem ${dadosPeriodo.alunos.length} alunos`);
+    // console.log(`🔍 DEBUG - dadosPeriodo.alunos tem ${dadosPeriodo.alunos.length} alunos`);
     
     // Procurar especificamente por registros do dia 15
     let registrosDia15 = [];
@@ -1372,9 +1372,9 @@ class FrequenciaSupabaseManager {
       }
     });
     
-    console.log(`📊 DEBUG - Dias com dados na base:`, Array.from(diasComDados).sort((a, b) => parseInt(a) - parseInt(b)).join(', '));
-    console.log(`🔍 DEBUG - Registros encontrados para dia 15:`, registrosDia15.length, registrosDia15.slice(0, 3));
-    console.log(`❓ DEBUG - Dias úteis sem dados:`, diasUteis.filter(d => !diasComDados.has(d.dia)).map(d => `${d.dia}(${d.diaSemana})`).join(', '));
+    // console.log(`📊 DEBUG - Dias com dados na base:`, Array.from(diasComDados).sort((a, b) => parseInt(a) - parseInt(b)).join(', '));
+    // console.log(`🔍 DEBUG - Registros encontrados para dia 15:`, registrosDia15.length, registrosDia15.slice(0, 3));
+    // console.log(`❓ DEBUG - Dias úteis sem dados:`, diasUteis.filter(d => !diasComDados.has(d.dia)).map(d => `${d.dia}(${d.diaSemana})`).join(', '));
     
     // Renderizar tabela por dias
     container.innerHTML = `
@@ -1431,7 +1431,7 @@ class FrequenciaSupabaseManager {
       </div>
     `;
     
-    console.log(`✅ DEBUG - Tabela diária renderizada: ${dadosPeriodo.alunos.length} alunos x ${diasUteis.length} dias úteis`);
+    // console.log(`✅ DEBUG - Tabela diária renderizada: ${dadosPeriodo.alunos.length} alunos x ${diasUteis.length} dias úteis`);
     showToast(`Visualização: ${diasUteis.length} dias úteis de ${this.getNomeMes(mesVisualizacao)}/${anoVisualizacao}`, 'success');
   }
   
@@ -1449,7 +1449,7 @@ class FrequenciaSupabaseManager {
       
       // Debug específico para sextas-feiras
       if (diaSemana === 5) { // sexta-feira
-        console.log(`🔍 SEXTA-FEIRA encontrada no calendário: dia ${diaFormatado} é ${diasSemana[diaSemana]}`);
+        // console.log(`🔍 SEXTA-FEIRA encontrada no calendário: dia ${diaFormatado} é ${diasSemana[diaSemana]}`);
       }
       
       // Apenas dias úteis (segunda=1 a sexta=5)
@@ -1484,13 +1484,13 @@ class FrequenciaSupabaseManager {
     }
     
     // Detectar dias com dados
-    console.log(`🔍 DEBUG mostrarTabelaDias - Iniciando detecção de dias`);
-    console.log(`👥 DEBUG - Total de alunos na turma: ${dados.alunos.length}`);
+    // console.log(`🔍 DEBUG mostrarTabelaDias - Iniciando detecção de dias`);
+    // console.log(`👥 DEBUG - Total de alunos na turma: ${dados.alunos.length}`);
     
     const diasSet = new Set();
     dados.alunos.forEach((aluno, index) => {
-      console.log(`👤 DEBUG - Aluno ${index + 1}/${dados.alunos.length}: ${aluno.nome} (${aluno.codigo})`);
-      console.log(`📅 DEBUG - Dias do aluno ${aluno.codigo}:`, aluno.dias);
+      // console.log(`👤 DEBUG - Aluno ${index + 1}/${dados.alunos.length}: ${aluno.nome} (${aluno.codigo})`);
+      // console.log(`📅 DEBUG - Dias do aluno ${aluno.codigo}:`, aluno.dias);
       
       if (aluno.dias && typeof aluno.dias === 'object') {
         const diasDoAluno = Object.keys(aluno.dias);
