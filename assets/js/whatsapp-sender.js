@@ -249,7 +249,17 @@ class WhatsAppSender {
 
   // Verificar se medida é positiva
   isMedidaPositiva(tipo) {
-    const tiposPositivos = ['elogio', 'parabéns', 'destaque', 'reconhecimento', 'mérito'];
+    const tiposPositivos = [
+      'elogio',
+      'parabéns',
+      'destaque',
+      'reconhecimento',
+      'mérito',
+      'positivo',  // Para "Fato Observado Positivo"
+      'fato observado positivo',
+      'comportamento exemplar',
+      'destaque acadêmico'
+    ];
     return tiposPositivos.some(tipoPos => tipo.toLowerCase().includes(tipoPos));
   }
 
@@ -406,6 +416,25 @@ window.testarNormalizacaoTelefone = function() {
   });
 };
 
+// Função para testar detecção de medidas positivas
+window.testarDeteccaoPositiva = function() {
+  const tiposTeste = [
+    'Fato Observado Positivo',
+    'Elogio por Destaque Acadêmico',
+    'Advertência',
+    'Suspensão',
+    'Reconhecimento por Mérito',
+    'Comportamento Exemplar'
+  ];
+
+  console.log('🧪 Testando detecção de medidas positivas:');
+  tiposTeste.forEach(tipo => {
+    const isPositiva = window.whatsappSender.isMedidaPositiva(tipo);
+    console.log(`${isPositiva ? '✅' : '❌'} "${tipo}" → ${isPositiva ? 'POSITIVA' : 'NEGATIVA'}`);
+  });
+};
+
 console.log('📱 WhatsApp Sender carregado - use: window.whatsappSender');
 console.log('🧪 Para testar medidas: await testarMedidaDisciplinar("positiva") ou await testarMedidaDisciplinar("negativa")');
 console.log('📞 Para testar telefones: testarNormalizacaoTelefone()');
+console.log('✅ Para testar detecção: testarDeteccaoPositiva()');
