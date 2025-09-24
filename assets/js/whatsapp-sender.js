@@ -45,6 +45,31 @@ class WhatsAppSender {
     }
   }
 
+  // Aguardar inicialização do banco de dados
+  async aguardarInicializacaoDB(timeout = 5000) {
+    return new Promise((resolve) => {
+      const startTime = Date.now();
+
+      const checkDB = () => {
+        if (window.db) {
+          console.log('✅ window.db inicializado com sucesso');
+          resolve(true);
+          return;
+        }
+
+        if (Date.now() - startTime >= timeout) {
+          console.error(`❌ Timeout aguardando window.db (${timeout}ms)`);
+          resolve(false);
+          return;
+        }
+
+        setTimeout(checkDB, 100);
+      };
+
+      checkDB();
+    });
+  }
+
   // Normalizar número de telefone (remover 5º dígito se presente)
   normalizarTelefone(telefone) {
     if (!telefone) return null;
@@ -82,6 +107,19 @@ class WhatsAppSender {
     try {
       console.log(`🔍 Buscando telefone para aluno ID: ${alunoId}`);
 
+      // Verificar se window.db está inicializado
+      if (!window.db) {
+        console.error('❌ window.db não está inicializado');
+        console.log('🔄 Tentando aguardar inicialização...');
+
+        // Aguardar até 5 segundos pela inicialização
+        await this.aguardarInicializacaoDB(5000);
+
+        if (!window.db) {
+          throw new Error('Sistema de banco de dados não inicializado após aguardar. Recarregue a página.');
+        }
+      }
+
       // Buscar dados do aluno no banco
       const alunoDoc = await window.db.collection('alunos').doc(alunoId).get();
 
@@ -91,7 +129,16 @@ class WhatsAppSender {
       }
 
       const dadosAluno = alunoDoc.data();
-      console.log(`📋 Dados do aluno encontrados:`, dadosAluno);
+      console.log(`📋 Dados do aluno encontrados:`, {
+        id: alunoId,
+        nome: dadosAluno.nome || dadosAluno.nome_completo,
+        responsavel1: dadosAluno.responsavel1,
+        telefone_responsavel: dadosAluno.telefone_responsavel,
+        telefone1: dadosAluno.telefone1,
+        telefone: dadosAluno.telefone,
+        // Log todos os campos para debug
+        camposDisponiveis: Object.keys(dadosAluno)
+      });
 
       // Tentar diferentes campos de telefone
       const telefoneResponsavel = dadosAluno.responsavel1 ||
@@ -100,11 +147,13 @@ class WhatsAppSender {
                                  dadosAluno.telefone;
 
       if (telefoneResponsavel) {
-        console.log(`📞 Telefone bruto encontrado: ${telefoneResponsavel}`);
-        return this.normalizarTelefone(telefoneResponsavel);
+        console.log(`📞 Telefone bruto encontrado no campo: ${telefoneResponsavel}`);
+        const telefoneNormalizado = this.normalizarTelefone(telefoneResponsavel);
+        console.log(`📲 Telefone final normalizado: ${telefoneNormalizado}`);
+        return telefoneNormalizado;
       }
 
-      console.warn(`⚠️ Nenhum telefone encontrado para o aluno: ${dadosAluno.nome || alunoId}`);
+      console.warn(`⚠️ Nenhum telefone encontrado para o aluno: ${dadosAluno.nome_completo || dadosAluno.nome || alunoId}`);
       return null;
 
     } catch (error) {
