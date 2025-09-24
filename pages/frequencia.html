@@ -32,9 +32,7 @@
     <!-- WhatsApp Sender Integration -->
     <script defer src="../assets/js/whatsapp-sender.js"></script>
 
-    <!-- AVISO: Sistema legado - use pages/relatorios.html para frequência -->
-    <!-- Sistema de Frequência OBSOLETO -->
-    <script src="../assets/js/frequencia-supabase.js"></script>
+    <!-- Sistema de Frequência simplificado -->
 </head>
 
 <body>
@@ -387,13 +385,19 @@
                 // Coletar alunos faltosos (F ou FC)
                 const alunosFaltosos = [];
 
-                // Buscar na tabela de frequência
-                const tabelaFreq = document.querySelector('#listaAlunosFrequencia table');
+                // Buscar tabela de frequência (tentar diferentes seletores)
+                let tabelaFreq = document.querySelector('#listaAlunosFrequencia table');
                 if (!tabelaFreq) {
-                    throw new Error('Tabela de frequência não encontrada');
+                    tabelaFreq = document.querySelector('#tabelaFrequencia');
+                }
+                if (!tabelaFreq) {
+                    tabelaFreq = document.querySelector('.alunos-frequencia-lista table');
+                }
+                if (!tabelaFreq) {
+                    throw new Error('Tabela de frequência não encontrada em nenhum seletor');
                 }
 
-                const linhas = tabelaFreq.querySelectorAll('tbody tr');
+                const linhas = tabelaFreq.querySelectorAll('tr');
                 linhas.forEach(linha => {
                     const select = linha.querySelector('select[id^="freq_"]');
                     if (select && (select.value === 'F' || select.value === 'FC')) {
@@ -412,7 +416,7 @@
                     }
                 });
 
-                console.log('🔍 Debug coleta:', { tabelaEncontrada: !!tabelaFreq, linhasTotal: linhas.length, faltosos: alunosFaltosos.length });
+                console.log(`📱 Encontrados: ${alunosFaltosos.length} faltosos na data ${data}`);
 
                 if (alunosFaltosos.length === 0) {
                     showMessage('ℹ️ Nenhum aluno faltoso encontrado para envio de WhatsApp', 'info');
@@ -567,7 +571,7 @@
                 const salvarOriginal = window.salvarFrequenciaDiaria;
 
                 window.salvarFrequenciaDiaria = async function() {
-                    console.log('📋 Salvando frequência...');
+                    // Salvando frequência...
 
                     const checkboxWhatsApp = document.getElementById('enviarWhatsAppFrequencia');
                     const enviarWhatsApp = checkboxWhatsApp && checkboxWhatsApp.checked;
@@ -580,7 +584,6 @@
 
                         // Se checkbox marcado, enviar WhatsApp
                         if (enviarWhatsApp) {
-                            console.log('📱 Enviando WhatsApp após salvar...');
                             setTimeout(enviarWhatsAppFaltosos, 1500);
                         }
 
