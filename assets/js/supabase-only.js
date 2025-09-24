@@ -382,31 +382,28 @@ const alunosDB = {
         const { data: allData } = await supabase
             .from('alunos')
             .select('codigo, "código (matrícula)", "Nome completo", turma, responsável, "Telefone do responsável", "Telefone do responsável 2"');
-        
-        const existing = allData?.find(item => 
-            item['código (matrícula)'] === codigo
+
+        const existing = allData?.find(item =>
+            item['código (matrícula)'] == codigo || item.codigo == codigo
         );
         
         if (!existing) {
             throw new Error('Aluno não encontrado');
         }
         
-        // Fazer delete usando código (usar query SQL direta se necessário)
-        // Por enquanto, só marcar como inativo
-        const updateData = {
-            'código (matrícula)': codigo,
-            'Nome completo': existing['Nome completo'],
-            'turma': existing.turma,
-            'responsável': existing.responsável,
-            'Telefone do responsável': existing['Telefone do responsável'], 
-            'Telefone do responsável 2': existing['Telefone do responsável 2']
-        };
-        
-        // Como delete é complexo, vamos desabilitar por enquanto
-        console.warn('⚠️ Função delete temporariamente desabilitada. Use o Supabase diretamente.');
-        const error = null;
-        
+        // Fazer delete real usando código (matrícula)
+        console.log('🗑️ Excluindo aluno:', existing);
+
+        const { error } = await supabase
+            .from('alunos')
+            .delete()
+            .eq('código (matrícula)', existing['código (matrícula)']);
+
+        console.log('🗑️ Resultado exclusão Supabase:', error ? 'ERRO: ' + error.message : 'SUCESSO');
+
         if (error) throw error;
+
+        return { success: true, deleted: existing };
     },
     
     // Métodos de compatibilidade Firestore para gestao.js
