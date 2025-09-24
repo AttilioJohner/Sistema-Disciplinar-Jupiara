@@ -3151,8 +3151,8 @@
                 
                 try {
                     const { data, error } = await window.supabaseClient
-                        .from('medidas')
-                        .select('id, codigo_matricula, nome_completo, tipo_medida, especificacao, prazo_assinatura, prazo_status, data')
+                        .from('medidas_disciplinares')
+                        .select('id, codigo_aluno, nome_aluno, tipo_medida, especificacao, prazo_assinatura, prazo_status, data')
                         .not('prazo_assinatura', 'is', null)
                         .neq('prazo_status', 'entregue')
                         .in('tipo_medida', ['Advertência Verbal', 'Advertência Escrita', 'Suspensão', 'Ação Educativa'])
@@ -3161,12 +3161,26 @@
                     if (error) {
                         // Se as colunas não existem, mostrar alerta amigável
                         if (error.code === '42703') {
-                            console.warn('⚠️ Colunas de prazo não encontradas no banco. Execute o SQL de criação de colunas.');
+                            console.warn('⚠️ Colunas de prazo não encontradas no banco.');
+                            console.log(`
+💡 Para ativar os alertas de prazo, execute este SQL no Supabase:
+
+ALTER TABLE medidas_disciplinares
+ADD COLUMN IF NOT EXISTS prazo_assinatura date,
+ADD COLUMN IF NOT EXISTS prazo_status text default 'pendente',
+ADD COLUMN IF NOT EXISTS prazo_entregue_em timestamp;
+
+-- Definir prazo de 7 dias para medidas já existentes
+UPDATE medidas_disciplinares
+SET prazo_assinatura = (data + interval '7 days')::date
+WHERE prazo_assinatura IS NULL
+  AND tipo_medida IN ('Advertência Verbal', 'Advertência Escrita', 'Suspensão', 'Ação Educativa');
+                            `);
                             await atualizarContainerAlertas([{
                                 tipo: 'warning',
                                 icone: '⚙️',
-                                texto: 'Sistema de prazos disponível após configuração do banco de dados',
-                                detalhes: 'Execute o SQL fornecido no Supabase Dashboard para ativar o controle de prazos'
+                                texto: 'Sistema de alertas de prazo em configuração',
+                                detalhes: 'Verifique o console para instruções de ativação'
                             }]);
                             return;
                         }
@@ -3225,10 +3239,10 @@
                         id: medida.id,
                         tipo: prioridade,
                         icone: statusIcon,
-                        texto: `${medida.nome_completo} - ${medida.tipo_medida}: ${statusTexto}`,
+                        texto: `${medida.nome_aluno} - ${medida.tipo_medida}: ${statusTexto}`,
                         detalhes: medida.especificacao,
                         diasRestantes: diffDays,
-                        alunoId: medida.codigo_matricula,
+                        alunoId: medida.codigo_aluno,
                         prazoData: medida.prazo_assinatura
                     });
                 });
@@ -3342,8 +3356,8 @@
         async function marcarPrazoEntregue(medidaId) {
             try {
                 const { error } = await window.supabaseClient
-                    .from('medidas')
-                    .update({ 
+                    .from('medidas_disciplinares')
+                    .update({
                         prazo_status: 'entregue',
                         prazo_entregue_em: new Date().toISOString()
                     })
