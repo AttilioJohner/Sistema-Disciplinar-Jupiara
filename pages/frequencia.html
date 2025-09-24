@@ -365,7 +365,7 @@
 
         // Função para enviar WhatsApp para alunos faltosos
         async function enviarWhatsAppFaltosos() {
-            console.log('🚀 Iniciando envio de WhatsApp para alunos faltosos');
+            console.log('📱 Iniciando WhatsApp para faltosos');
 
             try {
                 // Verificar se WhatsApp Sender está disponível
@@ -386,15 +386,22 @@
 
                 // Coletar alunos faltosos (F ou FC)
                 const alunosFaltosos = [];
-                const frequenciaInputs = document.querySelectorAll('select[id^="freq_"]');
 
-                frequenciaInputs.forEach(select => {
-                    if (select.value === 'F' || select.value === 'FC') {
+                // Buscar na tabela de frequência
+                const tabelaFreq = document.querySelector('#listaAlunosFrequencia table');
+                if (!tabelaFreq) {
+                    throw new Error('Tabela de frequência não encontrada');
+                }
+
+                const linhas = tabelaFreq.querySelectorAll('tbody tr');
+                linhas.forEach(linha => {
+                    const select = linha.querySelector('select[id^="freq_"]');
+                    if (select && (select.value === 'F' || select.value === 'FC')) {
                         const alunoId = select.id.replace('freq_', '');
-                        const nomeElement = select.closest('tr').querySelector('td:first-child');
-                        const nome = nomeElement ? nomeElement.textContent.trim() : '';
+                        const nomeCell = linha.querySelector('td:first-child');
+                        const nome = nomeCell ? nomeCell.textContent.trim() : '';
 
-                        if (nome) {
+                        if (nome && alunoId) {
                             alunosFaltosos.push({
                                 id: alunoId,
                                 nome: nome,
@@ -405,12 +412,14 @@
                     }
                 });
 
+                console.log('🔍 Debug coleta:', { tabelaEncontrada: !!tabelaFreq, linhasTotal: linhas.length, faltosos: alunosFaltosos.length });
+
                 if (alunosFaltosos.length === 0) {
                     showMessage('ℹ️ Nenhum aluno faltoso encontrado para envio de WhatsApp', 'info');
                     return;
                 }
 
-                console.log(`📱 ${alunosFaltosos.length} alunos faltosos encontrados:`, alunosFaltosos);
+                console.log(`📱 ${alunosFaltosos.length} alunos faltosos encontrados`);
 
                 // Mostrar popup de progresso
                 const popup = mostrarPopupProgresso(alunosFaltosos.length);
@@ -448,10 +457,10 @@
 
                         if (resultado.success) {
                             sucessos++;
-                            console.log(`✅ WhatsApp enviado para ${aluno.nome}`);
+                            console.log(`✅ Enviado: ${aluno.nome}`);
                         } else {
                             falhas++;
-                            console.error(`❌ Falha ao enviar para ${aluno.nome}:`, resultado.error);
+                            console.error(`❌ Falha: ${aluno.nome} - ${resultado.error}`);
                         }
 
                     } catch (error) {
@@ -551,37 +560,39 @@
             }, 1500);
         }
 
-        // Interceptar função de salvar frequência original
-        const salvarFrequenciaDiariaOriginal = window.salvarFrequenciaDiaria;
+        // Interceptar função de salvar frequência
+        document.addEventListener('DOMContentLoaded', function() {
+            // Aguardar um pouco para garantir que a função original foi carregada
+            setTimeout(() => {
+                const salvarOriginal = window.salvarFrequenciaDiaria;
 
-        window.salvarFrequenciaDiaria = async function() {
-            console.log('📋 Salvando frequência...');
+                window.salvarFrequenciaDiaria = async function() {
+                    console.log('📋 Salvando frequência...');
 
-            // Verificar se checkbox WhatsApp está marcado
-            const checkboxWhatsApp = document.getElementById('enviarWhatsAppFrequencia');
-            const enviarWhatsApp = checkboxWhatsApp && checkboxWhatsApp.checked;
+                    const checkboxWhatsApp = document.getElementById('enviarWhatsAppFrequencia');
+                    const enviarWhatsApp = checkboxWhatsApp && checkboxWhatsApp.checked;
 
-            try {
-                // Chamar função original de salvamento
-                if (salvarFrequenciaDiariaOriginal) {
-                    await salvarFrequenciaDiariaOriginal();
-                }
+                    try {
+                        // Chamar função original
+                        if (salvarOriginal) {
+                            const resultado = await salvarOriginal();
+                        }
 
-                // Se salvamento foi bem-sucedido e checkbox marcado, enviar WhatsApp
-                if (enviarWhatsApp) {
-                    console.log('📱 Checkbox WhatsApp marcado, enviando mensagens...');
-                    setTimeout(() => {
-                        enviarWhatsAppFaltosos();
-                    }, 1000);
-                } else {
-                    console.log('📱 Checkbox WhatsApp não marcado, apenas salvando');
-                }
+                        // Se checkbox marcado, enviar WhatsApp
+                        if (enviarWhatsApp) {
+                            console.log('📱 Enviando WhatsApp após salvar...');
+                            setTimeout(enviarWhatsAppFaltosos, 1500);
+                        }
 
-            } catch (error) {
-                console.error('❌ Erro ao salvar frequência:', error);
-                throw error;
-            }
-        };
+                        return true;
+
+                    } catch (error) {
+                        console.error('❌ Erro:', error);
+                        throw error;
+                    }
+                };
+            }, 2000);
+        });
     </script>
 
 </body>
