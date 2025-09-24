@@ -2006,7 +2006,7 @@
                                 📱 Enviar WhatsApp automaticamente aos responsáveis após salvar
                             </label>
                             <small style="color: #666; margin-left: 28px; display: block; margin-top: 4px;">
-                                Notificação será enviada para: 556699138335 (número de teste)
+                                Notificação será enviada para o número cadastrado do responsável
                             </small>
                         </div>
 
@@ -2536,7 +2536,7 @@
                     id: dadosAluno.codigo,
                     nome: dadosAluno['Nome completo'],
                     turma: dadosAluno.turma,
-                    telefone1: '556699138335', // Sempre usar número de teste
+                    telefone1: dadosAluno['Telefone do responsável'] || dadosAluno['Telefone do responsável 2'] || null,
                     telefone2: null
                 };
 
