@@ -1,7 +1,7 @@
 // gestao.js — CRUD de Alunos com Sistema Local + Modo Debug
 
 // ===== CONTROLE DE VERSÃO PARA EVITAR CACHE AGRESSIVO =====
-const APP_VERSION = '20250924-001';
+const APP_VERSION = '20250924-002';
 
 function checkAppVersion() {
   const lastVersion = localStorage.getItem('app_version');
@@ -115,6 +115,8 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       mapElements();
       bindEvents();
       initPhotoPreview();
+      // Garantir que botão de excluir do formulário principal fique sempre oculto
+      if (els.btnExcluir) els.btnExcluir.style.display = 'none';
       // NÃO carregar alunos automaticamente - aguardar clique do usuário
       setTimeout(() => adicionarBotaoCarregamento(), 100);
       
@@ -1173,7 +1175,8 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         idInput.classList.add('is-disabled');
       }
       if (els.btnSalvar) els.btnSalvar.textContent = '✅ Atualizar';
-      if (els.btnExcluir) els.btnExcluir.style.display = 'inline-block';
+      // MANTER BOTÃO DE EXCLUIR SEMPRE OCULTO - usamos apenas edição inline
+      if (els.btnExcluir) els.btnExcluir.style.display = 'none';
     } else {
       if (idInput) {
         idInput.disabled = false;
