@@ -411,7 +411,7 @@
         /* Estatísticas */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 1rem;
             margin-top: 2rem;
         }
@@ -596,11 +596,11 @@
         
         .charts-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
             margin-bottom: 2rem;
         }
-        
+
         .chart-container {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
@@ -608,13 +608,15 @@
             padding: 1.5rem;
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
+            overflow: hidden; /* Evita que gráficos saiam do container */
+            min-height: 350px;
         }
-        
+
         .chart-container:hover {
             transform: translateY(-2px);
             box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
         }
-        
+
         .chart-title {
             font-size: 1.1rem;
             font-weight: 600;
@@ -622,10 +624,29 @@
             margin-bottom: 1rem;
             text-align: center;
         }
-        
+
         .chart-wrapper {
             position: relative;
-            height: 300px;
+            height: 280px; /* Altura reduzida para melhor controle */
+            width: 100%;
+            overflow: hidden; /* Garante que canvas não saia do wrapper */
+        }
+
+        /* Melhorias para responsividade */
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .chart-container {
+                padding: 1rem;
+                min-height: 300px;
+            }
+
+            .chart-wrapper {
+                height: 240px;
+            }
         }
         
         .comparison-stats {
@@ -1038,6 +1059,10 @@
                                 <div class="stat-label">Suspensões</div>
                             </div>
                             <div class="stat-card">
+                                <div class="stat-value" id="totalFatos">0</div>
+                                <div class="stat-label">Fatos Observados</div>
+                            </div>
+                            <div class="stat-card">
                                 <div class="stat-value" id="totalElogios">0</div>
                                 <div class="stat-label">Elogios</div>
                             </div>
@@ -1324,15 +1349,56 @@
                 notaElement.classList.add('baixa');
             }
             
-            // Estatísticas
+            // Estatísticas - com filtros mais abrangentes e logs para debug
+            console.log('📊 Calculando estatísticas das medidas:', medidas);
+
             const totalMedidas = medidas.length;
-            const advertencias = medidas.filter(m => m.tipo_medida === 'Advertência Verbal' || m.tipo_medida === 'Advertência Escrita').length;
-            const suspensoes = medidas.filter(m => m.tipo_medida === 'Suspensão').length;
-            const elogios = medidas.filter(m => m.tipo_medida === 'Elogio' || m.tipo_medida === 'Reconhecimento').length;
-            
+
+            // Advertências (incluindo diferentes variações)
+            const advertencias = medidas.filter(m =>
+                m.tipo_medida && (
+                    m.tipo_medida.toLowerCase().includes('advertência') ||
+                    m.tipo_medida.toLowerCase().includes('advertencia')
+                )
+            ).length;
+
+            // Suspensões
+            const suspensoes = medidas.filter(m =>
+                m.tipo_medida && m.tipo_medida.toLowerCase().includes('suspensão')
+            ).length;
+
+            // Fatos Observados Negativos
+            const fatosObservados = medidas.filter(m =>
+                m.tipo_medida && (
+                    m.tipo_medida.toLowerCase().includes('fato observado') ||
+                    m.tipo_medida.toLowerCase().includes('observação') ||
+                    m.tipo_medida.toLowerCase().includes('registro')
+                )
+            ).length;
+
+            // Elogios (incluindo reconhecimentos e medidas positivas)
+            const elogios = medidas.filter(m =>
+                m.tipo_medida && (
+                    m.tipo_medida.toLowerCase().includes('elogio') ||
+                    m.tipo_medida.toLowerCase().includes('reconhecimento') ||
+                    m.tipo_medida.toLowerCase().includes('destaque') ||
+                    m.tipo_medida.toLowerCase().includes('parabenização')
+                )
+            ).length;
+
+            console.log('📈 Estatísticas calculadas:', {
+                total: totalMedidas,
+                advertencias,
+                suspensoes,
+                fatosObservados,
+                elogios
+            });
+
+            // Atualizar interface
             document.getElementById('totalMedidas').textContent = totalMedidas;
             document.getElementById('totalAdvertencias').textContent = advertencias;
             document.getElementById('totalSuspensoes').textContent = suspensoes;
+            document.getElementById('totalFatos').textContent = fatosObservados;
             document.getElementById('totalElogios').textContent = elogios;
             
             // Histórico de medidas
@@ -1926,12 +1992,12 @@
             new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['Aluno', 'Turma', 'Escola'],
+                    labels: ['Aluno', 'Média da Turma', 'Média da Escola'],
                     datasets: [{
                         label: 'Frequência (%)',
                         data: [dadosAluno.frequencia, mediasTurma.frequencia, mediasEscola.frequencia],
                         backgroundColor: [
-                            '#4f46e5',
+                            dadosAluno.frequencia >= 85 ? '#10b981' : dadosAluno.frequencia >= 75 ? '#f59e0b' : '#ef4444',
                             '#10b981',
                             '#6b7280'
                         ],
@@ -1945,9 +2011,28 @@
                     plugins: {
                         legend: {
                             display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const value = context.parsed.y;
+                                    if (context.dataIndex === 0) {
+                                        return value >= 85 ? '✅ Excelente' : value >= 75 ? '⚠️ Regular' : '❌ Baixa';
+                                    }
+                                    return '';
+                                }
+                            }
                         }
                     },
                     scales: {
+                        x: {
+                            ticks: {
+                                maxRotation: 0,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
                         y: {
                             beginAtZero: true,
                             max: 100,
@@ -1969,12 +2054,12 @@
             new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['Aluno', 'Turma', 'Escola'],
+                    labels: ['Aluno', 'Média da Turma', 'Média da Escola'],
                     datasets: [{
                         label: 'Total de Medidas',
                         data: [dadosAluno.totalMedidas, mediasTurma.totalMedidas, mediasEscola.totalMedidas],
                         backgroundColor: [
-                            '#f59e0b',
+                            dadosAluno.totalMedidas === 0 ? '#10b981' : dadosAluno.totalMedidas <= 3 ? '#f59e0b' : '#ef4444',
                             '#10b981',
                             '#6b7280'
                         ],
@@ -1988,11 +2073,33 @@
                     plugins: {
                         legend: {
                             display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const value = context.parsed.y;
+                                    if (context.dataIndex === 0) {
+                                        return value === 0 ? '✅ Sem medidas' : value <= 3 ? '⚠️ Poucas medidas' : '❌ Muitas medidas';
+                                    }
+                                    return '';
+                                }
+                            }
                         }
                     },
                     scales: {
+                        x: {
+                            ticks: {
+                                maxRotation: 0,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
                         y: {
-                            beginAtZero: true
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
                         }
                     }
                 }
