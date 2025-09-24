@@ -90,20 +90,14 @@ class FrequenciaSupabaseManager {
         const inicio = pagina * tamanhoPagina;
         const fim = inicio + tamanhoPagina - 1;
         
-        console.log(`📄 Carregando página ${pagina + 1} (registros ${inicio} a ${fim})...`);
+        // Carregando página silenciosamente
         
         const { data: frequenciasPagina, error } = await this.supabase
           .from('frequencia')
           .select('*')
           .range(inicio, fim);
         
-        // Debug específico: verificar se esta página contém o registro 1250
-        if (frequenciasPagina && frequenciasPagina.length > 0) {
-          const temRegistro1250 = frequenciasPagina.find(r => r.id === 1250);
-          if (temRegistro1250) {
-            console.log(`✅ PÁGINA ${pagina + 1} CONTÉM REGISTRO 1250:`, temRegistro1250);
-          }
-        }
+        // Debug removido
         
         if (error) {
           console.error('❌ Erro ao buscar frequências:', error);
@@ -123,30 +117,9 @@ class FrequenciaSupabaseManager {
       }
       
       const frequencias = todasFrequencias;
-      console.log(`🎯 TOTAL FINAL DE REGISTROS CARREGADOS: ${frequencias.length}`);
+      // Dados carregados silenciosamente
       
-      // Debug específico: verificar se ID 1250 está nos dados carregados
-      const registro1250 = frequencias.find(r => r.id === 1250);
-      if (registro1250) {
-        console.log(`🎯 REGISTRO 1250 ENCONTRADO:`, registro1250);
-        const data1250 = new Date(registro1250.data + 'T00:00:00.000Z');
-        console.log(`🎯 REGISTRO 1250 DATA DEBUG: raw='${registro1250.data}' -> Date=${data1250} -> Year=${data1250.getUTCFullYear()} Month=${data1250.getUTCMonth()} Day=${data1250.getUTCDate()}`);
-      } else {
-        console.log(`❌ REGISTRO 1250 NÃO ENCONTRADO nos ${frequencias.length} registros carregados`);
-      }
-      
-      // Debug: verificar se existem registros para agosto/2025 sexta-feira 15
-      const registrosAgosto15 = frequencias.filter(r => {
-        const data = new Date(r.data + 'T00:00:00.000Z');
-        // Só debugar alguns registros para não lotar o console
-        if (r.id === 1250 || r.data.includes('2025-08-15')) {
-          console.log(`🔧 DEBUG DATA ID ${r.id}: raw='${r.data}' -> Date=${data} -> Year=${data.getUTCFullYear()} Month=${data.getUTCMonth()} Day=${data.getUTCDate()}`);
-        }
-        return data.getUTCFullYear() === 2025 && 
-               data.getUTCMonth() === 7 && // agosto = 7 (0-indexed)
-               data.getUTCDate() === 15;
-      });
-      console.log(`🔍 REGISTROS PARA 15/08/2025:`, registrosAgosto15.length, registrosAgosto15.slice(0, 3));
+      // Debug removido
       
       this.dadosFrequencia.clear();
       
@@ -154,8 +127,6 @@ class FrequenciaSupabaseManager {
       const gruposDados = new Map();
       
       if (frequencias && frequencias.length > 0) {
-        console.log(`📊 Total de registros encontrados: ${frequencias.length}`);
-        console.log('📋 Primeiros 3 registros:', frequencias.slice(0, 3));
         
         frequencias.forEach(registro => {
           // Extrair mês e ano da data - CORREÇÃO: usar parsing UTC para evitar problema de timezone

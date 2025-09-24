@@ -22,8 +22,7 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase-only.js"></script>
     
-    <!-- Chart.js para gráficos -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js removido (não utilizado na frequência) -->
     
     <!-- UI Components -->
     <script src="../assets/js/ui/toast.js"></script>
@@ -387,34 +386,27 @@
                 // Coletar alunos faltosos (F ou FC)
                 const alunosFaltosos = [];
 
-                // Buscar tabela de frequência (tentar diferentes seletores)
-                let tabelaFreq = document.querySelector('#listaAlunosFrequencia table');
-                if (!tabelaFreq) {
-                    tabelaFreq = document.querySelector('#tabelaFrequencia');
-                }
-                if (!tabelaFreq) {
-                    tabelaFreq = document.querySelector('.alunos-frequencia-lista table');
-                }
-                if (!tabelaFreq) {
-                    throw new Error('Tabela de frequência não encontrada em nenhum seletor');
+                // Buscar lista de alunos com frequência (DIVs, não TABLE)
+                const listaAlunosFreq = document.getElementById('listaAlunosFrequencia');
+                if (!listaAlunosFreq) {
+                    throw new Error('Lista de alunos de frequência não encontrada');
                 }
 
-                const linhas = tabelaFreq.querySelectorAll('tr');
-                linhas.forEach(linha => {
-                    const select = linha.querySelector('select[id^="freq_"]');
-                    if (select && (select.value === 'F' || select.value === 'FC')) {
-                        const alunoId = select.id.replace('freq_', '');
-                        const nomeCell = linha.querySelector('td:first-child');
-                        const nome = nomeCell ? nomeCell.textContent.trim() : '';
+                // Buscar todos os itens de aluno na lista
+                const alunosItems = listaAlunosFreq.querySelectorAll('.aluno-frequencia-item');
+                alunosItems.forEach(item => {
+                    const codigo = item.dataset.codigo;
+                    const nomeElement = item.querySelector('.aluno-nome');
+                    const nome = nomeElement ? nomeElement.textContent.trim() : '';
+                    const radioSelecionado = item.querySelector('input[type="radio"]:checked');
 
-                        if (nome && alunoId) {
-                            alunosFaltosos.push({
-                                id: alunoId,
-                                nome: nome,
-                                turma: turma,
-                                status: select.value === 'F' ? 'Falta' : 'Falta Controlada'
-                            });
-                        }
+                    if (radioSelecionado && (radioSelecionado.value === 'F' || radioSelecionado.value === 'FC')) {
+                        alunosFaltosos.push({
+                            id: codigo,
+                            nome: nome,
+                            turma: turma,
+                            status: radioSelecionado.value === 'F' ? 'Falta' : 'Falta Controlada'
+                        });
                     }
                 });
 
