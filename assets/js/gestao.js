@@ -1,7 +1,7 @@
 // gestao.js — CRUD de Alunos com Sistema Local + Modo Debug
 
 // ===== CONTROLE DE VERSÃO PARA EVITAR CACHE AGRESSIVO =====
-const APP_VERSION = '20250911-001';
+const APP_VERSION = '20250924-001';
 
 function checkAppVersion() {
   const lastVersion = localStorage.getItem('app_version');
@@ -232,6 +232,8 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
           onEdit(id);
         } else if (action === 'delete') {
           onDelete(id);
+        } else if (action === 'delete-edit') {
+          onDeleteInlineEdit(id);
         } else if (action === 'toggle-edit') {
           toggleRowEditMode(id);
         } else if (action === 'save-edit') {
@@ -590,6 +592,123 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     editingRows.delete(String(id));
     renderTable();
     toast('Edição cancelada', 'info');
+  }
+
+  async function onDeleteInlineEdit(id) {
+    try {
+      // Buscar dados do aluno para mostrar na confirmação
+      const aluno = alunosCache.find(a =>
+        a.id === id || a.codigo === id ||
+        a.id === parseInt(id) || a.codigo === parseInt(id)
+      );
+
+      const nomeAluno = aluno ? (aluno.nome_completo || aluno.nome || 'Aluno desconhecido') : 'Aluno desconhecido';
+      const codigoAluno = aluno ? (aluno.codigo || aluno.id || id) : id;
+
+      // Confirmação dupla para segurança
+      const confirmacao1 = confirm(
+        `⚠️ ATENÇÃO: Você tem certeza que deseja EXCLUIR definitivamente o aluno?\n\n` +
+        `Código: ${codigoAluno}\n` +
+        `Nome: ${nomeAluno}\n\n` +
+        `Esta ação NÃO PODE SER DESFEITA!`
+      );
+
+      if (!confirmacao1) {
+        toast('Exclusão cancelada', 'info');
+        return;
+      }
+
+      // Segunda confirmação para evitar exclusão acidental
+      const confirmacao2 = confirm(
+        `🚨 ÚLTIMA CONFIRMAÇÃO!\n\n` +
+        `Você está prestes a EXCLUIR DEFINITIVAMENTE:\n` +
+        `${nomeAluno} (${codigoAluno})\n\n` +
+        `Clique OK apenas se tiver ABSOLUTA CERTEZA!`
+      );
+
+      if (!confirmacao2) {
+        toast('Exclusão cancelada', 'info');
+        return;
+      }
+
+      console.log('🗑️ Iniciando exclusão do aluno:', id);
+
+      // Mostrar indicador de exclusão no botão
+      const deleteBtn = document.querySelector(`button[data-action="delete-edit"][data-id="${cssEscape(id)}"]`);
+      if (deleteBtn) {
+        const originalText = deleteBtn.innerHTML;
+        deleteBtn.innerHTML = '⏳ Excluindo...';
+        deleteBtn.disabled = true;
+
+        try {
+          // Usar a API do Supabase para exclusão
+          if (window.supabaseSystem && window.supabaseSystem.db && window.supabaseSystem.db.alunos) {
+            const resultado = await window.supabaseSystem.db.alunos.delete(id);
+            console.log('🗑️ Resultado da exclusão:', resultado);
+
+            if (resultado && resultado.error) {
+              throw new Error(resultado.error.message || 'Erro ao excluir aluno');
+            }
+          } else {
+            // Fallback para função local
+            await onDelete(id);
+          }
+
+          // Remover do cache local
+          const alunoIndex = alunosCache.findIndex(a => {
+            const match = a.id === parseInt(id) || a.codigo === parseInt(id) || a.id === id || a.codigo === id;
+            return match;
+          });
+
+          if (alunoIndex !== -1) {
+            alunosCache.splice(alunoIndex, 1);
+            console.log('✅ Aluno removido do cache local');
+          }
+
+          // Sair do modo de edição
+          editingRows.delete(String(id));
+
+          // Atualizar interface
+          renderTable();
+          updateStatistics();
+
+          toast(`Aluno ${nomeAluno} excluído com sucesso!`, 'ok');
+          console.log('✅ Exclusão concluída com sucesso');
+
+        } finally {
+          // Restaurar botão mesmo se houver erro
+          if (deleteBtn) {
+            deleteBtn.innerHTML = originalText;
+            deleteBtn.disabled = false;
+          }
+        }
+      } else {
+        // Se não encontrou o botão, executar exclusão diretamente
+        if (window.supabaseSystem && window.supabaseSystem.db && window.supabaseSystem.db.alunos) {
+          await window.supabaseSystem.db.alunos.delete(id);
+        } else {
+          await onDelete(id);
+        }
+
+        // Atualizar cache e interface
+        const alunoIndex = alunosCache.findIndex(a =>
+          a.id === parseInt(id) || a.codigo === parseInt(id) || a.id === id || a.codigo === id
+        );
+        if (alunoIndex !== -1) {
+          alunosCache.splice(alunoIndex, 1);
+        }
+
+        editingRows.delete(String(id));
+        renderTable();
+        updateStatistics();
+
+        toast(`Aluno ${nomeAluno} excluído com sucesso!`, 'ok');
+      }
+
+    } catch (error) {
+      console.error('🗑️ Erro ao excluir aluno:', error);
+      toast('Erro ao excluir aluno: ' + (error.message || 'Erro desconhecido'), 'erro');
+    }
   }
 
   async function onSaveInlineEdit(id) {
@@ -961,8 +1080,9 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         '<td><input type="text" value="' + escapeHtml(a.telefone2 || '') + '" data-field="telefone2" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 3px;"></td>' +
         '<td style="text-align: center; padding: 4px;">' + fotoCell + '</td>' +
         '<td style="white-space:nowrap">' +
-          '<button type="button" class="btn btn-small btn-success" style="background: #28a745; color: white; border: 1px solid #1e7e34; margin-right: 4px;" data-action="save-edit" data-id="' + encodeURIComponent(a.id) + '">✅ Salvar</button>' +
-          '<button type="button" class="btn btn-small btn-secondary" style="background: #6c757d; color: white; border: 1px solid #545b62;" data-action="cancel-edit" data-id="' + encodeURIComponent(a.id) + '">❌ Cancelar</button>' +
+          '<button type="button" class="btn btn-small btn-success" style="background: #28a745; color: white; border: 1px solid #1e7e34; margin-right: 2px; font-size: 11px;" data-action="save-edit" data-id="' + encodeURIComponent(a.id) + '">✅ Salvar</button>' +
+          '<button type="button" class="btn btn-small btn-danger" style="background: #dc3545; color: white; border: 1px solid #c82333; margin-right: 2px; font-size: 11px;" data-action="delete-edit" data-id="' + encodeURIComponent(a.id) + '">🗑️ Excluir</button>' +
+          '<button type="button" class="btn btn-small btn-secondary" style="background: #6c757d; color: white; border: 1px solid #545b62; font-size: 11px;" data-action="cancel-edit" data-id="' + encodeURIComponent(a.id) + '">❌ Cancelar</button>' +
         '</td>' +
       '</tr>'
     );
