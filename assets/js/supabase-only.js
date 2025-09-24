@@ -397,7 +397,7 @@ const alunosDB = {
         const { error } = await supabase
             .from('alunos')
             .delete()
-            .eq('código (matrícula)', existing['código (matrícula)']);
+            .eq('codigo', existing['código (matrícula)'] || existing.codigo);
 
         console.log('🗑️ Resultado exclusão Supabase:', error ? 'ERRO: ' + error.message : 'SUCESSO');
 
