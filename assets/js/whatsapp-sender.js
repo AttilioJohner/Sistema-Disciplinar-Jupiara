@@ -238,7 +238,7 @@ class WhatsAppSender {
       }
     }
 
-    mensagem += `📲 Essa é uma mensagem automática. Em caso de dúvidas, entre em contato com a Gestão Cívico-Militar pelo telefone ou WhatsApp: (66) 8101-0652.`;
+    mensagem += `📲 Essa é uma mensagem automática. Em caso de dúvidas, entre em contato com a Gestão Cívico-Militar pelo telefone ou WhatsApp: (66) 98111-4366.`;
 
     return mensagem;
   }
@@ -286,7 +286,7 @@ class WhatsAppSender {
     }
 
     mensagem += `📞 *Contato da Escola:*\n`;
-    mensagem += `WhatsApp: (66) 8101-0652\n`;
+    mensagem += `WhatsApp: (66) 98111-4366\n`;
     mensagem += `Email: eecmjupiara@gmail.com\n\n`;
     mensagem += `_Mensagem automática do Sistema Disciplinar_`;
 
@@ -301,7 +301,7 @@ class WhatsAppSender {
     mensagem += `📅 *Data:* ${data}\n\n`;
     mensagem += `${conteudo}\n\n`;
     mensagem += `📞 *Contato da Escola:*\n`;
-    mensagem += `WhatsApp: (66) 8101-0652\n`;
+    mensagem += `WhatsApp: (66) 98111-4366\n`;
     mensagem += `Email: eecmjupiara@gmail.com\n\n`;
     mensagem += `_Mensagem automática do Sistema Disciplinar_`;
 
