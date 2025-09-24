@@ -2402,11 +2402,11 @@
             
         }
 
-        // Controlar exibição do campo de suspensão
+        // Controlar exibição do campo de suspensão e calcular prazo
         document.getElementById('tipoMedida').addEventListener('change', function() {
             const campoSuspensao = document.getElementById('campoSuspensao');
             const diasSuspensao = document.getElementById('diasSuspensao');
-            
+
             if (this.value === 'Suspensão') {
                 campoSuspensao.style.display = 'block';
                 diasSuspensao.required = true;
@@ -2414,6 +2414,11 @@
                 campoSuspensao.style.display = 'none';
                 diasSuspensao.required = false;
                 diasSuspensao.value = '';
+            }
+
+            // Recalcular prazo quando tipo de medida muda
+            if (typeof calcularPrazoAutomatico === 'function') {
+                calcularPrazoAutomatico();
             }
         });
 
@@ -2433,6 +2438,13 @@
             // Só definir prazo para medidas que requerem assinatura
             const medidasComPrazo = ['Advertência Verbal', 'Advertência Escrita', 'Suspensão', 'Ação Educativa'];
             const prazoAssinatura = medidasComPrazo.includes(tipoMedida) ? (window.prazoCalculado || null) : null;
+
+            console.log('🔍 Debug prazo:', {
+                tipoMedida,
+                requerPrazo: medidasComPrazo.includes(tipoMedida),
+                prazoCalculado: window.prazoCalculado,
+                prazoFinal: prazoAssinatura
+            });
             
             if (!alunoId) {
                 alert('Selecione um aluno');
@@ -2746,6 +2758,13 @@
                 campoSuspensao.style.display = 'none';
                 diasSuspensao.required = false;
             }
+
+            // Recalcular prazo quando campos de medida mudam
+            setTimeout(() => {
+                if (typeof calcularPrazoAutomatico === 'function') {
+                    calcularPrazoAutomatico();
+                }
+            }, 100);
         }
         
         function carregarFaltasPorCategoria() {
