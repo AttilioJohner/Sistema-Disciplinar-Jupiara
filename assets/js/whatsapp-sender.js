@@ -199,7 +199,20 @@ class WhatsAppSender {
 
   // Formatar mensagem de medida disciplinar (novo template)
   formatarMensagemMedidaDisciplinar(aluno, medida) {
-    const data = medida.data || new Date().toLocaleDateString('pt-BR');
+    // Usar a data fornecida na medida ou a data atual como fallback
+    let data;
+    if (medida.data) {
+      // Se a data vem no formato YYYY-MM-DD (input HTML), formatá-la corretamente
+      if (medida.data.includes('-') && medida.data.length === 10) {
+        const [ano, mes, dia] = medida.data.split('-');
+        const dataLocal = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia));
+        data = dataLocal.toLocaleDateString('pt-BR');
+      } else {
+        data = medida.data; // Se já está formatada, usar como está
+      }
+    } else {
+      data = new Date().toLocaleDateString('pt-BR');
+    }
     const isPositiva = this.isMedidaPositiva(medida.tipo);
 
     let mensagem = `Bom dia!\n`;
