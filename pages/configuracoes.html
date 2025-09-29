@@ -273,8 +273,14 @@ CREATE POLICY "Usuários podem inserir" ON usuarios_sistema FOR INSERT WITH CHEC
                                     <input type="text" id="novoUsuarioNome" class="form-input" placeholder="Nome do usuário">
                                 </div>
                                 <div class="form-group">
+                                    <label class="form-label">Email (opcional)</label>
+                                    <input type="email" id="novoUsuarioEmail" class="form-input" placeholder="Deixe vazio para gerar automaticamente">
+                                    <small class="form-help">Se vazio, será username@eecmjupiara.com.br</small>
+                                </div>
+                                <div class="form-group">
                                     <label class="form-label">Senha Inicial</label>
-                                    <input type="password" id="novoUsuarioSenha" class="form-input" placeholder="Mínimo 6 caracteres">
+                                    <input type="password" id="novoUsuarioSenha" class="form-input" placeholder="Mínimo 8 caracteres">
+                                    <small class="form-help">Deve conter: maiúscula, minúscula e número</small>
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Papel no Sistema</label>

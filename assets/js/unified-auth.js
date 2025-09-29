@@ -111,8 +111,8 @@ class UnifiedAuth {
                         email = usuario.email;
                         console.log('📧 Username encontrado, usando email:', email);
                     } catch (usernameError) {
-                        console.log('⚠️ Username não encontrado, tentando login local');
-                        return this.localSignIn(loginInput, password);
+                        console.log('⚠️ Username não encontrado no Supabase');
+                        throw new Error('Usuário não encontrado. Verifique o nome de usuário.');
                     }
                 }
 
@@ -131,7 +131,19 @@ class UnifiedAuth {
 
             } catch (error) {
                 console.error('❌ Erro no login Supabase:', error);
-                // Fallback para login local em caso de erro
+
+                // Se é erro de usuário não encontrado, não fazer fallback
+                if (error.message.includes('Usuário não encontrado')) {
+                    return { success: false, error: error.message };
+                }
+
+                // Para outros erros, tentar fallback apenas se não contém @
+                if (!loginInput.includes('@')) {
+                    console.log('🔄 Tentando login local como fallback');
+                    return this.localSignIn(loginInput, password);
+                }
+
+                return { success: false, error: 'Erro na autenticação: ' + error.message };
             }
         }
 
@@ -141,11 +153,10 @@ class UnifiedAuth {
 
 
     localSignIn(email, password) {
-        // Usuários padrão do sistema
+        // Usuário admin local (apenas para emergência)
         const validCredentials = [
             { email: 'admin', password: 'admin123' },
-            { email: 'admin@eecmjupiara.com.br', password: 'admin123' },
-            { email: 'admin@escola.com', password: 'admin123' }
+            { email: 'admin@eecmjupiara.com.br', password: 'JupiaraAdmin2024!' }
         ];
 
         const credential = validCredentials.find(cred => 
