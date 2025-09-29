@@ -2154,24 +2154,45 @@
                             </div>
                             <div class="aviso-content">
                                 <div class="pontuacao-info">
-                                    <p><strong>Como funciona o sistema de notas disciplinares:</strong></p>
+                                    <p><strong>Resumo do Sistema de Notas Disciplinares:</strong></p>
+
+                                    <div class="escala-info">
+                                        <h4>📋 Como funciona a avaliação:</h4>
+                                        <ul>
+                                            <li><strong>Nota inicial:</strong> Todo aluno inicia o período letivo com nota disciplinar 10,0 (Exemplar)</li>
+                                            <li><strong>Sistema de deduções:</strong> Cada falta disciplinar reduz pontos da nota conforme sua gravidade</li>
+                                            <li><strong>Escala de avaliação:</strong> As notas variam de 0 (Crítico) a 10 (Exemplar)</li>
+                                        </ul>
+                                    </div>
+
                                     <div class="pontuacao-grid">
                                         <div class="pontuacao-item nivel-leve">
-                                            <strong>Faltas Leves:</strong> Redução de 0,2 pontos na nota disciplinar
+                                            <strong>📝 Faltas Leves (26 tipos)</strong><br>
+                                            Relacionadas a uniforme, pontualidade, organização e conduta básica
                                         </div>
                                         <div class="pontuacao-item nivel-media">
-                                            <strong>Faltas Médias:</strong> Redução de 0,5 pontos na nota disciplinar
+                                            <strong>⚠️ Faltas Médias (36 tipos)</strong><br>
+                                            Desobediência, negligência e comportamentos inadequados
                                         </div>
                                         <div class="pontuacao-item nivel-grave">
-                                            <strong>Faltas Graves:</strong> Redução de 1,0 ponto na nota disciplinar
+                                            <strong>🚨 Faltas Graves (29 tipos)</strong><br>
+                                            Desrespeito, violência, uso de substâncias e fraudes
                                         </div>
                                     </div>
-                                    <div class="escala-info">
-                                        <p><strong>Escala de Avaliação:</strong> 0 (Crítico) a 10 (Exemplar)</p>
-                                        <p><strong>Nota inicial:</strong> Todo aluno inicia com nota 10,0</p>
-                                    </div>
+
                                     <div class="alert-info">
-                                        💡 <strong>Dica:</strong> A nota disciplinar influencia diretamente no histórico escolar do aluno e pode afetar processos seletivos futuros.
+                                        <strong>📚 Importância da Nota Disciplinar:</strong><br>
+                                        A nota disciplinar é registrada no histórico escolar do aluno e pode impactar:
+                                        <ul>
+                                            <li>• Processos seletivos para ensino superior</li>
+                                            <li>• Programas de intercâmbio estudantil</li>
+                                            <li>• Oportunidades de bolsas de estudo</li>
+                                            <li>• Atividades extracurriculares da escola</li>
+                                        </ul>
+                                    </div>
+
+                                    <div class="alert-warning">
+                                        <strong>⚖️ Processo Disciplinar:</strong> Todas as medidas disciplinares seguem processo pedagógico com direito à defesa, orientação familiar e acompanhamento da coordenação pedagógica.
                                     </div>
                                 </div>
                             </div>
@@ -2354,8 +2375,11 @@
         // Função para carregar estatísticas gerais REAIS da escola
         async function carregarEstatisticasGerais() {
             try {
+                console.log('📊 Carregando estatísticas gerais...');
+
                 // Aguardar supabaseClient estar disponível
                 if (!window.supabaseClient) {
+                    console.log('⏳ Aguardando supabaseClient...');
                     await new Promise(resolve => {
                         const check = setInterval(() => {
                             if (window.supabaseClient) {
@@ -2367,14 +2391,19 @@
                 }
 
                 // 1. TOTAL DE ALUNOS DA ESCOLA (não apenas os filhos)
+                console.log('🔍 Consultando total de alunos...');
                 const { count: totalAlunosEscola, error: countError } = await window.supabaseClient
                     .from('alunos')
                     .select('id', { count: 'exact', head: true });
-                
+
+                console.log('📊 Total de alunos:', totalAlunosEscola, 'Erro:', countError);
+
                 if (!countError && totalAlunosEscola !== null) {
                     document.getElementById('totalAlunos').textContent = totalAlunosEscola;
+                    console.log('✅ Total de alunos atualizado:', totalAlunosEscola);
                 } else {
                     document.getElementById('totalAlunos').textContent = '0';
+                    console.log('❌ Erro ou nenhum aluno encontrado');
                 }
 
                 // 2. MÉDIA DE FREQUÊNCIA GERAL DA ESCOLA (hoje)
@@ -2384,12 +2413,15 @@
                     .select('status')
                     .eq('data', hoje);
                 
+                console.log('🔍 Frequências de hoje:', frequenciasHoje?.length, 'Erro:', freqError);
+
                 if (!freqError && frequenciasHoje && frequenciasHoje.length > 0) {
-                    const presentes = frequenciasHoje.filter(f => 
+                    const presentes = frequenciasHoje.filter(f =>
                         f.status === 'presente' || f.status === 'atestado'
                     ).length;
                     const percentualGeral = Math.round((presentes / frequenciasHoje.length) * 100);
                     document.getElementById('mediaFrequencia').textContent = `${percentualGeral}%`;
+                    console.log('✅ Média de frequência atualizada:', percentualGeral + '%');
                 } else {
                     // Se não houver dados de hoje, buscar média dos últimos 7 dias
                     const seteDiasAtras = new Date();
@@ -3161,7 +3193,7 @@
                 await carregarAlunosAutorizados();
 
                 // Carregar estatísticas gerais (opcional)
-                carregarEstatisticasGerais();
+                await carregarEstatisticasGerais();
 
             } catch (error) {
                 console.error('Erro ao inicializar:', error);
