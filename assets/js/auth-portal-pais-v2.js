@@ -186,6 +186,193 @@ class AuthPortalPaisV2 {
     }
 
     /**
+     * Cadastro com múltiplos filhos - versão estendida
+     */
+    async criarContaComMultiplosFilhos(cpf, nome, codigosFilhos, parentesco, senha) {
+        try {
+            const cpfLimpo = cpf.replace(/\D/g, '');
+
+            console.log('🔐 Iniciando cadastro com múltiplos filhos:', { cpfLimpo, nome, codigosFilhos, parentesco });
+
+            // 1. Verificar se CPF já existe
+            const { data: cpfExistente } = await this.supabase
+                .from('responsaveis')
+                .select('id')
+                .eq('cpf', cpfLimpo)
+                .single();
+
+            if (cpfExistente) {
+                throw new Error('CPF já cadastrado. Use a opção de login normal.');
+            }
+
+            // 2. Verificar se os alunos existem
+            const alunosEncontrados = [];
+            const alunosNaoEncontrados = [];
+
+            for (const codigoAluno of codigosFilhos) {
+                if (!codigoAluno) continue; // Pular códigos vazios
+
+                let alunoEncontrado = false;
+                let dadosAluno = null;
+
+                // Tentar buscar dados do aluno
+                try {
+                    const { data: alunoData, error: alunoError } = await this.supabase
+                        .from('alunos')
+                        .select('codigo, "Nome completo", turma')
+                        .eq('codigo', parseInt(codigoAluno))
+                        .single();
+
+                    if (!alunoError && alunoData) {
+                        dadosAluno = alunoData;
+                        alunoEncontrado = true;
+                        console.log('✅ Aluno encontrado:', dadosAluno);
+                    }
+                } catch (err) {
+                    console.log(`⚠️ Erro ao buscar aluno ${codigoAluno}:`, err);
+                }
+
+                if (alunoEncontrado) {
+                    alunosEncontrados.push({ codigo: codigoAluno, dados: dadosAluno });
+                } else {
+                    alunosNaoEncontrados.push(codigoAluno);
+                }
+            }
+
+            console.log('📊 Resultado da verificação:', {
+                encontrados: alunosEncontrados.length,
+                naoEncontrados: alunosNaoEncontrados.length
+            });
+
+            // Se nenhum aluno foi encontrado, não podemos prosseguir
+            if (alunosEncontrados.length === 0) {
+                throw new Error('Nenhum código de aluno válido foi encontrado. Verifique os códigos informados.');
+            }
+
+            // 3. Criar hash simples da senha
+            const senhaHash = btoa(senha + cpfLimpo);
+
+            // 4. Criar responsável
+            const { data: novoResponsavel, error: responsavelError } = await this.supabase
+                .from('responsaveis')
+                .insert({
+                    cpf: cpfLimpo,
+                    nome: nome,
+                    email: `${cpfLimpo}@portal.pais.local`,
+                    telefone: '',
+                    senha_hash: senhaHash,
+                    ativo: true
+                })
+                .select('id')
+                .single();
+
+            if (responsavelError) {
+                console.error('❌ Erro ao criar responsável:', responsavelError);
+
+                if (responsavelError.code === '23505' || responsavelError.message.includes('duplicate')) {
+                    throw new Error('CPF já cadastrado no sistema.');
+                }
+
+                throw new Error('Erro ao criar conta. Por favor, tente novamente.');
+            }
+
+            console.log('✅ Responsável criado com ID:', novoResponsavel.id);
+
+            // 5. Criar associações com todos os alunos
+            const vinculosCriados = [];
+            const vinculosComErro = [];
+
+            for (const alunoInfo of alunosEncontrados) {
+                try {
+                    console.log('🔗 Criando vínculo com aluno código:', alunoInfo.codigo);
+
+                    const { data: associacaoData, error: associacaoError } = await this.supabase
+                        .from('responsavel_aluno')
+                        .insert({
+                            responsavel_id: novoResponsavel.id,
+                            aluno_codigo: parseInt(alunoInfo.codigo),
+                            parentesco: parentesco,
+                            autorizado_retirar: true,
+                            autorizado_ver_notas: true,
+                            autorizado_ver_frequencia: true,
+                            autorizado_ver_disciplinar: true
+                        })
+                        .select()
+                        .single();
+
+                    if (associacaoError) {
+                        if (associacaoError.code === '23505' || associacaoError.message.includes('duplicate')) {
+                            console.log(`⚠️ Vínculo já existia para aluno ${alunoInfo.codigo}`);
+                            vinculosCriados.push(alunoInfo);
+                        } else {
+                            console.error(`❌ Erro ao criar vínculo com aluno ${alunoInfo.codigo}:`, associacaoError);
+                            vinculosComErro.push({ aluno: alunoInfo.codigo, erro: associacaoError.message });
+                        }
+                    } else {
+                        console.log('✅ Vínculo criado com sucesso:', associacaoData);
+                        vinculosCriados.push(alunoInfo);
+                    }
+                } catch (err) {
+                    console.error(`❌ Erro inesperado ao vincular aluno ${alunoInfo.codigo}:`, err);
+                    vinculosComErro.push({ aluno: alunoInfo.codigo, erro: err.message });
+                }
+            }
+
+            // Se nenhum vínculo foi criado, remover responsável
+            if (vinculosCriados.length === 0) {
+                await this.supabase
+                    .from('responsaveis')
+                    .delete()
+                    .eq('id', novoResponsavel.id);
+
+                throw new Error('Não foi possível vincular a nenhum aluno. Verifique os códigos informados.');
+            }
+
+            // 6. Mensagem de sucesso personalizada
+            let mensagemSucesso = 'Conta criada com sucesso! ';
+
+            if (vinculosCriados.length === 1) {
+                const aluno = vinculosCriados[0];
+                if (aluno.dados) {
+                    mensagemSucesso += `Você foi vinculado ao aluno ${aluno.dados['Nome completo']}`;
+                    if (aluno.dados.turma) {
+                        mensagemSucesso += ` (Turma: ${aluno.dados.turma})`;
+                    }
+                } else {
+                    mensagemSucesso += `Você foi vinculado ao aluno de código ${aluno.codigo}`;
+                }
+            } else {
+                mensagemSucesso += `Você foi vinculado a ${vinculosCriados.length} alunos: `;
+                const nomesAlunos = vinculosCriados.map(aluno => {
+                    if (aluno.dados) {
+                        return `${aluno.dados['Nome completo']}${aluno.dados.turma ? ` (${aluno.dados.turma})` : ''}`;
+                    }
+                    return `Código ${aluno.codigo}`;
+                });
+                mensagemSucesso += nomesAlunos.join(', ');
+            }
+
+            if (alunosNaoEncontrados.length > 0) {
+                mensagemSucesso += `. Códigos não encontrados: ${alunosNaoEncontrados.join(', ')}`;
+            }
+
+            mensagemSucesso += '. Agora você pode fazer login com seu CPF e senha.';
+
+            return {
+                success: true,
+                message: mensagemSucesso
+            };
+
+        } catch (error) {
+            console.error('❌ Erro no cadastro:', error);
+            return {
+                success: false,
+                error: error.message || 'Erro ao criar conta. Tente novamente.'
+            };
+        }
+    }
+
+    /**
      * Login simplificado - verifica senha hash
      */
     async loginSimplificado(cpf, senha) {

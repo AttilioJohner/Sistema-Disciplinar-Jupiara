@@ -260,8 +260,8 @@
             
             <h3 style="color: #2c3e50; margin-bottom: 15px;">Primeiro Acesso</h3>
             <p style="color: #7f8c8d; font-size: 14px; margin-bottom: 20px; text-align: left;">
-                Para criar sua conta, informe seus dados e o <strong>código do seu filho</strong>. 
-                Não é necessário cadastro prévio na escola.
+                Para criar sua conta, informe seus dados e o <strong>código do(s) seu(s) filho(s)</strong>.
+                Você pode cadastrar até 2 filhos no primeiro acesso. Não é necessário cadastro prévio na escola.
             </p>
 
             <form id="primeiroAcessoFormElement">
@@ -277,9 +277,15 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="codigoAluno">Código do Seu Filho</label>
+                    <label for="codigoAluno">Código do Primeiro Filho</label>
                     <input type="number" id="codigoAluno" name="codigoAluno" placeholder="Ex: 123" required>
                     <div class="cpf-hint">Código que aparece no boletim ou carteirinha</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="codigoSegundoFilho">Código do Segundo Filho (Opcional)</label>
+                    <input type="number" id="codigoSegundoFilho" name="codigoSegundoFilho" placeholder="Ex: 456">
+                    <div class="cpf-hint">Deixe vazio se tiver apenas um filho</div>
                 </div>
 
                 <div class="form-group">
@@ -439,6 +445,7 @@
                 const cpf = document.getElementById('cpfPrimeiro').value;
                 const nome = document.getElementById('nomePrimeiro').value.trim();
                 const codigoAluno = document.getElementById('codigoAluno').value.trim();
+                const codigoSegundoFilho = document.getElementById('codigoSegundoFilho').value.trim();
                 const parentesco = document.getElementById('parentesco').value;
                 const senha = document.getElementById('senhaPrimeiro').value;
                 const confirmarSenha = document.getElementById('confirmarSenha').value;
@@ -468,7 +475,13 @@
                     throw new Error('Senhas não conferem');
                 }
 
-                const resultado = await auth.criarContaSimplificada(cpf, nome, codigoAluno, parentesco, senha);
+                // Preparar lista de códigos dos filhos
+                const codigosFilhos = [codigoAluno];
+                if (codigoSegundoFilho) {
+                    codigosFilhos.push(codigoSegundoFilho);
+                }
+
+                const resultado = await auth.criarContaComMultiplosFilhos(cpf, nome, codigosFilhos, parentesco, senha);
 
                 if (resultado.success) {
                     mostrarMensagem(resultado.message, 'success');
