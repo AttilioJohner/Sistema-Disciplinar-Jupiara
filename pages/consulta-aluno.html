@@ -1025,18 +1025,18 @@
 
         .nav-btn {
             flex: 1;
-            max-width: 200px;
+            max-width: 180px;
             background: transparent;
             border: 2px solid transparent;
-            padding: 15px 20px;
+            padding: 12px 15px;
             border-radius: 12px;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
-            font-size: 0.95em;
+            gap: 6px;
+            font-size: 0.9em;
             color: #7f8c8d;
         }
 
@@ -1293,6 +1293,322 @@
                 margin-bottom: 20px;
             }
         }
+
+        /* Estilos para Avisos Gerais */
+        .avisos-section {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 18px;
+            padding: 30px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            backdrop-filter: blur(10px);
+        }
+
+        .aviso-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .aviso-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .aviso-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .aviso-icon {
+            font-size: 2.5em;
+            padding: 15px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .aviso-title {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .aviso-content {
+            color: #34495e;
+            line-height: 1.6;
+        }
+
+        .horario-grid {
+            display: grid;
+            gap: 12px;
+            margin: 15px 0;
+        }
+
+        .horario-item {
+            background: rgba(102, 126, 234, 0.05);
+            padding: 12px 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            font-size: 0.95em;
+        }
+
+        .uniforme-section, .recomendacoes-section {
+            margin-bottom: 25px;
+        }
+
+        .uniforme-section h4, .recomendacoes-section h4 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #2c3e50;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .section-icon {
+            font-size: 1.3em;
+        }
+
+        .uniforme-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .uniforme-item {
+            background: rgba(39, 174, 96, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #27ae60;
+        }
+
+        .regras-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .regras-list li {
+            background: rgba(231, 76, 60, 0.1);
+            padding: 12px 15px;
+            border-radius: 8px;
+            border-left: 4px solid #e74c3c;
+            margin-bottom: 8px;
+        }
+
+        .regras-list li::before {
+            content: "⚠️ ";
+            margin-right: 8px;
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, rgba(230, 126, 34, 0.1), rgba(241, 196, 15, 0.1));
+            border: 2px solid #f39c12;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            color: #d35400;
+            font-weight: 500;
+        }
+
+        /* Estilos para Regulamentos */
+        .regulamentos-section {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 18px;
+            padding: 30px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            backdrop-filter: blur(10px);
+        }
+
+        .regulamento-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 2px solid;
+            transition: all 0.3s ease;
+        }
+
+        .regulamento-card.falta-leve {
+            border-color: #f1c40f;
+            background: linear-gradient(135deg, rgba(241, 196, 15, 0.05), rgba(243, 156, 18, 0.05));
+        }
+
+        .regulamento-card.falta-media {
+            border-color: #e67e22;
+            background: linear-gradient(135deg, rgba(230, 126, 34, 0.05), rgba(211, 84, 0, 0.05));
+        }
+
+        .regulamento-card.falta-grave {
+            border-color: #e74c3c;
+            background: linear-gradient(135deg, rgba(231, 76, 60, 0.05), rgba(192, 57, 43, 0.05));
+        }
+
+        .regulamento-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+        }
+
+        .regulamento-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid currentColor;
+            opacity: 0.8;
+        }
+
+        .regulamento-icon {
+            font-size: 2.5em;
+            padding: 15px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .regulamento-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .regulamento-content {
+            color: #34495e;
+        }
+
+        .faltas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .falta-item {
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            line-height: 1.4;
+            transition: all 0.2s ease;
+        }
+
+        .falta-leve .falta-item {
+            background: rgba(241, 196, 15, 0.1);
+            border-left: 4px solid #f1c40f;
+        }
+
+        .falta-media .falta-item {
+            background: rgba(230, 126, 34, 0.1);
+            border-left: 4px solid #e67e22;
+        }
+
+        .falta-grave .falta-item {
+            background: rgba(231, 76, 60, 0.1);
+            border-left: 4px solid #e74c3c;
+        }
+
+        .falta-item:hover {
+            transform: translateX(5px);
+            opacity: 0.9;
+        }
+
+        .pontuacao-info {
+            color: #34495e;
+            line-height: 1.6;
+        }
+
+        .pontuacao-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .pontuacao-item {
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .nivel-leve {
+            background: linear-gradient(135deg, rgba(241, 196, 15, 0.15), rgba(243, 156, 18, 0.15));
+            border: 2px solid #f1c40f;
+            color: #d68910;
+        }
+
+        .nivel-media {
+            background: linear-gradient(135deg, rgba(230, 126, 34, 0.15), rgba(211, 84, 0, 0.15));
+            border: 2px solid #e67e22;
+            color: #d35400;
+        }
+
+        .nivel-grave {
+            background: linear-gradient(135deg, rgba(231, 76, 60, 0.15), rgba(192, 57, 43, 0.15));
+            border: 2px solid #e74c3c;
+            color: #c0392b;
+        }
+
+        .escala-info {
+            background: rgba(52, 152, 219, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 4px solid #3498db;
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(155, 89, 182, 0.1));
+            border: 2px solid #3498db;
+            border-radius: 12px;
+            padding: 20px;
+            color: #2980b9;
+            font-weight: 500;
+        }
+
+        /* Responsivo para seções */
+        @media (max-width: 768px) {
+            .avisos-section, .regulamentos-section {
+                padding: 20px;
+            }
+
+            .aviso-card, .regulamento-card {
+                padding: 20px;
+            }
+
+            .aviso-header, .regulamento-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+
+            .aviso-icon, .regulamento-icon {
+                font-size: 2em;
+                padding: 12px;
+            }
+
+            .horario-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .faltas-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pontuacao-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1403,6 +1719,14 @@
                     <button class="nav-btn" onclick="switchTab('frequencia')" data-tab="frequencia">
                         <span class="nav-icon">📅</span>
                         <span class="nav-text">Frequência</span>
+                    </button>
+                    <button class="nav-btn" onclick="switchTab('avisos')" data-tab="avisos">
+                        <span class="nav-icon">📢</span>
+                        <span class="nav-text">Avisos Gerais</span>
+                    </button>
+                    <button class="nav-btn" onclick="switchTab('regulamentos')" data-tab="regulamentos">
+                        <span class="nav-icon">📜</span>
+                        <span class="nav-text">Regulamentos</span>
                     </button>
                 </div>
             </div>
@@ -1544,6 +1868,312 @@
                                         <!-- Tabela será preenchida via JS -->
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Avisos Gerais -->
+                <div id="avisos" class="tab-pane">
+                    <div class="avisos-section">
+                        <h3 class="section-title">
+                            <span class="title-icon">📢</span>
+                            Avisos Gerais da Escola
+                        </h3>
+
+                        <!-- Ato Cívico -->
+                        <div class="aviso-card">
+                            <div class="aviso-header">
+                                <div class="aviso-icon">🇧🇷</div>
+                                <div class="aviso-title">Cronograma de Ato Cívico</div>
+                            </div>
+                            <div class="aviso-content">
+                                <p><strong>Horário Matutino - 06:55h:</strong></p>
+                                <div class="horario-grid">
+                                    <div class="horario-item">
+                                        <strong>Segunda-feira:</strong> 2º Ano - A, 1º Ano - C
+                                    </div>
+                                    <div class="horario-item">
+                                        <strong>Terça-feira:</strong> 1º Ano - B
+                                    </div>
+                                    <div class="horario-item">
+                                        <strong>Quarta-feira:</strong> 9º Ano - A, 9º Ano - E, 9º Ano - B
+                                    </div>
+                                    <div class="horario-item">
+                                        <strong>Quinta-feira:</strong> 8º Ano - A, 8º Ano - B
+                                    </div>
+                                    <div class="horario-item">
+                                        <strong>Sexta-feira:</strong> 7º Ano - A
+                                    </div>
+                                </div>
+                                <p><strong>Horário Vespertino - 17:05h:</strong></p>
+                                <div class="horario-grid">
+                                    <div class="horario-item">
+                                        <strong>Segunda-feira:</strong> 6º Ano - A
+                                    </div>
+                                    <div class="horario-item">
+                                        <strong>Terça-feira:</strong> 6º Ano - B
+                                    </div>
+                                    <div class="horario-item">
+                                        <strong>Quarta-feira:</strong> 7º Ano - B
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Instrução Cívica-Militar -->
+                        <div class="aviso-card">
+                            <div class="aviso-header">
+                                <div class="aviso-icon">⚔️</div>
+                                <div class="aviso-title">Instrução Cívica-Militar (Ordem Unida)</div>
+                            </div>
+                            <div class="aviso-content">
+                                <div class="horario-grid">
+                                    <div class="horario-item">
+                                        <strong>09:00h às 09:20h (3ª Aula) - Quinta-feira:</strong> 8º Ano - B
+                                    </div>
+                                    <div class="horario-item">
+                                        <strong>10:40h às 11:10h (5ª Aula) - Quarta-feira:</strong> 8º Ano - A, 9º Ano - A
+                                    </div>
+                                    <div class="horario-item">
+                                        <strong>10:40h às 11:10h (5ª Aula) - Quinta-feira:</strong> 7º Ano - A
+                                    </div>
+                                    <div class="horario-item">
+                                        <strong>10:40h às 11:10h (5ª Aula) - Sexta-feira:</strong> 9º Ano - E, 9º Ano - B
+                                    </div>
+                                    <div class="horario-item">
+                                        <strong>11:30h às 12:00h (6ª Aula) - Segunda-feira:</strong> 1º Ano - B
+                                    </div>
+                                    <div class="horario-item">
+                                        <strong>11:30h às 12:00h (6ª Aula) - Terça-feira:</strong> 1º Ano - C, 2º Ano - A
+                                    </div>
+                                    <div class="horario-item">
+                                        <strong>12:00h às 12:30h (1ª Aula) - Segunda-feira:</strong> 6º Ano - B
+                                    </div>
+                                    <div class="horario-item">
+                                        <strong>12:00h às 12:30h (1ª Aula) - Quarta-feira:</strong> 7º Ano - B
+                                    </div>
+                                    <div class="horario-item">
+                                        <strong>12:00h às 12:30h (1ª Aula) - Sexta-feira:</strong> 6º Ano - A
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Obrigações Gerais -->
+                        <div class="aviso-card">
+                            <div class="aviso-header">
+                                <div class="aviso-icon">📋</div>
+                                <div class="aviso-title">Obrigações dos Alunos</div>
+                            </div>
+                            <div class="aviso-content">
+                                <div class="uniforme-section">
+                                    <h4><span class="section-icon">👕</span>Uniforme Escolar</h4>
+                                    <div class="uniforme-grid">
+                                        <div class="uniforme-item">
+                                            <strong>Segunda, Quarta e Sexta:</strong>
+                                            Uniforme Completo - Abrigo Escolar (Calça e camiseta da Escola)
+                                        </div>
+                                        <div class="uniforme-item">
+                                            <strong>Terça e Quinta:</strong>
+                                            Camiseta da Escola e calça Jeans
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="recomendacoes-section">
+                                    <h4><span class="section-icon">📱</span>Aparelhos Eletrônicos</h4>
+                                    <ul class="regras-list">
+                                        <li>Uso de caixas de som portáteis é proibido</li>
+                                        <li>Aparelhos devem estar desligados durante as aulas</li>
+                                        <li>Fones de ouvido não permitidos durante aulas e formaturas</li>
+                                        <li>Não tirar fotos/vídeos em sala sem autorização</li>
+                                        <li>Contato durante aulas deve ser feito pela direção</li>
+                                    </ul>
+                                </div>
+
+                                <div class="recomendacoes-section">
+                                    <h4><span class="section-icon">🚫</span>Proibições Gerais</h4>
+                                    <ul class="regras-list">
+                                        <li>Bebidas alcoólicas, energéticos, cigarros ou drogas</li>
+                                        <li>Manifestações de namoro no colégio ou uniformizado</li>
+                                        <li>Líquido corretivo e estiletes</li>
+                                        <li>Comercialização de produtos</li>
+                                        <li>Skates, patinetes ou transporte motorizado</li>
+                                    </ul>
+                                </div>
+
+                                <div class="alert-warning">
+                                    ⚠️ <strong>Importante:</strong> O não cumprimento dos horários e regras estabelecidas acarretará medidas disciplinares, podendo impactar diretamente na nota de disciplina do aluno!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Regulamentos -->
+                <div id="regulamentos" class="tab-pane">
+                    <div class="regulamentos-section">
+                        <h3 class="section-title">
+                            <span class="title-icon">📜</span>
+                            Regulamentos e Faltas Disciplinares
+                        </h3>
+
+                        <!-- Faltas Leves -->
+                        <div class="regulamento-card falta-leve">
+                            <div class="regulamento-header">
+                                <div class="regulamento-icon">🟡</div>
+                                <div class="regulamento-title">Faltas Disciplinares de Natureza Leve</div>
+                            </div>
+                            <div class="regulamento-content">
+                                <div class="faltas-grid">
+                                    <div class="falta-item">1. Apresentar-se com uniforme diferente do estabelecido</div>
+                                    <div class="falta-item">2. Apresentar-se com barba ou bigode sem fazer</div>
+                                    <div class="falta-item">3. Cabelo em desalinho ou fora do padrão</div>
+                                    <div class="falta-item">4. Chegar atrasado às atividades escolares</div>
+                                    <div class="falta-item">5. Comparecer sem o material necessário</div>
+                                    <div class="falta-item">6. Adentrar dependências sem autorização</div>
+                                    <div class="falta-item">7. Consumir alimentos durante aula/formatura</div>
+                                    <div class="falta-item">8. Conversar ou se mexer quando em forma</div>
+                                    <div class="falta-item">9. Não entregar objetos achados</div>
+                                    <div class="falta-item">10. Não retribuir cumprimentos regulamentares</div>
+                                    <div class="falta-item">11. Deixar material em locais inapropriados</div>
+                                    <div class="falta-item">12. Descartar lixo no chão</div>
+                                    <div class="falta-item">13. Dobrar peças do uniforme</div>
+                                    <div class="falta-item">14. Debruçar-se e dormir durante aulas</div>
+                                    <div class="falta-item">15. Executar ordem unida de forma displicente</div>
+                                    <div class="falta-item">16. Fazer barulho excessivo durante aula</div>
+                                    <div class="falta-item">17. Não comunicar irregularidades presenciadas</div>
+                                    <div class="falta-item">18. Perturbar estudo dos colegas</div>
+                                    <div class="falta-item">19. Usar publicações estranhas à atividade</div>
+                                    <div class="falta-item">20. Retardar execução de atividades</div>
+                                    <div class="falta-item">21. Sentar no chão quando uniformizado</div>
+                                    <div class="falta-item">22. Usar jogos/brinquedos na escola</div>
+                                    <div class="falta-item">23. Usar piercings/brincos fora do padrão (alunas)</div>
+                                    <div class="falta-item">24. Usar piercings/brincos (alunos)</div>
+                                    <div class="falta-item">25. Usar boné/capuz durante atividades</div>
+                                    <div class="falta-item">26. Ficar na sala durante intervalos</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Faltas Médias -->
+                        <div class="regulamento-card falta-media">
+                            <div class="regulamento-header">
+                                <div class="regulamento-icon">🟠</div>
+                                <div class="regulamento-title">Faltas Disciplinares de Natureza Média</div>
+                            </div>
+                            <div class="regulamento-content">
+                                <div class="faltas-grid">
+                                    <div class="falta-item">27. Atrasar ou não atender chamado de autoridades</div>
+                                    <div class="falta-item">28. Não comparecer a atividades designadas</div>
+                                    <div class="falta-item">29. Ausentar-se de atividades sem autorização</div>
+                                    <div class="falta-item">30. Não cumprir medidas disciplinares</div>
+                                    <div class="falta-item">31. Não devolver documentos no prazo</div>
+                                    <div class="falta-item">32. Não devolver livros da biblioteca</div>
+                                    <div class="falta-item">33. Não entregar documentos aos responsáveis</div>
+                                    <div class="falta-item">34. Não executar tarefas atribuídas</div>
+                                    <div class="falta-item">35. Não zelar pela apresentação pessoal</div>
+                                    <div class="falta-item">36. Dirigir petições sobre assuntos da direção</div>
+                                    <div class="falta-item">37. Entrar/sair por locais não permitidos</div>
+                                    <div class="falta-item">38. Espalhar boatos ou notícias tendenciosas</div>
+                                    <div class="falta-item">39. Tocar a sirene sem autorização</div>
+                                    <div class="falta-item">40. Fumar dentro ou nas imediações</div>
+                                    <div class="falta-item">41. Ingressar sem uniforme regulamentar</div>
+                                    <div class="falta-item">42. Ler publicações contra disciplina/moral</div>
+                                    <div class="falta-item">43. Contato físico amoroso quando uniformizado</div>
+                                    <div class="falta-item">44. Não zelar pelo nome da instituição</div>
+                                    <div class="falta-item">45. Recusar participação em eventos oficiais</div>
+                                    <div class="falta-item">46. Ofender moral de colegas ou comunidade</div>
+                                    <div class="falta-item">47. Portar-se inconvenientemente</div>
+                                    <div class="falta-item">48. Comportamento desrespeitoso em eventos</div>
+                                    <div class="falta-item">49. Proferir palavras de baixo calão</div>
+                                    <div class="falta-item">50. Transações pecuniárias não autorizadas</div>
+                                    <div class="falta-item">51. Provocar discórdia entre colegas</div>
+                                    <div class="falta-item">52. Publicar conteúdo que exponha a escola</div>
+                                    <div class="falta-item">53. Retirar objetos sem autorização</div>
+                                    <div class="falta-item">54. Sair de forma sem autorização</div>
+                                    <div class="falta-item">55. Entrar/permanecer na sala sem permissão</div>
+                                    <div class="falta-item">56. Ser retirado por mau comportamento</div>
+                                    <div class="falta-item">57. Simular doenças para esquivar-se</div>
+                                    <div class="falta-item">58. Participar de jogos de azar ou apostas</div>
+                                    <div class="falta-item">59. Usar instalações esportivas sem autorização</div>
+                                    <div class="falta-item">60. Usar uniforme em ambiente inapropriado</div>
+                                    <div class="falta-item">61. Usar aparelhos eletrônicos sem autorização</div>
+                                    <div class="falta-item">62. Usar distintivos indevidamente</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Faltas Graves -->
+                        <div class="regulamento-card falta-grave">
+                            <div class="regulamento-header">
+                                <div class="regulamento-icon">🔴</div>
+                                <div class="regulamento-title">Faltas Disciplinares de Natureza Grave</div>
+                            </div>
+                            <div class="regulamento-content">
+                                <div class="faltas-grid">
+                                    <div class="falta-item">63. Assinar pelo responsável</div>
+                                    <div class="falta-item">64. Causar danos ao patrimônio</div>
+                                    <div class="falta-item">65. Causar/contribuir para acidentes</div>
+                                    <div class="falta-item">66. Comunicar-se durante avaliações</div>
+                                    <div class="falta-item">67. Denegrir o nome da escola</div>
+                                    <div class="falta-item">68. Desrespeitar autoridades escolares</div>
+                                    <div class="falta-item">69. Divulgar apologia às drogas/violência</div>
+                                    <div class="falta-item">70. Entrar/ausentar-se sem autorização</div>
+                                    <div class="falta-item">71. Extraviar documentos sob responsabilidade</div>
+                                    <div class="falta-item">72. Faltar com a verdade/usar anonimato</div>
+                                    <div class="falta-item">73. Uso de drogas/álcool na escola</div>
+                                    <div class="falta-item">74. Hastear/arriar bandeiras sem autorização</div>
+                                    <div class="falta-item">75. Instigar colegas a cometer faltas</div>
+                                    <div class="falta-item">76. Contato físico libidinoso</div>
+                                    <div class="falta-item">77. Fazer uso de material difamatório</div>
+                                    <div class="falta-item">78. Praticar Bullying/Cyberbullying</div>
+                                    <div class="falta-item">79. Pichar ou causar poluição</div>
+                                    <div class="falta-item">80. Portar objetos perigosos</div>
+                                    <div class="falta-item">81. Desrespeitar símbolos nacionais</div>
+                                    <div class="falta-item">82. Manifestações que maculem a escola</div>
+                                    <div class="falta-item">83. Promover trotes</div>
+                                    <div class="falta-item">84. Envolver-se em rixa/luta</div>
+                                    <div class="falta-item">85. Manifestações políticas uniformizado</div>
+                                    <div class="falta-item">86. Alterar documentos</div>
+                                    <div class="falta-item">87. Representar a escola sem autorização</div>
+                                    <div class="falta-item">88. Distribuir material político-partidário</div>
+                                    <div class="falta-item">89. Utilizar/subtrair objetos alheios</div>
+                                    <div class="falta-item">90. Usar processos fraudulentos</div>
+                                    <div class="falta-item">91. Causar avaria ao patrimônio</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sistema de Pontuação -->
+                        <div class="aviso-card">
+                            <div class="aviso-header">
+                                <div class="aviso-icon">📊</div>
+                                <div class="aviso-title">Sistema de Avaliação Disciplinar</div>
+                            </div>
+                            <div class="aviso-content">
+                                <div class="pontuacao-info">
+                                    <p><strong>Como funciona o sistema de notas disciplinares:</strong></p>
+                                    <div class="pontuacao-grid">
+                                        <div class="pontuacao-item nivel-leve">
+                                            <strong>Faltas Leves:</strong> Redução de 0,2 pontos na nota disciplinar
+                                        </div>
+                                        <div class="pontuacao-item nivel-media">
+                                            <strong>Faltas Médias:</strong> Redução de 0,5 pontos na nota disciplinar
+                                        </div>
+                                        <div class="pontuacao-item nivel-grave">
+                                            <strong>Faltas Graves:</strong> Redução de 1,0 ponto na nota disciplinar
+                                        </div>
+                                    </div>
+                                    <div class="escala-info">
+                                        <p><strong>Escala de Avaliação:</strong> 0 (Crítico) a 10 (Exemplar)</p>
+                                        <p><strong>Nota inicial:</strong> Todo aluno inicia com nota 10,0</p>
+                                    </div>
+                                    <div class="alert-info">
+                                        💡 <strong>Dica:</strong> A nota disciplinar influencia diretamente no histórico escolar do aluno e pode afetar processos seletivos futuros.
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

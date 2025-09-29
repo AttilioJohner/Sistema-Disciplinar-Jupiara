@@ -677,7 +677,7 @@ async function getStatistics() {
         
         if (!supabase) {
             console.error('❌ Supabase não disponível para estatísticas');
-            return { totalAlunos: 0, totalMedidas: 0, totalTurmas: 0 };
+            return { totalAlunos: 0, totalMedidas: 0, totalFaltas: 0, totalTurmas: 0 };
         }
         
         console.log('📊 Carregando estatísticas do Supabase...');
@@ -717,6 +717,7 @@ async function getStatistics() {
         return {
             totalAlunos: 0,
             totalMedidas: 0,
+            totalFaltas: 0,
             totalTurmas: 0
         };
     }

@@ -212,102 +212,44 @@
 
   <!-- Guard + inicialização do dashboard (só logado) -->
 <script>
-  async function carregarEstatisticasDashboard() {
-    try {
-      if (typeof db !== 'undefined' && db) {
-        // Buscar todos os alunos (sem filtro de ativo)
-        const alunosSnapshot = await db.collection('alunos').get();
-
-        // Buscar medidas disciplinares (coleção correta)
-        const medidasSnapshot = await db.collection('medidas_disciplinares').get();
-
-        // Para faltas, vamos contar 0 por enquanto até implementarmos
-        const totalAlunos = alunosSnapshot.size;
-        const totalFaltas = 0; // Implementar quando tiver sistema de faltas
-        const totalMedidas = medidasSnapshot.size;
-        const mediaFaltas = totalAlunos > 0 ? (totalFaltas / totalAlunos).toFixed(1) : 0;
-
-        document.getElementById('totalAlunos').textContent  = totalAlunos;
-        document.getElementById('totalFaltas').textContent  = totalFaltas;
-        document.getElementById('totalMedidas').textContent = totalMedidas;
-        document.getElementById('mediaFaltas').textContent  = mediaFaltas;
-
-        console.log(`Estatísticas: ${totalAlunos} alunos, ${totalMedidas} medidas`);
-        if (typeof showMessage === 'function') showMessage('📊 Estatísticas atualizadas!', 'success');
-      }
-    } catch (e) {
-      console.error('Erro ao carregar estatísticas:', e);
-      if (typeof showMessage === 'function') showMessage('⚠️ Erro ao carregar estatísticas', 'error');
-    }
-  }
 
   document.addEventListener('DOMContentLoaded', () => {
-    
-    requireAuth({
-      loginPath: 'pages/login.html',
-      onAuth: (user) => {
-        if (typeof carregarEstatisticasDashboard === 'function') {
-          carregarEstatisticasDashboard();
-          if (typeof carregarAlunosDashboard === 'function') {
-            carregarAlunosDashboard();
-          }
-        }
 
-        // Função de logout compatible com local-auth
-        const btn = document.getElementById('btnLogout');
-        if (btn) {
-          btn.addEventListener('click', async () => {
-            try {
-              if (window.localAuth && typeof window.localAuth.signOut === 'function') {
-                await window.localAuth.signOut();
-                showMessage('👋 Logout realizado com sucesso!', 'success');
-                setTimeout(() => {
-                  window.location.href = 'pages/login.html';
-                }, 1000);
-              } else {
-                console.warn('Sistema de autenticação não disponível');
-                window.location.href = 'pages/login.html';
-              }
-            } catch (error) {
-              console.error('Erro no logout:', error);
-              window.location.href = 'pages/login.html';
-            }
-          });
-        }
+    // Verificar autenticação usando sistema Supabase
+    if (!window.supabaseSystem.auth.requireAuth()) {
+      return;
+    }
 
-        // Logout da sidebar
-        const sidebarLogout = document.getElementById('sidebarLogout');
-        if (sidebarLogout) {
-          sidebarLogout.addEventListener('click', async (e) => {
-            e.preventDefault();
-            try {
-              if (window.localAuth && typeof window.localAuth.signOut === 'function') {
-                await window.localAuth.signOut();
-                showMessage('👋 Logout realizado com sucesso!', 'success');
-                setTimeout(() => {
-                  window.location.href = 'pages/login.html';
-                }, 1000);
-              } else {
-                window.location.href = 'pages/login.html';
-              }
-            } catch (error) {
-              console.error('Erro no logout:', error);
-              window.location.href = 'pages/login.html';
-            }
-          });
-        }
+    // Carregar dados adicionais se disponíveis
+    if (typeof carregarAlunosDashboard === 'function') {
+      carregarAlunosDashboard();
+    }
 
-        // === Toggle "Alunos Cadastrados" ===
-        const toggleBtn = document.getElementById('toggleAlunosBtn');
-        const alunosSection = document.getElementById('alunosSection');
-        if (toggleBtn && alunosSection) {
-          toggleBtn.addEventListener('click', () => {
-            const hidden = alunosSection.style.display === 'none';
-            alunosSection.style.display = hidden ? 'block' : 'none';
-            toggleBtn.textContent = hidden ? 'Ocultar' : 'Mostrar';
-          });
-        }
-      }
-    });
+    // Configurar logout buttons
+    const btn = document.getElementById('btnLogout');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        window.supabaseSystem.auth.logout();
+      });
+    }
+
+    const sidebarLogout = document.getElementById('sidebarLogout');
+    if (sidebarLogout) {
+      sidebarLogout.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.supabaseSystem.auth.logout();
+      });
+    }
+
+    // === Toggle "Alunos Cadastrados" ===
+    const toggleBtn = document.getElementById('toggleAlunosBtn');
+    const alunosSection = document.getElementById('alunosSection');
+    if (toggleBtn && alunosSection) {
+      toggleBtn.addEventListener('click', () => {
+        const hidden = alunosSection.style.display === 'none';
+        alunosSection.style.display = hidden ? 'block' : 'none';
+        toggleBtn.textContent = hidden ? 'Ocultar' : 'Mostrar';
+      });
+    }
   });
 </script>
