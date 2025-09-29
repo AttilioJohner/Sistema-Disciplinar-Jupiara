@@ -8,13 +8,36 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Simular status da API
+// ⭐ Middleware para rastrear atividade (ajuda o auto-sleep)
+let lastActivity = Date.now();
+let totalRequests = 0;
+
+app.use((req, res, next) => {
+  lastActivity = Date.now();
+  totalRequests++;
+  console.log(`📊 Request #${totalRequests} - ${req.method} ${req.path}`);
+  next();
+});
+
+// Health check otimizado para Railway auto-sleep
 app.get('/', (req, res) => {
+  const uptime = process.uptime();
+  const minutesSinceActivity = Math.floor((Date.now() - lastActivity) / 60000);
+
   res.json({
     status: 200,
     message: "Evolution API Mock - Escola Jupiara funcionando!",
     version: "1.0.0-mock",
-    clientName: "escola_jupiara_mock"
+    clientName: "escola_jupiara_mock",
+    uptime: `${Math.floor(uptime / 60)}m ${Math.floor(uptime % 60)}s`,
+    totalRequests: totalRequests,
+    lastActivity: new Date(lastActivity).toLocaleString('pt-BR'),
+    sleepInfo: {
+      enabled: true,
+      sleepsAfter: "30 minutos sem atividade",
+      wakesOn: "Qualquer requisição HTTP",
+      coldStart: "10-30 segundos"
+    }
   });
 });
 
@@ -71,8 +94,31 @@ app.get('/instance/connectionState/:instance', (req, res) => {
   });
 });
 
-const PORT = 3001;
-app.listen(PORT, () => {
+const PORT = process.env.PORT || 3001;
+
+// Configurações otimizadas para Railway auto-sleep
+const server = app.listen(PORT, () => {
   console.log(`🚀 API Mock WhatsApp rodando em http://localhost:${PORT}`);
   console.log(`📱 Teste: http://localhost:${PORT}/instance/connect/escola_jupiara_principal`);
+  console.log(`💤 Auto-sleep: ATIVO (dorme após 30min sem uso)`);
+  console.log(`⚡ Wake-up: AUTOMÁTICO (qualquer request HTTP)`);
 });
+
+// Graceful shutdown para Railway
+process.on('SIGTERM', () => {
+  console.log('🔄 SIGTERM recebido, fechando servidor...');
+  server.close(() => {
+    console.log('✅ Servidor fechado gracefully');
+    process.exit(0);
+  });
+});
+
+// Log de atividade a cada 10 minutos
+setInterval(() => {
+  const minutesSinceActivity = Math.floor((Date.now() - lastActivity) / 60000);
+  console.log(`⏰ Atividade: última há ${minutesSinceActivity} minutos`);
+
+  if (minutesSinceActivity >= 25) {
+    console.log(`💤 AVISO: Auto-sleep em ~${30 - minutesSinceActivity} minutos`);
+  }
+}, 10 * 60 * 1000); // A cada 10 minutos

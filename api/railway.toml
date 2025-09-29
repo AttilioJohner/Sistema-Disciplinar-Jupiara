@@ -1,0 +1,27 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+# Configuração de auto-sleep para economizar recursos
+restartPolicy = "on-failure"
+healthcheckPath = "/"
+healthcheckTimeout = 300
+
+# ⭐ AUTO-SLEEP ATIVADO
+# - Dorme após 30 min sem requisições
+# - Acorda automaticamente com qualquer request HTTP
+# - Cold start: 10-30 segundos
+sleepApplication = true
+
+[variables]
+# Variáveis de ambiente para produção
+NODE_ENV = "production"
+PORT = "3001"
+
+# Configurações de timeout otimizadas para sleep
+KEEP_ALIVE_TIMEOUT = "30000"
+HEADERS_TIMEOUT = "35000"
+
+[build.env]
+# Configurações de build
+NODE_VERSION = "18"
