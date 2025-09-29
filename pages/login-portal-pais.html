@@ -359,7 +359,7 @@
 
             // Verificar se já está logado
             if (await auth.isAuthenticated()) {
-                window.location.href = 'consulta-aluno-v2.html';
+                window.location.href = 'consulta-aluno.html';
                 return;
             }
 
@@ -418,7 +418,7 @@
                     mostrarMensagem('Login realizado com sucesso! Redirecionando...', 'success');
                     
                     setTimeout(() => {
-                        window.location.href = 'consulta-aluno-v2.html';
+                        window.location.href = 'consulta-aluno.html';
                     }, 1000);
                 } else {
                     throw new Error(resultado.error);

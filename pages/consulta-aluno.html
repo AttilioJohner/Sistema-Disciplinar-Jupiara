@@ -752,6 +752,149 @@
             background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
         }
 
+        .btn-add-student {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-add-student:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-add-student span {
+            font-size: 12px;
+        }
+
+        /* Modal para adicionar filho */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-hint {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 25px;
+        }
+
+        .btn-cancel {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .btn-cancel:hover {
+            background: #7f8c8d;
+        }
+
+        .btn-confirm {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-confirm:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .loading-inline {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         .aluno-card-header {
             display: flex;
             align-items: center;
@@ -1201,10 +1344,15 @@
 
         <!-- Seção de Busca -->
         <div class="search-section">
-            <h2 class="search-title">
-                👥 Seus Filhos
-            </h2>
-            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 class="search-title" style="margin: 0;">
+                    👥 Seus Filhos
+                </h2>
+                <button class="btn-add-student" onclick="mostrarModalAdicionarFilho()" title="Adicionar mais um filho">
+                    <span>➕</span> Adicionar Filho
+                </button>
+            </div>
+
             <div id="alertMessage" class="alert"></div>
 
             <!-- Lista de filhos do responsável -->
@@ -2557,7 +2705,116 @@
             }
         }
 
+        // Modal para adicionar filho
+        function mostrarModalAdicionarFilho() {
+            document.getElementById('modalAdicionarFilho').style.display = 'flex';
+            document.getElementById('formAdicionarFilho').reset();
+        }
+
+        function fecharModalAdicionarFilho() {
+            document.getElementById('modalAdicionarFilho').style.display = 'none';
+        }
+
+        // Handle do formulário de adicionar filho
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('formAdicionarFilho');
+            if (form) {
+                form.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+
+                    const btnSubmit = e.target.querySelector('.btn-confirm');
+                    const btnText = btnSubmit.querySelector('.btn-text');
+
+                    try {
+                        // Mostrar loading
+                        btnText.innerHTML = '<span class="loading-inline"></span> Adicionando...';
+                        btnSubmit.disabled = true;
+
+                        const codigoAluno = document.getElementById('codigoNovoFilho').value.trim();
+                        const parentesco = document.getElementById('parentescoNovoFilho').value;
+
+                        if (!codigoAluno || !parentesco) {
+                            throw new Error('Preencha todos os campos');
+                        }
+
+                        // Verificar autenticação
+                        if (!auth || !await auth.isAuthenticated()) {
+                            throw new Error('Sessão expirada. Faça login novamente.');
+                        }
+
+                        // Associar ao aluno
+                        const resultado = await auth.associarAoAluno(codigoAluno, parentesco);
+
+                        if (resultado.success) {
+                            showAlert(resultado.message, 'success');
+                            fecharModalAdicionarFilho();
+
+                            // Atualizar lista de alunos
+                            setTimeout(async () => {
+                                await carregarAlunosAutorizados();
+                            }, 1000);
+                        } else {
+                            throw new Error(resultado.error || 'Erro ao adicionar filho');
+                        }
+
+                    } catch (error) {
+                        console.error('Erro ao adicionar filho:', error);
+                        showAlert(error.message, 'error');
+                    } finally {
+                        btnText.textContent = 'Adicionar';
+                        btnSubmit.disabled = false;
+                    }
+                });
+            }
+
+            // Fechar modal clicando fora
+            const modal = document.getElementById('modalAdicionarFilho');
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        fecharModalAdicionarFilho();
+                    }
+                });
+            }
+        });
+
         // Remover função buscarAluno antiga e manter as outras funções existentes
     </script>
+
+    <!-- Modal para Adicionar Filho -->
+    <div class="modal-overlay" id="modalAdicionarFilho">
+        <div class="modal">
+            <h3>👶 Adicionar Novo Filho</h3>
+            <form id="formAdicionarFilho">
+                <div class="form-group">
+                    <label for="codigoNovoFilho">Código do Aluno</label>
+                    <input type="number" id="codigoNovoFilho" placeholder="Ex: 123" required>
+                    <div class="form-hint">Código que aparece no boletim ou carteirinha</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="parentescoNovoFilho">Parentesco</label>
+                    <select id="parentescoNovoFilho" required>
+                        <option value="">Selecione...</option>
+                        <option value="pai">Pai</option>
+                        <option value="mãe">Mãe</option>
+                        <option value="avô">Avô</option>
+                        <option value="avó">Avó</option>
+                        <option value="tio">Tio</option>
+                        <option value="tia">Tia</option>
+                        <option value="responsável legal">Responsável Legal</option>
+                        <option value="outro">Outro</option>
+                    </select>
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel" onclick="fecharModalAdicionarFilho()">Cancelar</button>
+                    <button type="submit" class="btn-confirm">
+                        <span class="btn-text">Adicionar</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 </html>
