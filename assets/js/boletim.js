@@ -48,9 +48,19 @@ const NOTA_MINIMA_APROVACAO = 6.0;
 // VARIÁVEIS GLOBAIS
 // ========================================
 
-let supabase = null;
-let currentUser = null;
 let alunosCache = {};
+
+// ========================================
+// FUNÇÕES AUXILIARES
+// ========================================
+
+function getSupabase() {
+  return window.supabaseClient || window.supabase;
+}
+
+function getCurrentUser() {
+  return window.supabaseSystem?.auth?.getCurrentUser() || null;
+}
 
 // ========================================
 // INICIALIZAÇÃO
@@ -61,29 +71,14 @@ async function initBoletim() {
 
   // Aguardar Supabase estar pronto
   let tentativas = 0;
-  while (!window.supabaseClient && tentativas < 50) {
+  while (!getSupabase() && tentativas < 50) {
     await new Promise(resolve => setTimeout(resolve, 100));
     tentativas++;
   }
 
-  if (!window.supabaseClient) {
+  if (!getSupabase()) {
     console.error('❌ Supabase não disponível');
     return;
-  }
-
-  supabase = window.supabaseClient;
-
-  // Obter usuário atual
-  const authData = localStorage.getItem('supabase_auth');
-  if (authData) {
-    try {
-      const auth = JSON.parse(authData);
-      if (auth.user && auth.expires > Date.now()) {
-        currentUser = auth.user;
-      }
-    } catch (e) {
-      console.error('Erro ao carregar usuário:', e);
-    }
   }
 
   console.log('✅ Sistema de boletim inicializado');
@@ -166,6 +161,11 @@ async function carregarAlunosPorTurma(turma, tipo) {
       return;
     }
 
+    const supabase = getSupabase();
+    if (!supabase) {
+      throw new Error('Supabase não disponível');
+    }
+
     // Buscar do Supabase
     const { data, error } = await supabase
       .from('alunos')
@@ -183,7 +183,7 @@ async function carregarAlunosPorTurma(turma, tipo) {
 
   } catch (error) {
     console.error('❌ Erro ao carregar alunos:', error);
-    alert('Erro ao carregar alunos. Verifique o console.');
+    alert('Erro ao carregar alunos: ' + error.message);
   }
 }
 
@@ -233,6 +233,11 @@ async function carregarMateriasParaLancamento(turma, alunoJson, bimestre) {
 
     // Determinar matérias por tipo de turma
     const materias = TURMAS_MEDIO.includes(turma) ? MATERIAS_MEDIO : MATERIAS_FUNDAMENTAL;
+
+    const supabase = getSupabase();
+    if (!supabase) {
+      throw new Error('Supabase não disponível');
+    }
 
     // Buscar notas já lançadas
     const { data: notasExistentes, error } = await supabase
@@ -305,6 +310,13 @@ async function salvarNotas() {
     }
 
     const alunoData = JSON.parse(alunoJson);
+
+    const currentUser = getCurrentUser();
+    const supabase = getSupabase();
+
+    if (!supabase) {
+      throw new Error('Supabase não disponível');
+    }
 
     // Coletar notas dos inputs
     const inputs = document.querySelectorAll('.nota-input');
@@ -417,6 +429,11 @@ async function consultarBoletim() {
 }
 
 async function consultarBimestre(alunoData, turma, bimestre, ano, container) {
+  const supabase = getSupabase();
+  if (!supabase) {
+    throw new Error('Supabase não disponível');
+  }
+
   const { data: notas, error } = await supabase
     .from('boletim')
     .select('*')
@@ -495,6 +512,11 @@ async function consultarBimestre(alunoData, turma, bimestre, ano, container) {
 }
 
 async function consultarMediaAnual(alunoData, turma, ano, container) {
+  const supabase = getSupabase();
+  if (!supabase) {
+    throw new Error('Supabase não disponível');
+  }
+
   const { data: notas, error } = await supabase
     .from('boletim')
     .select('*')
