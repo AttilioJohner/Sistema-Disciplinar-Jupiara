@@ -153,10 +153,11 @@ async function carregarAlunosPorTurma(turma, tipo) {
   }
 
   try {
-    console.log(`📥 Carregando alunos da turma: ${turma}`);
+    console.log(`📥 Carregando alunos da turma: "${turma}"`);
 
     // Verificar cache
     if (alunosCache[turma]) {
+      console.log('💾 Usando cache');
       preencherSelectAlunos(alunosCache[turma], tipo);
       return;
     }
@@ -166,20 +167,34 @@ async function carregarAlunosPorTurma(turma, tipo) {
       throw new Error('Supabase não disponível');
     }
 
-    // Buscar do Supabase
-    const { data, error } = await supabase
+    // Buscar TODOS os alunos e filtrar no cliente (evita problemas com encoding)
+    console.log('🔍 Buscando todos os alunos...');
+    const { data: todosAlunos, error } = await supabase
       .from('alunos')
       .select('codigo, "código (matrícula)", "Nome completo", turma')
-      .eq('turma', turma)
       .order('"Nome completo"');
 
     if (error) throw error;
 
-    // Salvar no cache
-    alunosCache[turma] = data || [];
+    console.log(`📊 Total de alunos no banco: ${todosAlunos?.length || 0}`);
 
-    preencherSelectAlunos(data || [], tipo);
-    console.log(`✅ ${data?.length || 0} alunos carregados`);
+    // Obter turmas únicas para debug
+    const turmasUnicas = [...new Set(todosAlunos?.map(a => a.turma) || [])];
+    console.log('🎓 Turmas disponíveis:', turmasUnicas);
+
+    // Filtrar alunos da turma selecionada
+    const alunosDaTurma = (todosAlunos || []).filter(aluno => {
+      const turmaAluno = aluno.turma?.trim().toLowerCase();
+      const turmaBusca = turma.trim().toLowerCase();
+      return turmaAluno === turmaBusca;
+    });
+
+    console.log(`✅ Alunos encontrados na turma "${turma}": ${alunosDaTurma.length}`);
+
+    // Salvar no cache
+    alunosCache[turma] = alunosDaTurma;
+
+    preencherSelectAlunos(alunosDaTurma, tipo);
 
   } catch (error) {
     console.error('❌ Erro ao carregar alunos:', error);
