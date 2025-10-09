@@ -44,6 +44,24 @@ const TURMAS_MEDIO = ['1º Ano A', '1º Ano B', '2º Ano A', '2º Ano B'];
 
 const NOTA_MINIMA_APROVACAO = 6.0;
 
+// Mapeamento de turmas (formato display -> formato banco)
+const TURMAS_MAP = {
+  '6º Ano A': '6A',
+  '6º Ano B': '6B',
+  '7º Ano A': '7A',
+  '7º Ano B': '7B',
+  '8º Ano A': '8A',
+  '8º Ano B': '8B',
+  '9º Ano A': '9A',
+  '9º Ano B': '9B',
+  '9º Ano E': '9E',
+  '1º Ano A': '1A',
+  '1º Ano B': '1B',
+  '1º Ano C': '1C',
+  '2º Ano A': '2A',
+  '2º Ano B': '2B'
+};
+
 // ========================================
 // VARIÁVEIS GLOBAIS
 // ========================================
@@ -167,34 +185,25 @@ async function carregarAlunosPorTurma(turma, tipo) {
       throw new Error('Supabase não disponível');
     }
 
-    // Buscar TODOS os alunos e filtrar no cliente (evita problemas com encoding)
-    console.log('🔍 Buscando todos os alunos...');
-    const { data: todosAlunos, error } = await supabase
+    // Converter turma do formato display para formato banco
+    const turmaBanco = TURMAS_MAP[turma] || turma;
+    console.log(`🔄 Convertendo turma: "${turma}" -> "${turmaBanco}"`);
+
+    // Buscar alunos da turma específica
+    const { data: alunosDaTurma, error } = await supabase
       .from('alunos')
       .select('codigo, "código (matrícula)", "Nome completo", turma')
+      .eq('turma', turmaBanco)
       .order('"Nome completo"');
 
     if (error) throw error;
 
-    console.log(`📊 Total de alunos no banco: ${todosAlunos?.length || 0}`);
-
-    // Obter turmas únicas para debug
-    const turmasUnicas = [...new Set(todosAlunos?.map(a => a.turma) || [])];
-    console.log('🎓 Turmas disponíveis:', turmasUnicas);
-
-    // Filtrar alunos da turma selecionada
-    const alunosDaTurma = (todosAlunos || []).filter(aluno => {
-      const turmaAluno = aluno.turma?.trim().toLowerCase();
-      const turmaBusca = turma.trim().toLowerCase();
-      return turmaAluno === turmaBusca;
-    });
-
-    console.log(`✅ Alunos encontrados na turma "${turma}": ${alunosDaTurma.length}`);
+    console.log(`✅ ${alunosDaTurma?.length || 0} alunos encontrados na turma "${turma}" (${turmaBanco})`);
 
     // Salvar no cache
-    alunosCache[turma] = alunosDaTurma;
+    alunosCache[turma] = alunosDaTurma || [];
 
-    preencherSelectAlunos(alunosDaTurma, tipo);
+    preencherSelectAlunos(alunosDaTurma || [], tipo);
 
   } catch (error) {
     console.error('❌ Erro ao carregar alunos:', error);
