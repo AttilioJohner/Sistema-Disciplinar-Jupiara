@@ -1576,6 +1576,213 @@
             font-weight: 500;
         }
 
+        /* Estilos para Boletim Escolar */
+        .boletim-section {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 18px;
+            padding: 30px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            backdrop-filter: blur(10px);
+        }
+
+        .boletim-header-info {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .boletim-header-info h4 {
+            margin: 0 0 8px 0;
+            font-size: 1.4em;
+        }
+
+        .boletim-header-info p {
+            margin: 0;
+            opacity: 0.95;
+        }
+
+        .medias-bimestre-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .media-bim-card {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            border-radius: 12px;
+            padding: 18px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .media-bim-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.15);
+        }
+
+        .media-bim-title {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .media-bim-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .media-bim-status {
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .materias-boletim-list {
+            margin-top: 25px;
+        }
+
+        .materia-boletim-item {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 18px;
+            border: 2px solid rgba(102, 126, 234, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .materia-boletim-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .materia-boletim-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .materia-nome {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .materia-status {
+            font-size: 0.9em;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 20px;
+        }
+
+        .status-aprovado {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-reprovado {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .notas-bimestres {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .nota-bim-box {
+            text-align: center;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            border: 1px solid rgba(102, 126, 234, 0.15);
+        }
+
+        .nota-bim-label {
+            font-size: 0.75em;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .nota-bim-valor {
+            font-size: 1.3em;
+            font-weight: 700;
+        }
+
+        .media-materia-anual {
+            text-align: center;
+            padding-top: 12px;
+            border-top: 2px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .media-materia-anual span {
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+
+        .media-materia-anual strong {
+            font-size: 1.4em;
+            font-weight: 700;
+            margin-left: 8px;
+        }
+
+        .media-geral-final {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px;
+            border-radius: 14px;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .media-geral-final h4 {
+            margin: 0 0 15px 0;
+            font-size: 1.2em;
+        }
+
+        .media-geral-number {
+            font-size: 3.5em;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+
+        .media-geral-status {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-top: 12px;
+        }
+
+        .media-geral-info {
+            font-size: 0.9em;
+            margin-top: 12px;
+            opacity: 0.95;
+        }
+
+        .boletim-vazio {
+            text-align: center;
+            padding: 50px 20px;
+            color: #7f8c8d;
+        }
+
+        .boletim-vazio-icon {
+            font-size: 4em;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
         /* Responsivo para seções */
         @media (max-width: 768px) {
             .avisos-section, .regulamentos-section {
@@ -1719,6 +1926,10 @@
                     <button class="nav-btn" onclick="switchTab('frequencia')" data-tab="frequencia">
                         <span class="nav-icon">📅</span>
                         <span class="nav-text">Frequência</span>
+                    </button>
+                    <button class="nav-btn" onclick="switchTab('boletim')" data-tab="boletim">
+                        <span class="nav-icon">📚</span>
+                        <span class="nav-text">Boletim Escolar</span>
                     </button>
                     <button class="nav-btn" onclick="switchTab('avisos')" data-tab="avisos">
                         <span class="nav-icon">📢</span>
@@ -1868,6 +2079,24 @@
                                         <!-- Tabela será preenchida via JS -->
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Boletim Escolar -->
+                <div id="boletim" class="tab-pane">
+                    <div class="boletim-section">
+                        <h3 class="section-title">
+                            <span class="title-icon">📚</span>
+                            Boletim Escolar
+                        </h3>
+
+                        <div id="boletimContent">
+                            <div class="loading-state" style="text-align: center; padding: 40px; color: #7f8c8d;">
+                                <div style="font-size: 3em; margin-bottom: 15px;">📚</div>
+                                <h3 style="color: #2c3e50;">Carregando boletim...</h3>
+                                <p>Aguarde enquanto as notas são carregadas</p>
                             </div>
                         </div>
                     </div>
@@ -3090,6 +3319,217 @@
             }
         }
 
+        // Função para carregar boletim do aluno
+        async function carregarBoletimPortalPais(codigoAluno, turmaAluno) {
+            const container = document.getElementById('boletimContent');
+            const anoLetivo = new Date().getFullYear();
+            const NOTA_MINIMA_APROVACAO = 6.0;
+
+            try {
+                console.log('📚 Carregando boletim do aluno:', codigoAluno);
+
+                // Mostrar loading
+                container.innerHTML = `
+                    <div class="loading-state" style="text-align: center; padding: 40px; color: #7f8c8d;">
+                        <div style="font-size: 3em; margin-bottom: 15px;">📚</div>
+                        <h3 style="color: #2c3e50;">Carregando boletim...</h3>
+                        <p>Aguarde enquanto as notas são carregadas</p>
+                    </div>
+                `;
+
+                // Buscar TODAS as notas do aluno
+                const { data: notas, error } = await window.supabaseClient
+                    .from('boletim')
+                    .select('*')
+                    .eq('aluno_codigo', codigoAluno)
+                    .eq('ano_letivo', anoLetivo)
+                    .order('materia');
+
+                if (error) {
+                    console.warn('Erro ao buscar boletim:', error);
+                    container.innerHTML = `
+                        <div class="boletim-vazio">
+                            <div class="boletim-vazio-icon">⚠️</div>
+                            <h3 style="color: #2c3e50;">Erro ao carregar boletim</h3>
+                            <p>Não foi possível carregar os dados do boletim</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                if (!notas || notas.length === 0) {
+                    container.innerHTML = `
+                        <div class="boletim-vazio">
+                            <div class="boletim-vazio-icon">📚</div>
+                            <h3 style="color: #2c3e50;">Nenhuma nota encontrada</h3>
+                            <p>Não há notas lançadas para este aluno no ano de ${anoLetivo}.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Agrupar notas por matéria e bimestre
+                const notasPorMateria = {};
+                notas.forEach(nota => {
+                    if (!notasPorMateria[nota.materia]) {
+                        notasPorMateria[nota.materia] = {};
+                    }
+                    notasPorMateria[nota.materia][nota.bimestre] = parseFloat(nota.nota);
+                });
+
+                // Calcular médias por bimestre
+                const mediasPorBimestre = {};
+                for (let bim = 1; bim <= 4; bim++) {
+                    let soma = 0;
+                    let count = 0;
+                    Object.keys(notasPorMateria).forEach(materia => {
+                        if (notasPorMateria[materia][bim] !== undefined) {
+                            soma += notasPorMateria[materia][bim];
+                            count++;
+                        }
+                    });
+                    if (count > 0) {
+                        mediasPorBimestre[bim] = (soma / count);
+                    }
+                }
+
+                // Calcular média anual por matéria
+                const mediasAnuaisPorMateria = {};
+                let somaMediasAnuais = 0;
+                let countMateriasComNota = 0;
+
+                Object.keys(notasPorMateria).forEach(materia => {
+                    const notasBimestres = Object.values(notasPorMateria[materia]);
+                    if (notasBimestres.length > 0) {
+                        const media = notasBimestres.reduce((a, b) => a + b, 0) / notasBimestres.length;
+                        mediasAnuaisPorMateria[materia] = {
+                            media: media,
+                            aprovado: media >= NOTA_MINIMA_APROVACAO
+                        };
+                        somaMediasAnuais += media;
+                        countMateriasComNota++;
+                    }
+                });
+
+                const mediaGeralAnual = countMateriasComNota > 0 ? (somaMediasAnuais / countMateriasComNota) : 0;
+                const aprovadoGeral = mediaGeralAnual >= NOTA_MINIMA_APROVACAO;
+
+                // Renderizar HTML
+                let html = `
+                    <div class="boletim-header-info">
+                        <h4>📚 Boletim Escolar ${anoLetivo}</h4>
+                        <p>Turma: ${turmaAluno}</p>
+                    </div>
+
+                    <h4 style="margin-bottom: 15px; color: #667eea; font-size: 1.1em;">📊 Médias por Bimestre</h4>
+                    <div class="medias-bimestre-container">
+                `;
+
+                for (let bim = 1; bim <= 4; bim++) {
+                    const media = mediasPorBimestre[bim];
+                    if (media !== undefined) {
+                        const aprovado = media >= NOTA_MINIMA_APROVACAO;
+                        html += `
+                            <div class="media-bim-card">
+                                <div class="media-bim-title">${bim}º Bimestre</div>
+                                <div class="media-bim-value" style="color: ${aprovado ? '#10b981' : '#ef4444'};">
+                                    ${media.toFixed(2)}
+                                </div>
+                                <div class="media-bim-status" style="color: ${aprovado ? '#10b981' : '#ef4444'};">
+                                    ${aprovado ? '✅ Aprovado' : '❌ Reprovado'}
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+
+                html += `
+                    </div>
+
+                    <h4 style="margin-bottom: 15px; margin-top: 25px; color: #667eea; font-size: 1.1em;">📚 Notas por Matéria</h4>
+                    <div class="materias-boletim-list">
+                `;
+
+                // Renderizar cada matéria com suas notas
+                Object.keys(notasPorMateria).sort().forEach(materia => {
+                    const notas = notasPorMateria[materia];
+                    const mediaMateria = mediasAnuaisPorMateria[materia];
+
+                    html += `
+                        <div class="materia-boletim-item">
+                            <div class="materia-boletim-header">
+                                <div class="materia-nome">${materia}</div>
+                                <div class="materia-status ${mediaMateria.aprovado ? 'status-aprovado' : 'status-reprovado'}">
+                                    ${mediaMateria.aprovado ? '✅ Aprovado' : '❌ Reprovado'}
+                                </div>
+                            </div>
+                            <div class="notas-bimestres">
+                    `;
+
+                    for (let bim = 1; bim <= 4; bim++) {
+                        const nota = notas[bim];
+                        if (nota !== undefined) {
+                            const aprovadoBim = nota >= NOTA_MINIMA_APROVACAO;
+                            html += `
+                                <div class="nota-bim-box">
+                                    <div class="nota-bim-label">${bim}º Bim</div>
+                                    <div class="nota-bim-valor" style="color: ${aprovadoBim ? '#10b981' : '#ef4444'};">
+                                        ${nota.toFixed(2)}
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            html += `
+                                <div class="nota-bim-box">
+                                    <div class="nota-bim-label">${bim}º Bim</div>
+                                    <div class="nota-bim-valor" style="color: #9ca3af;">-</div>
+                                </div>
+                            `;
+                        }
+                    }
+
+                    html += `
+                            </div>
+                            <div class="media-materia-anual">
+                                <span>Média Anual:</span>
+                                <strong style="color: ${mediaMateria.aprovado ? '#10b981' : '#ef4444'};">
+                                    ${mediaMateria.media.toFixed(2)}
+                                </strong>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                    </div>
+
+                    <div class="media-geral-final">
+                        <h4>Média Geral Anual</h4>
+                        <div class="media-geral-number">${mediaGeralAnual.toFixed(2)}</div>
+                        <div class="media-geral-status">
+                            ${aprovadoGeral ? '✅ APROVADO NO ANO' : '❌ REPROVADO NO ANO'}
+                        </div>
+                        <div class="media-geral-info">
+                            Baseado em ${countMateriasComNota} matéria(s)
+                        </div>
+                    </div>
+                `;
+
+                container.innerHTML = html;
+                console.log(`✅ Boletim exibido: Média geral ${mediaGeralAnual.toFixed(2)}`);
+
+            } catch (error) {
+                console.error('❌ Erro ao carregar boletim:', error);
+                container.innerHTML = `
+                    <div class="boletim-vazio">
+                        <div class="boletim-vazio-icon">⚠️</div>
+                        <h3 style="color: #2c3e50;">Erro ao carregar boletim</h3>
+                        <p>Não foi possível carregar os dados do boletim</p>
+                    </div>
+                `;
+            }
+        }
+
         // Função para criar gráfico de evolução do comportamento
         function criarGraficoEvolucao() {
             const ctx = document.getElementById('behaviorChart').getContext('2d');
@@ -3345,7 +3785,8 @@
                 preencherFichaDisciplinar();
                 await preencherDadosFrequenciaNovo(codigoAluno);
                 preencherResumoGeral();
-                
+                await carregarBoletimPortalPais(codigoAluno, studentData.turma);
+
                 // Mostrar seção de resultados
                 document.getElementById('resultsSection').style.display = 'block';
                 
