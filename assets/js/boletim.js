@@ -342,16 +342,30 @@ async function salvarNotas() {
       throw new Error('Supabase não disponível');
     }
 
-    // Verificar se há sessão ativa
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !session) {
-      alert('Sua sessão expirou. Por favor, faça login novamente.');
-      console.error('❌ Sessão expirada ou inválida');
+    // Verificar se há sessão ativa (Supabase ou Local)
+    let userEmail = 'sistema';
+
+    // Se tem currentUser (pode ser local ou Supabase)
+    if (currentUser) {
+      userEmail = currentUser.email;
+      console.log('✅ Usuário autenticado:', userEmail);
+
+      // Se não é login local, verificar sessão Supabase
+      if (currentUser.provider !== 'local') {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !session) {
+          alert('Sua sessão Supabase expirou. Por favor, faça login novamente.');
+          console.error('❌ Sessão Supabase expirada');
+          window.location.href = '/pages/login.html';
+          return;
+        }
+      }
+    } else {
+      // Não tem usuário logado
+      alert('Você precisa estar autenticado para salvar notas.');
       window.location.href = '/pages/login.html';
       return;
     }
-
-    console.log('✅ Sessão válida:', session.user.email);
 
     // Coletar notas dos inputs
     const inputs = document.querySelectorAll('.nota-input');
@@ -381,8 +395,8 @@ async function salvarNotas() {
         bimestre: parseInt(bimestre),
         materia: input.dataset.materia,
         nota: nota,
-        created_by: currentUser?.email || 'sistema',
-        updated_by: currentUser?.email || 'sistema'
+        created_by: userEmail,
+        updated_by: userEmail
       });
     });
 
