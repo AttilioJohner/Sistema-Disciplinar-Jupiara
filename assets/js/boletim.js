@@ -342,6 +342,17 @@ async function salvarNotas() {
       throw new Error('Supabase não disponível');
     }
 
+    // Verificar se há sessão ativa
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
+      alert('Sua sessão expirou. Por favor, faça login novamente.');
+      console.error('❌ Sessão expirada ou inválida');
+      window.location.href = '/pages/login.html';
+      return;
+    }
+
+    console.log('✅ Sessão válida:', session.user.email);
+
     // Coletar notas dos inputs
     const inputs = document.querySelectorAll('.nota-input');
     const notas = [];

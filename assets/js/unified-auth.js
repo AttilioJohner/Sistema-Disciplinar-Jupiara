@@ -66,24 +66,48 @@ class UnifiedAuth {
                     console.log('🔑 Sessão Supabase recuperada:', session.user.email);
                     return;
                 }
+
+                // Se não há sessão no Supabase, tentar recuperar do localStorage
+                const authData = localStorage.getItem(window.AUTH_CONFIG.localStorage.authKey);
+                if (authData) {
+                    try {
+                        const storedSession = JSON.parse(authData);
+                        if (storedSession.user && storedSession.expires > Date.now()) {
+                            // Verificar se o usuário tem provider Supabase (não é local)
+                            if (!storedSession.user.provider || storedSession.user.provider !== 'local') {
+                                console.log('🔄 Sessão expirada no Supabase, usuário precisa fazer login novamente');
+                                localStorage.removeItem(window.AUTH_CONFIG.localStorage.authKey);
+                                return;
+                            } else {
+                                // Login local, manter sessão
+                                this.currentUser = storedSession.user;
+                                console.log('🔑 Sessão local recuperada:', storedSession.user.email);
+                            }
+                        } else {
+                            localStorage.removeItem(window.AUTH_CONFIG.localStorage.authKey);
+                        }
+                    } catch (error) {
+                        localStorage.removeItem(window.AUTH_CONFIG.localStorage.authKey);
+                    }
+                }
             } catch (error) {
                 console.warn('⚠️ Erro ao verificar sessão Supabase:', error);
             }
-        }
-
-        // Verificar sessão local
-        const authData = localStorage.getItem(window.AUTH_CONFIG.localStorage.authKey);
-        if (authData) {
-            try {
-                const session = JSON.parse(authData);
-                if (session.user && session.expires > Date.now()) {
-                    this.currentUser = session.user;
-                    console.log('🔑 Sessão local recuperada:', session.user.email);
-                } else {
+        } else {
+            // Verificar sessão local
+            const authData = localStorage.getItem(window.AUTH_CONFIG.localStorage.authKey);
+            if (authData) {
+                try {
+                    const session = JSON.parse(authData);
+                    if (session.user && session.expires > Date.now()) {
+                        this.currentUser = session.user;
+                        console.log('🔑 Sessão local recuperada:', session.user.email);
+                    } else {
+                        localStorage.removeItem(window.AUTH_CONFIG.localStorage.authKey);
+                    }
+                } catch (error) {
                     localStorage.removeItem(window.AUTH_CONFIG.localStorage.authKey);
                 }
-            } catch (error) {
-                localStorage.removeItem(window.AUTH_CONFIG.localStorage.authKey);
             }
         }
     }
