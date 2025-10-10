@@ -44,9 +44,10 @@
     }
 
     .materia-row {
-      display: flex;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+      gap: 15px;
       align-items: center;
-      justify-content: space-between;
       padding: 12px;
       background: rgba(255, 255, 255, 0.05);
       border-radius: 8px;
@@ -60,8 +61,24 @@
     .materia-label {
       font-weight: 600;
       color: #6d28d9;
-      flex: 1;
       font-size: 15px;
+    }
+
+    .materias-header {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+      gap: 15px;
+      padding: 12px;
+      background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+      border-radius: 8px;
+      margin-bottom: 10px;
+      font-weight: 700;
+      color: white;
+      text-align: center;
+    }
+
+    .materias-header > div:first-child {
+      text-align: left;
     }
 
     .boletim-card {
@@ -309,17 +326,6 @@
                   <option value="">Selecione uma turma primeiro</option>
                 </select>
               </div>
-
-              <div class="form-group">
-                <label>Bimestre</label>
-                <select id="lancamento-bimestre" class="form-input">
-                  <option value="">Selecione o bimestre</option>
-                  <option value="1">1º Bimestre</option>
-                  <option value="2">2º Bimestre</option>
-                  <option value="3">3º Bimestre</option>
-                  <option value="4">4º Bimestre</option>
-                </select>
-              </div>
             </div>
 
             <div id="materias-container" style="display: none; margin-top: 20px;">
@@ -374,18 +380,6 @@
                 <label>Aluno</label>
                 <select id="consulta-aluno" class="form-input" disabled>
                   <option value="">Selecione uma turma primeiro</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label>Bimestre</label>
-                <select id="consulta-bimestre" class="form-input">
-                  <option value="">Selecione o bimestre</option>
-                  <option value="1">1º Bimestre</option>
-                  <option value="2">2º Bimestre</option>
-                  <option value="3">3º Bimestre</option>
-                  <option value="4">4º Bimestre</option>
-                  <option value="anual">Média Anual</option>
                 </select>
               </div>
             </div>

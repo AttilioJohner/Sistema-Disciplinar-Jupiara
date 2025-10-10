@@ -121,9 +121,8 @@ function setupEventListeners() {
     await carregarAlunosPorTurma(e.target.value, 'lancamento');
   });
 
-  // Lançamento: Carregar matérias ao selecionar aluno e bimestre
+  // Lançamento: Carregar matérias ao selecionar aluno
   document.getElementById('lancamento-aluno').addEventListener('change', verificarSelecaoCompleta);
-  document.getElementById('lancamento-bimestre').addEventListener('change', verificarSelecaoCompleta);
 
   // Consulta: Carregar alunos ao selecionar turma
   document.getElementById('consulta-turma').addEventListener('change', async (e) => {
@@ -241,16 +240,15 @@ function preencherSelectAlunos(alunos, tipo) {
 function verificarSelecaoCompleta() {
   const turma = document.getElementById('lancamento-turma').value;
   const aluno = document.getElementById('lancamento-aluno').value;
-  const bimestre = document.getElementById('lancamento-bimestre').value;
 
-  if (turma && aluno && bimestre) {
-    carregarMateriasParaLancamento(turma, aluno, bimestre);
+  if (turma && aluno) {
+    carregarMateriasParaLancamento(turma, aluno);
   } else {
     document.getElementById('materias-container').style.display = 'none';
   }
 }
 
-async function carregarMateriasParaLancamento(turma, alunoJson, bimestre) {
+async function carregarMateriasParaLancamento(turma, alunoJson) {
   try {
     const alunoData = JSON.parse(alunoJson);
     const ano = document.getElementById('lancamento-ano').value;
@@ -263,53 +261,74 @@ async function carregarMateriasParaLancamento(turma, alunoJson, bimestre) {
       throw new Error('Supabase não disponível');
     }
 
-    // Buscar notas já lançadas
+    // Buscar TODAS as notas já lançadas (todos os bimestres)
     const { data: notasExistentes, error } = await supabase
       .from('boletim')
       .select('*')
       .eq('aluno_codigo', alunoData.codigo)
-      .eq('ano_letivo', parseInt(ano))
-      .eq('bimestre', parseInt(bimestre));
+      .eq('ano_letivo', parseInt(ano));
 
     if (error) throw error;
 
-    // Criar mapa de notas existentes
+    // Criar mapa de notas existentes: {materia: {1: nota, 2: nota, ...}}
     const notasMap = {};
     (notasExistentes || []).forEach(nota => {
-      notasMap[nota.materia] = nota.nota;
+      if (!notasMap[nota.materia]) {
+        notasMap[nota.materia] = {};
+      }
+      notasMap[nota.materia][nota.bimestre] = nota.nota;
     });
 
     // Renderizar lista de matérias
     const container = document.getElementById('materias-list');
     container.innerHTML = '';
 
+    // Criar header da tabela
+    const header = document.createElement('div');
+    header.className = 'materias-header';
+    header.innerHTML = `
+      <div>Matéria</div>
+      <div>1º Bim</div>
+      <div>2º Bim</div>
+      <div>3º Bim</div>
+      <div>4º Bim</div>
+    `;
+    container.appendChild(header);
+
+    // Criar linhas para cada matéria
     materias.forEach(materia => {
       const row = document.createElement('div');
       row.className = 'materia-row';
 
+      // Label da matéria
       const label = document.createElement('div');
       label.className = 'materia-label';
       label.textContent = materia;
-
-      const input = document.createElement('input');
-      input.type = 'number';
-      input.className = 'nota-input';
-      input.placeholder = '0.00';
-      input.min = '0';
-      input.max = '10';
-      input.step = '0.01';
-      input.dataset.materia = materia;
-      input.value = notasMap[materia] || '';
-
-      // Validação em tempo real
-      input.addEventListener('input', (e) => {
-        const valor = parseFloat(e.target.value);
-        if (valor < 0) e.target.value = '0';
-        if (valor > 10) e.target.value = '10';
-      });
-
       row.appendChild(label);
-      row.appendChild(input);
+
+      // Inputs para cada bimestre (1, 2, 3, 4)
+      for (let bim = 1; bim <= 4; bim++) {
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'nota-input';
+        input.placeholder = '0.00';
+        input.min = '0';
+        input.max = '10';
+        input.step = '0.01';
+        input.dataset.materia = materia;
+        input.dataset.bimestre = bim;
+        input.value = notasMap[materia]?.[bim] || '';
+
+        // Validação em tempo real
+        input.addEventListener('input', (e) => {
+          const valor = parseFloat(e.target.value);
+          if (valor < 0) e.target.value = '0';
+          if (valor > 10) e.target.value = '10';
+        });
+
+        row.appendChild(input);
+      }
+
       container.appendChild(row);
     });
 
@@ -325,11 +344,10 @@ async function salvarNotas() {
   try {
     const turma = document.getElementById('lancamento-turma').value;
     const alunoJson = document.getElementById('lancamento-aluno').value;
-    const bimestre = document.getElementById('lancamento-bimestre').value;
     const ano = document.getElementById('lancamento-ano').value;
 
-    if (!turma || !alunoJson || !bimestre) {
-      alert('Preencha todos os campos antes de salvar!');
+    if (!turma || !alunoJson) {
+      alert('Selecione uma turma e um aluno antes de salvar!');
       return;
     }
 
@@ -392,7 +410,7 @@ async function salvarNotas() {
         aluno_nome: alunoData.nome,
         turma: turma,
         ano_letivo: parseInt(ano),
-        bimestre: parseInt(bimestre),
+        bimestre: parseInt(input.dataset.bimestre),
         materia: input.dataset.materia,
         nota: nota,
         created_by: userEmail,
@@ -440,7 +458,6 @@ function limparFormulario() {
   document.getElementById('lancamento-turma').value = '';
   document.getElementById('lancamento-aluno').innerHTML = '<option value="">Selecione uma turma primeiro</option>';
   document.getElementById('lancamento-aluno').disabled = true;
-  document.getElementById('lancamento-bimestre').value = '';
   document.getElementById('materias-container').style.display = 'none';
 }
 
@@ -452,29 +469,206 @@ async function consultarBoletim() {
   try {
     const turma = document.getElementById('consulta-turma').value;
     const alunoJson = document.getElementById('consulta-aluno').value;
-    const bimestre = document.getElementById('consulta-bimestre').value;
     const ano = document.getElementById('consulta-ano').value;
 
-    if (!turma || !alunoJson || !bimestre) {
-      alert('Preencha todos os campos antes de consultar!');
+    if (!turma || !alunoJson) {
+      alert('Selecione uma turma e um aluno antes de consultar!');
       return;
     }
 
     const alunoData = JSON.parse(alunoJson);
     const container = document.getElementById('resultado-consulta');
 
-    console.log(`🔍 Consultando boletim: Aluno=${alunoData.nome}, Bimestre=${bimestre}`);
+    console.log(`🔍 Consultando boletim completo: Aluno=${alunoData.nome}`);
 
-    if (bimestre === 'anual') {
-      await consultarMediaAnual(alunoData, turma, ano, container);
-    } else {
-      await consultarBimestre(alunoData, turma, bimestre, ano, container);
-    }
+    await consultarBoletimCompleto(alunoData, turma, ano, container);
 
   } catch (error) {
     console.error('❌ Erro ao consultar boletim:', error);
     alert('Erro ao consultar boletim: ' + error.message);
   }
+}
+
+async function consultarBoletimCompleto(alunoData, turma, ano, container) {
+  const supabase = getSupabase();
+  if (!supabase) {
+    throw new Error('Supabase não disponível');
+  }
+
+  // Buscar TODAS as notas do aluno
+  const { data: notas, error } = await supabase
+    .from('boletim')
+    .select('*')
+    .eq('aluno_codigo', alunoData.codigo)
+    .eq('ano_letivo', parseInt(ano))
+    .order('materia');
+
+  if (error) throw error;
+
+  if (!notas || notas.length === 0) {
+    container.innerHTML = `
+      <div class="boletim-card">
+        <div style="text-align: center; padding: 40px; color: #9ca3af;">
+          <h3>📭 Nenhuma nota encontrada</h3>
+          <p>Não há notas lançadas para este aluno no ano de ${ano}.</p>
+        </div>
+      </div>
+    `;
+    container.style.display = 'block';
+    return;
+  }
+
+  // Agrupar notas por matéria e bimestre: {materia: {1: nota, 2: nota, ...}}
+  const notasPorMateria = {};
+  notas.forEach(nota => {
+    if (!notasPorMateria[nota.materia]) {
+      notasPorMateria[nota.materia] = {};
+    }
+    notasPorMateria[nota.materia][nota.bimestre] = parseFloat(nota.nota);
+  });
+
+  // Calcular médias por bimestre (média de todas as matérias em cada bimestre)
+  const mediasPorBimestre = {};
+  for (let bim = 1; bim <= 4; bim++) {
+    let soma = 0;
+    let count = 0;
+    Object.keys(notasPorMateria).forEach(materia => {
+      if (notasPorMateria[materia][bim] !== undefined) {
+        soma += notasPorMateria[materia][bim];
+        count++;
+      }
+    });
+    if (count > 0) {
+      mediasPorBimestre[bim] = (soma / count).toFixed(2);
+    }
+  }
+
+  // Calcular média anual por matéria
+  const mediasAnuaisPorMateria = {};
+  let somaMediasAnuais = 0;
+  let countMateriasComNota = 0;
+
+  Object.keys(notasPorMateria).forEach(materia => {
+    const notasBimestres = Object.values(notasPorMateria[materia]);
+    if (notasBimestres.length > 0) {
+      const media = notasBimestres.reduce((a, b) => a + b, 0) / notasBimestres.length;
+      mediasAnuaisPorMateria[materia] = {
+        media: media,
+        aprovado: media >= NOTA_MINIMA_APROVACAO
+      };
+      somaMediasAnuais += media;
+      countMateriasComNota++;
+    }
+  });
+
+  const mediaGeralAnual = countMateriasComNota > 0 ? (somaMediasAnuais / countMateriasComNota).toFixed(2) : '0.00';
+  const aprovadoGeral = parseFloat(mediaGeralAnual) >= NOTA_MINIMA_APROVACAO;
+
+  // Renderizar HTML
+  let html = `
+    <div class="boletim-card">
+      <div class="boletim-header">
+        <div>
+          <h2 style="margin: 0; color: #e0e0e0;">${alunoData.nome}</h2>
+          <p style="margin: 5px 0 0 0; color: #9ca3af;">Turma: ${turma} | Ano Letivo: ${ano}</p>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <h3 style="color: #8b5cf6; margin-bottom: 10px;">📊 Médias por Bimestre</h3>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+  `;
+
+  for (let bim = 1; bim <= 4; bim++) {
+    const media = mediasPorBimestre[bim] || '-';
+    const aprovado = media !== '-' && parseFloat(media) >= NOTA_MINIMA_APROVACAO;
+    html += `
+      <div style="background: rgba(139, 92, 246, 0.1); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid rgba(139, 92, 246, 0.3);">
+        <div style="font-size: 12px; color: #9ca3af; margin-bottom: 5px;">${bim}º Bimestre</div>
+        <div style="font-size: 24px; font-weight: bold; color: ${aprovado ? '#10b981' : '#ef4444'};">${media}</div>
+        ${media !== '-' ? `<div style="font-size: 11px; color: ${aprovado ? '#10b981' : '#ef4444'}; margin-top: 5px;">${aprovado ? '✅ Aprovado' : '❌ Reprovado'}</div>` : ''}
+      </div>
+    `;
+  }
+
+  html += `
+        </div>
+      </div>
+
+      <div>
+        <h3 style="color: #8b5cf6; margin-bottom: 10px;">📚 Notas por Matéria</h3>
+        <div class="consulta-results">
+  `;
+
+  // Renderizar cada matéria com suas notas
+  Object.keys(notasPorMateria).sort().forEach(materia => {
+    const notas = notasPorMateria[materia];
+    const mediaMateria = mediasAnuaisPorMateria[materia];
+
+    html += `
+      <div class="nota-card">
+        <div class="nota-card-header">
+          <div class="nota-card-title">${materia}</div>
+          <div class="${mediaMateria.aprovado ? 'status-aprovado' : 'status-reprovado'}">
+            ${mediaMateria.aprovado ? '✅ Aprovado' : '❌ Reprovado'}
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px;">
+    `;
+
+    for (let bim = 1; bim <= 4; bim++) {
+      const nota = notas[bim];
+      if (nota !== undefined) {
+        const aprovadoBim = nota >= NOTA_MINIMA_APROVACAO;
+        html += `
+          <div style="text-align: center; padding: 8px; background: rgba(255, 255, 255, 0.03); border-radius: 6px;">
+            <div style="font-size: 11px; color: #9ca3af;">${bim}º Bim</div>
+            <div style="font-size: 18px; font-weight: bold; color: ${aprovadoBim ? '#10b981' : '#ef4444'};">${nota.toFixed(2)}</div>
+          </div>
+        `;
+      } else {
+        html += `
+          <div style="text-align: center; padding: 8px; background: rgba(255, 255, 255, 0.03); border-radius: 6px;">
+            <div style="font-size: 11px; color: #9ca3af;">${bim}º Bim</div>
+            <div style="font-size: 18px; color: #4b5563;">-</div>
+          </div>
+        `;
+      }
+    }
+
+    html += `
+        </div>
+        <div style="margin-top: 10px; text-align: center; padding-top: 10px; border-top: 1px solid rgba(139, 92, 246, 0.2);">
+          <span style="color: #9ca3af; font-size: 13px;">Média Anual: </span>
+          <span style="font-size: 20px; font-weight: bold; color: ${mediaMateria.aprovado ? '#10b981' : '#ef4444'};">
+            ${mediaMateria.media.toFixed(2)}
+          </span>
+        </div>
+      </div>
+    `;
+  });
+
+  html += `
+        </div>
+      </div>
+
+      <div class="media-geral">
+        <h3>Média Geral Anual</h3>
+        <div class="valor">${mediaGeralAnual}</div>
+        <div class="${aprovadoGeral ? 'status-aprovado' : 'status-reprovado'}" style="font-size: 18px;">
+          ${aprovadoGeral ? '✅ APROVADO NO ANO' : '❌ REPROVADO NO ANO'}
+        </div>
+        <div style="margin-top: 15px; font-size: 14px; opacity: 0.9;">
+          Baseado em ${countMateriasComNota} matéria(s)
+        </div>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+  container.style.display = 'block';
+
+  console.log(`✅ Boletim completo gerado: Média geral ${mediaGeralAnual}`);
 }
 
 async function consultarBimestre(alunoData, turma, bimestre, ano, container) {
