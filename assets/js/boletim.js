@@ -569,8 +569,8 @@ async function consultarBoletimCompleto(alunoData, turma, ano, container) {
     <div class="boletim-card">
       <div class="boletim-header">
         <div>
-          <h2 style="margin: 0; color: #e0e0e0;">${alunoData.nome}</h2>
-          <p style="margin: 5px 0 0 0; color: #9ca3af;">Turma: ${turma} | Ano Letivo: ${ano}</p>
+          <h2 style="margin: 0; color: #1f2937; font-weight: 700;">${alunoData.nome}</h2>
+          <p style="margin: 5px 0 0 0; color: #6d28d9; font-weight: 600;">Turma: ${turma} | Ano Letivo: ${ano}</p>
         </div>
       </div>
 
@@ -710,8 +710,8 @@ async function consultarBimestre(alunoData, turma, bimestre, ano, container) {
     <div class="boletim-card">
       <div class="boletim-header">
         <div>
-          <h2 style="margin: 0; color: #e0e0e0;">${alunoData.nome}</h2>
-          <p style="margin: 5px 0 0 0; color: #9ca3af;">Turma: ${turma} | ${bimestre}º Bimestre</p>
+          <h2 style="margin: 0; color: #1f2937; font-weight: 700;">${alunoData.nome}</h2>
+          <p style="margin: 5px 0 0 0; color: #6d28d9; font-weight: 600;">Turma: ${turma} | ${bimestre}º Bimestre</p>
         </div>
       </div>
 
@@ -816,8 +816,8 @@ async function consultarMediaAnual(alunoData, turma, ano, container) {
     <div class="boletim-card">
       <div class="boletim-header">
         <div>
-          <h2 style="margin: 0; color: #e0e0e0;">${alunoData.nome}</h2>
-          <p style="margin: 5px 0 0 0; color: #9ca3af;">Turma: ${turma} | Média Anual ${ano}</p>
+          <h2 style="margin: 0; color: #1f2937; font-weight: 700;">${alunoData.nome}</h2>
+          <p style="margin: 5px 0 0 0; color: #6d28d9; font-weight: 600;">Turma: ${turma} | Média Anual ${ano}</p>
         </div>
       </div>
 
