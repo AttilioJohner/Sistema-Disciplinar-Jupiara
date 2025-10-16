@@ -100,7 +100,124 @@ async function initBoletim() {
   }
 
   console.log('✅ Sistema de boletim inicializado');
+
+  // Carregar turmas dinamicamente
+  await carregarTurmasDinamicamente();
+
   setupEventListeners();
+  setupUnidadeChangeListener();
+}
+
+// ========================================
+// CARREGAMENTO DINÂMICO DE TURMAS
+// ========================================
+
+async function carregarTurmasDinamicamente() {
+  try {
+    const unidadeAtual = window.unidadeSelector ? window.unidadeSelector.getUnidade() : 'Sede';
+    console.log(`📚 Carregando turmas da unidade: ${unidadeAtual}`);
+
+    const supabase = getSupabase();
+    if (!supabase) {
+      console.warn('⚠️ Supabase não disponível, usando turmas padrão');
+      return;
+    }
+
+    // Buscar turmas distintas da unidade
+    const { data: turmasData, error } = await supabase
+      .from('alunos')
+      .select('turma, unidade')
+      .eq('unidade', unidadeAtual)
+      .not('turma', 'is', null)
+      .order('turma');
+
+    if (error) throw error;
+
+    // Obter turmas únicas
+    const turmasUnicas = [...new Set(turmasData.map(a => a.turma))];
+    console.log(`✅ ${turmasUnicas.length} turmas encontradas para ${unidadeAtual}:`, turmasUnicas);
+
+    // Preencher ambos os selects (lançamento e consulta)
+    preencherSelectTurmas('lancamento-turma', turmasUnicas);
+    preencherSelectTurmas('consulta-turma', turmasUnicas);
+
+  } catch (error) {
+    console.error('❌ Erro ao carregar turmas:', error);
+  }
+}
+
+function preencherSelectTurmas(selectId, turmas) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+
+  // Limpar opções existentes
+  select.innerHTML = '<option value="">Selecione uma turma</option>';
+
+  // Classificar turmas em fundamental e médio
+  const turmasFundamental = turmas.filter(t =>
+    t.includes('6') || t.includes('7') || t.includes('8') || t.includes('9')
+  );
+  const turmasMedio = turmas.filter(t =>
+    t.includes('1º') || t.includes('2º') || t.includes('1B') || t.includes('2B') ||
+    t.includes('1 B') || t.includes('2 B')
+  );
+
+  // Adicionar grupo Fundamental
+  if (turmasFundamental.length > 0) {
+    const optgroupFund = document.createElement('optgroup');
+    optgroupFund.label = 'Ensino Fundamental';
+    turmasFundamental.sort().forEach(turma => {
+      const option = document.createElement('option');
+      option.value = turma;
+      option.textContent = turma;
+      optgroupFund.appendChild(option);
+    });
+    select.appendChild(optgroupFund);
+  }
+
+  // Adicionar grupo Médio
+  if (turmasMedio.length > 0) {
+    const optgroupMedio = document.createElement('optgroup');
+    optgroupMedio.label = 'Ensino Médio';
+    turmasMedio.sort().forEach(turma => {
+      const option = document.createElement('option');
+      option.value = turma;
+      option.textContent = turma;
+      optgroupMedio.appendChild(option);
+    });
+    select.appendChild(optgroupMedio);
+  }
+}
+
+function setupUnidadeChangeListener() {
+  if (!window.unidadeSelector) {
+    console.warn('⚠️ Sistema de seleção de unidade não disponível');
+    return;
+  }
+
+  window.unidadeSelector.onChange(async () => {
+    const novaUnidade = window.unidadeSelector.getUnidade();
+    console.log(`🔄 Unidade alterada para: ${novaUnidade} - Recarregando boletim...`);
+
+    // Limpar cache de alunos
+    alunosCache = {};
+
+    // Recarregar turmas
+    await carregarTurmasDinamicamente();
+
+    // Limpar seleções
+    document.getElementById('lancamento-turma').value = '';
+    document.getElementById('lancamento-aluno').innerHTML = '<option value="">Selecione uma turma primeiro</option>';
+    document.getElementById('lancamento-aluno').disabled = true;
+    document.getElementById('materias-container').style.display = 'none';
+
+    document.getElementById('consulta-turma').value = '';
+    document.getElementById('consulta-aluno').innerHTML = '<option value="">Selecione uma turma primeiro</option>';
+    document.getElementById('consulta-aluno').disabled = true;
+    document.getElementById('resultado-consulta').style.display = 'none';
+
+    console.log(`✅ Dados atualizados para ${novaUnidade}`);
+  });
 }
 
 // ========================================
@@ -170,12 +287,17 @@ async function carregarAlunosPorTurma(turma, tipo) {
   }
 
   try {
-    console.log(`📥 Carregando alunos da turma: "${turma}"`);
+    // Obter unidade atual
+    const unidadeAtual = window.unidadeSelector ? window.unidadeSelector.getUnidade() : 'Sede';
+    console.log(`📥 Carregando alunos da turma: "${turma}" (Unidade: ${unidadeAtual})`);
+
+    // Criar chave de cache com unidade
+    const cacheKey = `${turma}_${unidadeAtual}`;
 
     // Verificar cache
-    if (alunosCache[turma]) {
+    if (alunosCache[cacheKey]) {
       console.log('💾 Usando cache');
-      preencherSelectAlunos(alunosCache[turma], tipo);
+      preencherSelectAlunos(alunosCache[cacheKey], tipo);
       return;
     }
 
@@ -188,19 +310,20 @@ async function carregarAlunosPorTurma(turma, tipo) {
     const turmaBanco = TURMAS_MAP[turma] || turma;
     console.log(`🔄 Convertendo turma: "${turma}" -> "${turmaBanco}"`);
 
-    // Buscar alunos da turma específica
+    // Buscar alunos da turma específica FILTRADOS pela unidade
     const { data: alunosDaTurma, error } = await supabase
       .from('alunos')
-      .select('codigo, "código (matrícula)", "Nome completo", turma')
+      .select('codigo, "código (matrícula)", "Nome completo", turma, unidade')
       .eq('turma', turmaBanco)
+      .eq('unidade', unidadeAtual)
       .order('"Nome completo"');
 
     if (error) throw error;
 
-    console.log(`✅ ${alunosDaTurma?.length || 0} alunos encontrados na turma "${turma}" (${turmaBanco})`);
+    console.log(`✅ ${alunosDaTurma?.length || 0} alunos encontrados na turma "${turma}" (${turmaBanco}) da unidade ${unidadeAtual}`);
 
-    // Salvar no cache
-    alunosCache[turma] = alunosDaTurma || [];
+    // Salvar no cache com chave que inclui unidade
+    alunosCache[cacheKey] = alunosDaTurma || [];
 
     preencherSelectAlunos(alunosDaTurma || [], tipo);
 
