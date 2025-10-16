@@ -2560,7 +2560,7 @@
                     especificacao: especificacao, // Usar especificação real que foi salva (faltas selecionadas ou motivo)
                     motivo: motivo,
                     providencias: acoes,
-                    data: data ? new Date(data).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR')
+                    data: data || new Date().toISOString().split('T')[0] // Passar sempre no formato YYYY-MM-DD
                 };
 
                 console.log('📋 Dados da medida armazenados para WhatsApp:', window.ultimaMedidaSalva);

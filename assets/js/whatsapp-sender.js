@@ -211,7 +211,9 @@ class WhatsAppSender {
         data = medida.data; // Se já está formatada, usar como está
       }
     } else {
-      data = new Date().toLocaleDateString('pt-BR');
+      // Usar data de hoje no timezone local (sem conversão UTC)
+      const hoje = new Date();
+      data = hoje.toLocaleDateString('pt-BR');
     }
     const isPositiva = this.isMedidaPositiva(medida.tipo);
 
@@ -309,7 +311,9 @@ class WhatsAppSender {
         dataFormatada = dadosFalta.data; // Se já está formatada, usar como está
       }
     } else {
-      dataFormatada = new Date().toLocaleDateString('pt-BR');
+      // Usar data de hoje no timezone local (sem conversão UTC)
+      const hoje = new Date();
+      dataFormatada = hoje.toLocaleDateString('pt-BR');
     }
 
     let mensagem = `Bom dia!\n`;
