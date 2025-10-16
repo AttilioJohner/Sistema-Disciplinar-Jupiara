@@ -139,42 +139,58 @@ class FrequenciaSupabaseManager {
       }
 
       const frequencias = todasFrequencias;
-      // Dados carregados silenciosamente
-      
-      // Debug removido
-      
+
+      console.log(`📂 [RESUMO] Total de ${frequencias.length} registros de frequência carregados`);
+
+      // BUSCAR AS TURMAS CORRETAS DOS ALUNOS (não confiar no campo turma da frequência)
+      const { data: alunosComTurma, error: errorTurmas } = await this.supabase
+        .from('alunos')
+        .select('codigo, turma, unidade')
+        .eq('unidade', unidadeAtual);
+
+      if (errorTurmas) {
+        console.error('❌ Erro ao buscar turmas dos alunos:', errorTurmas);
+        throw errorTurmas;
+      }
+
+      // Criar mapa de código do aluno -> turma correta
+      const mapAlunoPorTurma = {};
+      alunosComTurma.forEach(aluno => {
+        mapAlunoPorTurma[aluno.codigo] = aluno.turma;
+      });
+
+      console.log(`📂 [RESUMO] Mapa de turmas criado para ${Object.keys(mapAlunoPorTurma).length} alunos`);
+
       this.dadosFrequencia.clear();
-      
+
       // Agrupar por turma/mês/ano
       const gruposDados = new Map();
-      
+
       if (frequencias && frequencias.length > 0) {
-        
+
         frequencias.forEach(registro => {
+          // USAR A TURMA CORRETA DO MAPA em vez do campo turma do registro
+          const turmaCorreta = mapAlunoPorTurma[registro.codigo_matricula];
+
+          if (!turmaCorreta) {
+            // Se não encontrar a turma, significa que o aluno não está na unidade (não deveria acontecer)
+            console.warn(`⚠️ Aluno ${registro.codigo_matricula} sem turma no mapa (possível inconsistência)`);
+            return; // Pular este registro
+          }
+
           // Extrair mês e ano da data - CORREÇÃO: usar parsing UTC para evitar problema de timezone
           const dataObj = new Date(registro.data + 'T00:00:00.000Z');
           const mes = String(dataObj.getUTCMonth() + 1).padStart(2, '0');
           const ano = String(dataObj.getUTCFullYear());
           const dia = String(dataObj.getUTCDate()).padStart(2, '0');
-          
-          // Debug específico para registro 1250 e registros do dia 15/08/2025
-          if (registro.id === 1250 || (registro.data && registro.data.includes('2025-08-15'))) {
-            // console.log(`🔧 PROCESSAMENTO REGISTRO ${registro.id}:`, {
-            //   raw_data: registro.data,
-            //   parsed_date: dataObj,
-            //   mes: mes,
-            //   ano: ano,
-            //   dia: dia,
-            //   turma: registro.turma
-            // });
-          }
-          
-          const chave = `${registro.turma}_${mes}_${ano}`;
-          
+
+          // Usar a turma CORRETA em vez de registro.turma
+          const chave = `${turmaCorreta}_${mes}_${ano}`;
+
           if (!gruposDados.has(chave)) {
-            // console.log(`📅 Novo período encontrado: ${chave} (${registro.turma} - ${mes}/${ano})`);
+            console.log(`📅 Novo período: ${chave} (turma correta: ${turmaCorreta}, turma no BD: ${registro.turma})`);
             gruposDados.set(chave, {
-              turma: registro.turma,
+              turma: turmaCorreta, // USAR TURMA CORRETA
               mes: mes,
               ano: ano,
               alunos: new Map()
