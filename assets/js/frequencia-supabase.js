@@ -616,10 +616,15 @@ class FrequenciaSupabaseManager {
     if (!selectTurma) return;
 
     try {
-      // BUSCAR TURMAS DIRETAMENTE DA TABELA ALUNOS
+      // Obter unidade atual
+      const unidadeAtual = window.unidadeSelector ? window.unidadeSelector.getUnidade() : 'Sede';
+      console.log(`📚 [TURMAS] Carregando turmas da unidade: ${unidadeAtual}`);
+
+      // BUSCAR TURMAS DIRETAMENTE DA TABELA ALUNOS FILTRADAS POR UNIDADE
       const { data: alunos, error } = await this.supabase
         .from('alunos')
-        .select('turma')
+        .select('turma, unidade')
+        .eq('unidade', unidadeAtual)
         .not('turma', 'is', null);
 
       if (error) throw error;
@@ -636,7 +641,7 @@ class FrequenciaSupabaseManager {
         selectTurma.appendChild(option);
       });
 
-      console.log(`✅ ${turmasDisponiveis.length} turmas carregadas para lançamento:`, turmasDisponiveis);
+      console.log(`✅ ${turmasDisponiveis.length} turmas carregadas para lançamento (${unidadeAtual}):`, turmasDisponiveis);
 
     } catch (error) {
       console.error('Erro ao carregar turmas para lançamento:', error);
@@ -664,21 +669,26 @@ class FrequenciaSupabaseManager {
     }
 
     try {
-      // BUSCAR DIRETAMENTE DA TABELA ALUNOS (incluindo alunos recém-cadastrados)
+      // Obter unidade atual
+      const unidadeAtual = window.unidadeSelector ? window.unidadeSelector.getUnidade() : 'Sede';
+      console.log(`📚 [ALUNOS] Carregando alunos da turma ${turma} da unidade: ${unidadeAtual}`);
+
+      // BUSCAR DIRETAMENTE DA TABELA ALUNOS FILTRADOS POR UNIDADE (incluindo alunos recém-cadastrados)
       const { data: alunos, error } = await this.supabase
         .from('alunos')
-        .select('codigo, "Nome completo", turma')
+        .select('codigo, "Nome completo", turma, unidade')
         .eq('turma', turma)
+        .eq('unidade', unidadeAtual)
         .order('"Nome completo"');
 
       if (error) throw error;
 
       if (!alunos || alunos.length === 0) {
-        alert(`Nenhum aluno encontrado para a turma ${turma}`);
+        alert(`Nenhum aluno encontrado para a turma ${turma} na unidade ${unidadeAtual}`);
         return;
       }
 
-      // console.log(`✅ ${alunos.length} alunos encontrados na turma ${turma}:`, alunos.map(a => `${a.codigo} - ${a['Nome completo']}`));
+      console.log(`✅ ${alunos.length} alunos encontrados na turma ${turma} (${unidadeAtual})`);
 
       // BUSCAR FREQUÊNCIA EXISTENTE PARA A DATA E TURMA
       console.log(`🔍 Buscando frequência existente para ${turma} em ${dataLancamento}...`);
@@ -1740,13 +1750,45 @@ async function inicializarModuloFrequencia() {
     try {
       window.frequenciaManager = new FrequenciaSupabaseManager();
       showToast('✅ Módulo de frequência carregado!', 'success');
-      
+
       // Inicializar sistema de alertas e estatísticas
       setTimeout(() => {
         carregarAlertasFrequencia();
         carregarEstatisticasRapidas();
       }, 2000);
-      
+
+      // Adicionar listener de mudança de unidade
+      if (window.unidadeSelector) {
+        window.unidadeSelector.onChange(async () => {
+          console.log('🔄 Unidade alterada - recarregando dados de frequência...');
+
+          // Limpar seleção de turma
+          const turmaSelect = document.getElementById('turmaLancamento');
+          if (turmaSelect) {
+            turmaSelect.value = '';
+          }
+
+          // Ocultar lista de alunos se estiver visível
+          const containerLista = document.getElementById('containerListaAlunos');
+          if (containerLista) {
+            containerLista.style.display = 'none';
+          }
+
+          // Recarregar turmas da nova unidade
+          if (window.frequenciaManager) {
+            await window.frequenciaManager.carregarTurmasLancamento();
+          }
+
+          // Recarregar estatísticas da nova unidade
+          await carregarEstatisticasRapidas();
+
+          // Recarregar alertas da nova unidade
+          await carregarAlertasFrequencia();
+
+          showToast(`✅ Dados atualizados para ${window.unidadeSelector.getUnidade()}`, 'success');
+        });
+      }
+
     } catch (error) {
       console.error('❌ Erro ao inicializar FrequenciaManager:', error);
       showToast('Erro ao inicializar módulo de frequência', 'error');
@@ -1947,9 +1989,38 @@ async function atualizarAlertasMes() {
             </div>
         `;
 
-        // Buscar dados de frequência do mês
+        // Obter unidade atual
+        const unidadeAtual = window.unidadeSelector ? window.unidadeSelector.getUnidade() : 'Sede';
+        console.log(`🚨 [ALERTAS] Analisando alertas da unidade: ${unidadeAtual}`);
+
+        // Primeiro, buscar códigos dos alunos da unidade
+        const { data: alunosDaUnidade, error: errorAlunos } = await supabaseClient
+            .from('alunos')
+            .select('codigo')
+            .eq('unidade', unidadeAtual);
+
+        if (errorAlunos) {
+            throw errorAlunos;
+        }
+
+        const codigosDaUnidade = alunosDaUnidade?.map(a => a.codigo) || [];
+
+        if (codigosDaUnidade.length === 0) {
+            console.warn('⚠️ ALERTAS: Nenhum aluno encontrado na unidade selecionada');
+            alertasContainer.innerHTML = `
+                <div class="no-alertas">
+                    📅 <strong>Sem alunos</strong><br>
+                    <small>Nenhum aluno cadastrado na unidade ${unidadeAtual}</small>
+                </div>
+            `;
+            return;
+        }
+
+        console.log(`🚨 ALERTAS: Filtrando por ${codigosDaUnidade.length} alunos da ${unidadeAtual}`);
+
+        // Buscar dados de frequência do mês FILTRADOS pela unidade
         const inicioMes = `${anoAtual}-${mesSelecionado}-01`;
-        
+
         // Calcular último dia do mês corretamente
         const ultimoDiaMes = new Date(anoAtual, parseInt(mesSelecionado), 0).getDate();
         const fimMes = `${anoAtual}-${mesSelecionado}-${ultimoDiaMes.toString().padStart(2, '0')}`;
@@ -1959,6 +2030,7 @@ async function atualizarAlertasMes() {
             .select('*')
             .gte('data', inicioMes)
             .lte('data', fimMes)
+            .in('codigo_matricula', codigosDaUnidade)
             .order('codigo_matricula')
             .order('data');
 
@@ -1966,7 +2038,7 @@ async function atualizarAlertasMes() {
             throw error;
         }
 
-        console.log('🚨 ALERTAS: Registros encontrados:', registros?.length || 0);
+        console.log(`🚨 ALERTAS: Registros encontrados (${unidadeAtual}):`, registros?.length || 0);
 
         if (!registros || registros.length === 0) {
             alertasContainer.innerHTML = `
@@ -2752,30 +2824,60 @@ function aplicarFiltroStatus() {
 // Função para carregar estatísticas rápidas do dia
 async function carregarEstatisticasRapidas() {
     console.log('📊 STATS: Carregando estatísticas rápidas...');
-    
+
     try {
+        // Obter unidade atual
+        const unidadeAtual = window.unidadeSelector ? window.unidadeSelector.getUnidade() : 'Sede';
+        console.log(`📊 [ESTATÍSTICAS] Carregando dados da unidade: ${unidadeAtual}`);
+
+        // Primeiro, buscar códigos dos alunos da unidade
+        const { data: alunosDaUnidade, error: errorAlunos } = await supabaseClient
+            .from('alunos')
+            .select('codigo')
+            .eq('unidade', unidadeAtual);
+
+        if (errorAlunos) {
+            console.error('❌ STATS: Erro ao buscar alunos:', errorAlunos);
+            return;
+        }
+
+        const codigosDaUnidade = alunosDaUnidade?.map(a => a.codigo) || [];
+
+        if (codigosDaUnidade.length === 0) {
+            console.warn('⚠️ STATS: Nenhum aluno encontrado na unidade selecionada');
+            // Zerar estatísticas
+            document.getElementById('presencasHoje').textContent = '0';
+            document.getElementById('faltasHoje').textContent = '0';
+            document.getElementById('faltasControladasHoje').textContent = '0';
+            document.getElementById('atestadosHoje').textContent = '0';
+            return;
+        }
+
+        console.log(`📊 STATS: Filtrando por ${codigosDaUnidade.length} alunos da ${unidadeAtual}`);
+
         // Data de hoje no formato YYYY-MM-DD
         const hoje = new Date().toISOString().split('T')[0];
-        
-        // Buscar registros de frequência de hoje
+
+        // Buscar registros de frequência de hoje FILTRADOS pela unidade
         const { data: registrosHoje, error } = await supabaseClient
             .from('frequencia')
-            .select('status')
-            .eq('data', hoje);
-        
+            .select('status, codigo_matricula')
+            .eq('data', hoje)
+            .in('codigo_matricula', codigosDaUnidade);
+
         if (error) {
             console.error('❌ STATS: Erro ao buscar dados:', error);
             return;
         }
-        
-        console.log('📊 STATS: Registros de hoje encontrados:', registrosHoje?.length || 0);
-        
+
+        console.log(`📊 STATS: Registros de hoje encontrados (${unidadeAtual}):`, registrosHoje?.length || 0);
+
         // Contar por tipo de status
         let presencas = 0;
         let faltas = 0;
         let faltasControladas = 0;
         let atestados = 0;
-        
+
         if (registrosHoje && registrosHoje.length > 0) {
             registrosHoje.forEach(registro => {
                 switch (registro.status) {
