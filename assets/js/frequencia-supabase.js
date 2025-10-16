@@ -79,35 +79,56 @@ class FrequenciaSupabaseManager {
 
   async carregarDados() {
     try {
-      console.log('📂 Carregando dados do Supabase com paginação...');
-      
+      // Obter unidade atual
+      const unidadeAtual = window.unidadeSelector ? window.unidadeSelector.getUnidade() : 'Sede';
+      console.log(`📂 [RESUMO] Carregando dados do Supabase para unidade: ${unidadeAtual}`);
+
+      // Primeiro, buscar códigos dos alunos da unidade
+      const { data: alunosDaUnidade, error: errorAlunos } = await this.supabase
+        .from('alunos')
+        .select('codigo')
+        .eq('unidade', unidadeAtual);
+
+      if (errorAlunos) {
+        console.error('❌ Erro ao buscar alunos:', errorAlunos);
+        throw errorAlunos;
+      }
+
+      const codigosDaUnidade = alunosDaUnidade?.map(a => a.codigo) || [];
+
+      if (codigosDaUnidade.length === 0) {
+        console.warn(`⚠️ [RESUMO] Nenhum aluno encontrado na unidade ${unidadeAtual}`);
+        this.dadosFrequencia.clear();
+        this.atualizarFiltros();
+        return;
+      }
+
+      console.log(`📂 [RESUMO] Filtrando por ${codigosDaUnidade.length} alunos da ${unidadeAtual}`);
+
       let todasFrequencias = [];
       let pagina = 0;
       const tamanhoPagina = 1000;
       let temMaisDados = true;
-      
+
       while (temMaisDados) {
         const inicio = pagina * tamanhoPagina;
         const fim = inicio + tamanhoPagina - 1;
-        
-        // Carregando página silenciosamente
-        
+
+        // Carregando página FILTRADA pela unidade
         const { data: frequenciasPagina, error } = await this.supabase
           .from('frequencia')
           .select('*')
+          .in('codigo_matricula', codigosDaUnidade)
           .range(inicio, fim);
-        
-        // Debug removido
-        
+
         if (error) {
           console.error('❌ Erro ao buscar frequências:', error);
           throw error;
         }
-        
+
         if (frequenciasPagina && frequenciasPagina.length > 0) {
           todasFrequencias = todasFrequencias.concat(frequenciasPagina);
-          // console.log(`✅ Página ${pagina + 1}: ${frequenciasPagina.length} registros (total: ${todasFrequencias.length})`);
-          
+
           // Se recebemos menos que o tamanho da página, não há mais dados
           temMaisDados = frequenciasPagina.length === tamanhoPagina;
           pagina++;
@@ -115,7 +136,7 @@ class FrequenciaSupabaseManager {
           temMaisDados = false;
         }
       }
-      
+
       const frequencias = todasFrequencias;
       // Dados carregados silenciosamente
       
@@ -1774,9 +1795,11 @@ async function inicializarModuloFrequencia() {
             containerLista.style.display = 'none';
           }
 
-          // Recarregar turmas da nova unidade
+          // Recarregar TODOS os dados da nova unidade
           if (window.frequenciaManager) {
             await window.frequenciaManager.carregarTurmasLancamento();
+            // Recarregar dados do resumo (cards de turmas e pesquisa avançada)
+            await window.frequenciaManager.carregarDados();
           }
 
           // Recarregar estatísticas da nova unidade
