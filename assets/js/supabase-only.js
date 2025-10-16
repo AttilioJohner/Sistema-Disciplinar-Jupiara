@@ -180,6 +180,17 @@ function parseTelefone(valor) {
     return num;
 }
 
+// Helper para aplicar filtro de unidade
+function aplicarFiltroUnidade(query) {
+    // Se existir o seletor de unidade, aplicar filtro
+    if (window.unidadeSelector && typeof window.unidadeSelector.getUnidade === 'function') {
+        const unidade = window.unidadeSelector.getUnidade();
+        return query.eq('unidade', unidade);
+    }
+    // Se não existe, retornar query sem filtro (comportamento padrão)
+    return query;
+}
+
 // Database - Alunos
 const alunosDB = {
     async getAll() {
@@ -187,17 +198,22 @@ const alunosDB = {
         if (!supabase) {
             await initSupabase();
         }
-        
+
         if (!supabase) {
             console.error('❌ Supabase não disponível em alunosDB.getAll()');
             return [];
         }
-        
-        const { data, error } = await supabase
+
+        let query = supabase
             .from('alunos')
-            .select('codigo, "código (matrícula)", "Nome completo", turma, responsável, "Telefone do responsável", "Telefone do responsável 2"')
+            .select('codigo, "código (matrícula)", "Nome completo", turma, responsável, "Telefone do responsável", "Telefone do responsável 2", unidade')
             .order('"Nome completo"');
-        
+
+        // Aplicar filtro de unidade
+        query = aplicarFiltroUnidade(query);
+
+        const { data, error } = await query;
+
         if (error) throw error;
         return data || [];
     },
@@ -272,18 +288,23 @@ const alunosDB = {
         if (!supabase) {
             await initSupabase();
         }
-        
+
         if (!supabase) {
             console.error('❌ Supabase não disponível em alunosDB.getByTurma()');
             return [];
         }
-        
-        const { data, error } = await supabase
+
+        let query = supabase
             .from('alunos')
-            .select('codigo, "código (matrícula)", "Nome completo", turma, "responsável", "Telefone do responsável", "Telefone do responsável 2", foto_url')
+            .select('codigo, "código (matrícula)", "Nome completo", turma, "responsável", "Telefone do responsável", "Telefone do responsável 2", foto_url, unidade')
             .eq('turma', turma)
             .order('"Nome completo"');
-        
+
+        // Aplicar filtro de unidade
+        query = aplicarFiltroUnidade(query);
+
+        const { data, error } = await query;
+
         if (error) throw error;
         return data || [];
     },
