@@ -172,16 +172,32 @@
         
         /* Formulário de Busca */
         .search-form {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            align-items: end;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
             margin-bottom: 2rem;
         }
-        
-        @media (min-width: 768px) {
-            .search-form {
-                grid-template-columns: 1fr 1fr auto auto;
+
+        .search-form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        .search-form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-start;
+        }
+
+        @media (max-width: 768px) {
+            .search-form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .search-form-actions {
+                flex-direction: column;
             }
         }
         
@@ -1126,31 +1142,34 @@
                 </div>
                 <div class="card-body">
                     <div class="search-form">
-                        <div class="form-group">
-                            <label for="turmaSelect" class="form-label">Turma</label>
-                            <select id="turmaSelect" class="form-select" disabled>
-                                <option value="">⏳ Carregando turmas...</option>
-                            </select>
-                            <div id="loadingStatus" class="loading-status">
-                                <span class="loading-spinner"></span>
-                                Buscando dados das turmas... Isso pode levar alguns segundos.
+                        <!-- Campos de Turma e Aluno lado a lado -->
+                        <div class="search-form-row">
+                            <div class="form-group">
+                                <label for="turmaSelect" class="form-label">Turma</label>
+                                <select id="turmaSelect" class="form-select" disabled>
+                                    <option value="">⏳ Carregando turmas...</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="alunoSelect" class="form-label">Aluno</label>
+                                <select id="alunoSelect" class="form-select" disabled>
+                                    <option value="">Selecione um aluno...</option>
+                                </select>
                             </div>
                         </div>
-                        
-                        <div class="form-group">
-                            <label for="alunoSelect" class="form-label">Aluno</label>
-                            <select id="alunoSelect" class="form-select" disabled>
-                                <option value="">Selecione um aluno...</option>
-                            </select>
+
+                        <!-- Status de carregamento abaixo dos campos -->
+                        <div id="loadingStatus" class="loading-status">
+                            <span class="loading-spinner"></span>
+                            Buscando dados das turmas... Isso pode levar alguns segundos.
                         </div>
-                        
-                        <div class="form-group">
+
+                        <!-- Botões de ação -->
+                        <div class="search-form-actions">
                             <button id="btnConsultar" class="btn" disabled onclick="consultarFicha()">
                                 🔍 Consultar Ficha
                             </button>
-                        </div>
-                        
-                        <div class="form-group">
                             <button id="btnExportarPDF" class="btn" disabled onclick="exportarParaPDF()">
                                 📄 Exportar PDF
                             </button>
@@ -1353,9 +1372,11 @@
         
         // Flag para evitar carregamentos simultâneos
         let carregandoDados = false;
+        let tentativasCarregamento = 0;
+        const MAX_TENTATIVAS = 3;
 
         // Carregar turmas e alunos
-        async function carregarTurmasEAlunos() {
+        async function carregarTurmasEAlunos(tentativa = 1) {
             // Evitar chamadas simultâneas
             if (carregandoDados) {
                 console.log('⏸️ Já há um carregamento em andamento, aguardando...');
@@ -1367,15 +1388,17 @@
 
             try {
                 carregandoDados = true;
+                tentativasCarregamento = tentativa;
 
                 // Obter unidade atual
                 const unidadeAtual = window.unidadeSelector ? window.unidadeSelector.getUnidade() : 'Sede';
-                console.log(`📚 Carregando turmas e alunos da unidade: ${unidadeAtual}`);
+                console.log(`📚 Carregando turmas e alunos da unidade: ${unidadeAtual} (Tentativa ${tentativa}/${MAX_TENTATIVAS})`);
 
                 // Mostrar loading
                 turmaSelect.disabled = true;
-                turmaSelect.innerHTML = '<option value="">⏳ Carregando turmas...</option>';
+                turmaSelect.innerHTML = `<option value="">⏳ Carregando turmas... ${tentativa > 1 ? `(Tentativa ${tentativa})` : ''}</option>`;
                 loadingStatus.classList.remove('hidden');
+                loadingStatus.innerHTML = `<span class="loading-spinner"></span> Buscando dados das turmas... ${tentativa > 1 ? `(Tentativa ${tentativa}/${MAX_TENTATIVAS})` : 'Aguarde alguns segundos.'}`;
 
                 // Adicionar timeout de 10 segundos e ordenar resultados
                 const { data: alunosData, error } = await window.supabaseClient
@@ -1404,23 +1427,41 @@
                 turmaSelect.disabled = false;
                 loadingStatus.classList.add('hidden');
 
+                // Resetar contador de tentativas
+                tentativasCarregamento = 0;
+
                 console.log(`✅ Carregados: ${todasTurmas.length} turmas, ${todosAlunos.length} alunos`);
 
             } catch (error) {
                 console.error('❌ Erro ao carregar dados:', error);
 
-                // Tratamento específico para timeout
-                if (error.code === '57014' || error.message?.includes('timeout')) {
-                    turmaSelect.innerHTML = '<option value="">⚠️ Timeout - Clique para tentar novamente</option>';
-                    loadingStatus.innerHTML = '<span style="color: #f59e0b;">⚠️ Tempo esgotado. <button onclick="carregarTurmasEAlunos()" style="margin-left:10px;padding:4px 8px;border:none;background:#8b5cf6;color:white;border-radius:4px;cursor:pointer;">🔄 Tentar Novamente</button></span>';
+                // Tentar novamente automaticamente se não atingiu o limite
+                if (tentativa < MAX_TENTATIVAS) {
+                    const proximaTentativa = tentativa + 1;
+                    const aguardar = tentativa * 2000; // 2s, 4s...
+
+                    console.log(`🔄 Tentando novamente em ${aguardar/1000}s...`);
+
+                    turmaSelect.innerHTML = `<option value="">🔄 Erro - Tentando novamente...</option>`;
+                    loadingStatus.innerHTML = `<span style="color: #f59e0b;">⚠️ ${error.code === '57014' ? 'Timeout' : 'Erro'} detectado. Tentando novamente em ${aguardar/1000}s... (${proximaTentativa}/${MAX_TENTATIVAS})</span>`;
+
+                    setTimeout(() => {
+                        carregandoDados = false;
+                        carregarTurmasEAlunos(proximaTentativa);
+                    }, aguardar);
                 } else {
-                    // Mostrar erro no select e status
+                    // Esgotou as tentativas - mostrar erro final
+                    console.error('❌ Esgotadas todas as tentativas de carregamento');
                     turmaSelect.innerHTML = '<option value="">❌ Erro ao carregar turmas</option>';
-                    loadingStatus.innerHTML = '<span style="color: #dc2626;">⚠️ Erro ao carregar dados. <button onclick="carregarTurmasEAlunos()" style="margin-left:10px;padding:4px 8px;border:none;background:#8b5cf6;color:white;border-radius:4px;cursor:pointer;">🔄 Tentar Novamente</button></span>';
+                    loadingStatus.innerHTML = '<span style="color: #dc2626;">⚠️ Não foi possível carregar os dados após 3 tentativas. <button onclick="location.reload()" style="margin-left:10px;padding:4px 8px;border:none;background:#8b5cf6;color:white;border-radius:4px;cursor:pointer;">🔄 Recarregar Página</button></span>';
+                    turmaSelect.disabled = true;
+                    carregandoDados = false;
                 }
-                turmaSelect.disabled = true;
             } finally {
-                carregandoDados = false;
+                // Só libera a flag se foi a última tentativa ou sucesso
+                if (tentativasCarregamento === 0 || tentativa >= MAX_TENTATIVAS) {
+                    carregandoDados = false;
+                }
             }
         }
         
