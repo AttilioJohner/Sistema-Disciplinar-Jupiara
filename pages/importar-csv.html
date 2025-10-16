@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importar Alunos CSV - Sistema Disciplinar</title>
+    <link rel="icon" type="image/jpeg" href="../assets/images/logo-escola.jpeg">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
+    <link rel="stylesheet" href="../assets/css/dashboard.css">
+    <link rel="stylesheet" href="../assets/css/modern-layout.css">
+
+    <!-- Scripts -->
+    <script src="../assets/js/fix-emoji-titles.js"></script>
+    <script src="../assets/js/modern-topbar.js"></script>
+
+    <!-- Supabase -->
+    <script src="../netlify-env.js" onerror="console.log('Variáveis do Netlify não encontradas')"></script>
+    <script src="../assets/js/env-config.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-only.js"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        .main-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: #495057;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .sidebar-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        .sidebar-item.active {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            color: white;
+            font-weight: 600;
+        }
+
+        .sidebar-icon {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        .content-area {
+            flex: 1;
+            margin-left: 250px;
+            padding: 80px 30px 30px 30px;
+        }
+
+        .import-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .page-subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .drop-zone {
+            border: 3px dashed #667eea;
+            border-radius: 12px;
+            padding: 60px 20px;
+            text-align: center;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 30px;
+        }
+
+        .drop-zone:hover,
+        .drop-zone.drag-over {
+            background: #e7f0ff;
+            border-color: #764ba2;
+        }
+
+        .drop-zone-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .drop-zone-text {
+            font-size: 18px;
+            color: #495057;
+            margin-bottom: 10px;
+        }
+
+        .drop-zone-hint {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .preview-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e1dfdd;
+        }
+
+        .preview-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .preview-stats {
+            display: flex;
+            gap: 20px;
+        }
+
+        .stat-badge {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            display: block;
+            max-height: 400px;
+        }
+
+        .preview-table thead {
+            position: sticky;
+            top: 0;
+            background: #f8f9fa;
+            z-index: 10;
+        }
+
+        .preview-table th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .preview-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .preview-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 15px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .progress-container {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .log-container {
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .log-success { color: #28a745; }
+        .log-error { color: #dc3545; }
+        .log-info { color: #17a2b8; }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+
+        .turmas-novas {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .turma-badge {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #764ba2, #667eea);
+            color: white;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- BARRA SUPERIOR -->
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <div class="app-launcher">
+                <span></span><span></span><span></span>
+                <span></span><span></span><span></span>
+                <span></span><span></span><span></span>
+            </div>
+            <span class="app-name">Sistema Disciplinar</span>
+            <span class="school-name">EECM Jupiara</span>
+        </div>
+        <div class="top-bar-right">
+            <div class="user-profile">A</div>
+        </div>
+    </div>
+
+    <!-- LAYOUT PRINCIPAL -->
+    <div class="main-layout">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div style="padding: 20px 0;">
+                <a href="/index.html" class="sidebar-item">
+                    <span class="sidebar-icon">🏠</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/pages/gestao-alunos.html" class="sidebar-item">
+                    <span class="sidebar-icon">👥</span>
+                    <span>Gestão de Alunos</span>
+                </a>
+                <a href="/pages/importar-csv.html" class="sidebar-item active">
+                    <span class="sidebar-icon">📤</span>
+                    <span>Importar CSV</span>
+                </a>
+                <a href="/pages/medidas-disciplinares.html" class="sidebar-item">
+                    <span class="sidebar-icon">📋</span>
+                    <span>Medidas Disciplinares</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- CONTEÚDO -->
+        <div class="content-area">
+            <div class="import-container">
+                <div class="page-title">📤 Importar Alunos via CSV</div>
+                <div class="page-subtitle">Adicione alunos das salas anexas em lote</div>
+
+                <!-- Informações -->
+                <div class="alert alert-info">
+                    <span style="font-size: 24px;">ℹ️</span>
+                    <div>
+                        <strong>Turmas das Salas Anexas:</strong>
+                        <div class="turmas-novas">
+                            <span class="turma-badge">6C</span>
+                            <span class="turma-badge">6D</span>
+                            <span class="turma-badge">7C</span>
+                            <span class="turma-badge">7D</span>
+                            <span class="turma-badge">8C</span>
+                            <span class="turma-badge">8D</span>
+                            <span class="turma-badge">9C</span>
+                            <span class="turma-badge">9D</span>
+                            <span class="turma-badge">1B - Adib</span>
+                            <span class="turma-badge">2A</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <span style="font-size: 24px;">⚠️</span>
+                    <div>
+                        <strong>Formato do CSV:</strong><br>
+                        O arquivo deve ter as colunas: <code>código (matrícula)</code>, <code>Nome completo</code>, <code>turma</code>, <code>responsável</code>, <code>Telefone do responsável</code>, <code>Telefone do responsável 2</code>
+                    </div>
+                </div>
+
+                <!-- Drop Zone -->
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-icon">📁</div>
+                    <div class="drop-zone-text">Arraste o arquivo CSV aqui</div>
+                    <div class="drop-zone-hint">ou clique para selecionar</div>
+                    <input type="file" id="fileInput" accept=".csv" style="display: none;">
+                </div>
+
+                <!-- Preview -->
+                <div class="preview-section" id="previewSection">
+                    <div class="preview-header">
+                        <div class="preview-title">📊 Preview dos Dados</div>
+                        <div class="preview-stats">
+                            <span class="stat-badge" id="totalAlunos">0 alunos</span>
+                        </div>
+                    </div>
+
+                    <div style="overflow-x: auto;">
+                        <table class="preview-table" id="previewTable">
+                            <thead></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary" onclick="cancelarImportacao()">❌ Cancelar</button>
+                        <button class="btn btn-primary" id="btnImportar" onclick="iniciarImportacao()">✅ Importar Alunos</button>
+                    </div>
+                </div>
+
+                <!-- Progresso -->
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="progressBar">0%</div>
+                    </div>
+                    <div class="log-container" id="logContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let csvData = [];
+        let supabaseClient = null;
+
+        // Inicializar quando carregar
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Aguardar Supabase
+            await aguardarSupabase();
+
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+
+            // Eventos drag and drop
+            dropZone.addEventListener('click', () => fileInput.click());
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('drag-over');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                const file = e.dataTransfer.files[0];
+                if (file && file.name.endsWith('.csv')) {
+                    processarCSV(file);
+                } else {
+                    alert('❌ Por favor, selecione um arquivo CSV válido');
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    processarCSV(file);
+                }
+            });
+        });
+
+        async function aguardarSupabase() {
+            return new Promise((resolve) => {
+                const check = () => {
+                    if (window.supabaseClient) {
+                        supabaseClient = window.supabaseClient;
+                        console.log('✅ Supabase conectado');
+                        resolve(true);
+                    } else {
+                        setTimeout(check, 100);
+                    }
+                };
+                check();
+            });
+        }
+
+        function processarCSV(file) {
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                const text = e.target.result;
+                csvData = parseCSV(text);
+
+                if (csvData.length > 0) {
+                    mostrarPreview(csvData);
+                } else {
+                    alert('❌ Nenhum dado encontrado no CSV');
+                }
+            };
+
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+
+            return lines.slice(1).map(line => {
+                const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+                const obj = {};
+                headers.forEach((header, index) => {
+                    obj[header] = values[index] || '';
+                });
+                return obj;
+            }).filter(obj => obj['código (matrícula)']); // Filtrar linhas vazias
+        }
+
+        function mostrarPreview(data) {
+            document.getElementById('previewSection').style.display = 'block';
+            document.getElementById('totalAlunos').textContent = `${data.length} alunos`;
+
+            const table = document.getElementById('previewTable');
+            const thead = table.querySelector('thead');
+            const tbody = table.querySelector('tbody');
+
+            // Cabeçalho
+            thead.innerHTML = `
+                <tr>
+                    <th>Código</th>
+                    <th>Nome</th>
+                    <th>Turma</th>
+                    <th>Responsável</th>
+                    <th>Telefone</th>
+                </tr>
+            `;
+
+            // Dados (mostrar primeiros 10)
+            tbody.innerHTML = data.slice(0, 10).map(aluno => `
+                <tr>
+                    <td>${aluno['código (matrícula)']}</td>
+                    <td>${aluno['Nome completo']}</td>
+                    <td><strong>${aluno['turma']}</strong></td>
+                    <td>${aluno['responsável']}</td>
+                    <td>${aluno['Telefone do responsável']}</td>
+                </tr>
+            `).join('');
+
+            if (data.length > 10) {
+                tbody.innerHTML += `
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #666; font-style: italic;">
+                            ... e mais ${data.length - 10} alunos
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function cancelarImportacao() {
+            document.getElementById('previewSection').style.display = 'none';
+            document.getElementById('fileInput').value = '';
+            csvData = [];
+        }
+
+        async function iniciarImportacao() {
+            if (!supabaseClient) {
+                alert('❌ Supabase não conectado. Recarregue a página.');
+                return;
+            }
+
+            document.getElementById('btnImportar').disabled = true;
+            document.getElementById('progressContainer').style.display = 'block';
+
+            const progressBar = document.getElementById('progressBar');
+            const logContainer = document.getElementById('logContainer');
+
+            let importados = 0;
+            let erros = 0;
+
+            log('🚀 Iniciando importação...', 'info');
+
+            for (let i = 0; i < csvData.length; i++) {
+                const aluno = csvData[i];
+
+                try {
+                    // Mapear dados
+                    const alunoLimpo = {
+                        codigo: parseInt(aluno['código (matrícula)']),
+                        'Nome completo': aluno['Nome completo'],
+                        turma: aluno['turma'],
+                        'responsável': aluno['responsável'],
+                        'Telefone do responsável': aluno['Telefone do responsável'] ? parseInt(aluno['Telefone do responsável'].replace(/\D/g, '')) : null,
+                        'Telefone do responsável 2': aluno['Telefone do responsável 2'] ? parseInt(aluno['Telefone do responsável 2'].replace(/\D/g, '')) : null
+                    };
+
+                    // Inserir no Supabase
+                    const { error } = await supabaseClient
+                        .from('alunos')
+                        .upsert(alunoLimpo, { onConflict: 'codigo' });
+
+                    if (error) {
+                        console.error('Erro:', error);
+                        log(`❌ Erro ao importar ${aluno['Nome completo']}: ${error.message}`, 'error');
+                        erros++;
+                    } else {
+                        importados++;
+                        if (importados % 10 === 0) {
+                            log(`✅ Importados: ${importados}/${csvData.length}`, 'success');
+                        }
+                    }
+
+                } catch (error) {
+                    console.error('Erro inesperado:', error);
+                    log(`❌ Erro inesperado: ${error.message}`, 'error');
+                    erros++;
+                }
+
+                // Atualizar progresso
+                const progresso = Math.round(((i + 1) / csvData.length) * 100);
+                progressBar.style.width = `${progresso}%`;
+                progressBar.textContent = `${progresso}%`;
+            }
+
+            log(`🎉 Importação concluída! ✅ ${importados} importados | ❌ ${erros} erros`, 'info');
+
+            setTimeout(() => {
+                alert(`Importação concluída!\n\n✅ Importados: ${importados}\n❌ Erros: ${erros}`);
+                if (importados > 0) {
+                    window.location.href = '/pages/gestao-alunos.html';
+                }
+            }, 1000);
+        }
+
+        function log(mensagem, tipo = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${tipo}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${mensagem}`;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+    </script>
+</body>
+</html>
