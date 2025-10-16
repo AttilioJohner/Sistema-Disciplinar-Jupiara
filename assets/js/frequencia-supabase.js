@@ -178,6 +178,7 @@ class FrequenciaSupabaseManager {
         let registrosOutubro = 0;
         const diasOutubroSet = new Set();
         const alunosOutubroSet = new Set();
+        const turmasOutubroMap = {}; // Contar registros por turma em outubro
 
         frequencias.forEach(registro => {
           // USAR A TURMA CORRETA DO MAPA em vez do campo turma do registro
@@ -203,6 +204,16 @@ class FrequenciaSupabaseManager {
             registrosOutubro++;
             diasOutubroSet.add(dia);
             alunosOutubroSet.add(registro.codigo_matricula);
+
+            // Contar por turma (usar turma CORRETA)
+            if (!turmasOutubroMap[turmaCorreta]) {
+              turmasOutubroMap[turmaCorreta] = {
+                count: 0,
+                turmaNoBD: registro.turma, // turma que está gravada no BD
+                corrigida: turmaCorreta !== registro.turma
+              };
+            }
+            turmasOutubroMap[turmaCorreta].count++;
           }
 
           // Usar a turma CORRETA em vez de registro.turma
@@ -266,6 +277,17 @@ class FrequenciaSupabaseManager {
           console.log(`📅 [OUTUBRO/2025] Dias com dados: ${diasOutubro.join(', ')}`);
           console.log(`📅 [OUTUBRO/2025] Total de alunos: ${alunosOutubroSet.size}`);
           console.log(`📅 [OUTUBRO/2025] Total de dias: ${diasOutubro.length}`);
+
+          // Mostrar registros por turma
+          console.log(`📅 [OUTUBRO/2025] Registros por turma:`);
+          Object.keys(turmasOutubroMap).sort().forEach(turma => {
+            const info = turmasOutubroMap[turma];
+            if (info.corrigida) {
+              console.log(`  - ${turma}: ${info.count} registros ⚠️ CORRIGIDO (BD tinha: ${info.turmaNoBD})`);
+            } else {
+              console.log(`  - ${turma}: ${info.count} registros ✅`);
+            }
+          });
         } else {
           console.warn(`⚠️ [OUTUBRO/2025] Nenhum registro encontrado!`);
         }
