@@ -179,14 +179,31 @@ class FrequenciaSupabaseManager {
         const diasOutubroSet = new Set();
         const alunosOutubroSet = new Set();
         const turmasOutubroMap = {}; // Contar registros por turma em outubro
+        const alunosOrfaosOutubro = []; // Alunos com frequência em outubro mas sem turma atual
 
         frequencias.forEach(registro => {
           // USAR A TURMA CORRETA DO MAPA em vez do campo turma do registro
           const turmaCorreta = mapAlunoPorTurma[registro.codigo_matricula];
 
           if (!turmaCorreta) {
-            // Se não encontrar a turma, significa que o aluno não está na unidade (não deveria acontecer)
-            console.warn(`⚠️ Aluno ${registro.codigo_matricula} sem turma no mapa (possível inconsistência)`);
+            // Se não encontrar a turma, significa que o aluno não está na unidade atual
+
+            // Se for outubro, rastrear esses alunos "órfãos"
+            const dataObj = new Date(registro.data + 'T00:00:00.000Z');
+            const mes = String(dataObj.getUTCMonth() + 1).padStart(2, '0');
+            const ano = String(dataObj.getUTCFullYear());
+
+            if (mes === '10' && ano === '2025') {
+              const alunoJaAdicionado = alunosOrfaosOutubro.find(a => a.codigo === registro.codigo_matricula);
+              if (!alunoJaAdicionado) {
+                alunosOrfaosOutubro.push({
+                  codigo: registro.codigo_matricula,
+                  nome: registro.nome_completo,
+                  turmaNoBD: registro.turma
+                });
+              }
+            }
+
             return; // Pular este registro
           }
 
@@ -288,6 +305,15 @@ class FrequenciaSupabaseManager {
               console.log(`  - ${turma}: ${info.count} registros ✅`);
             }
           });
+
+          // Mostrar alunos órfãos (com frequência mas não estão na unidade atual)
+          if (alunosOrfaosOutubro.length > 0) {
+            console.warn(`⚠️ [OUTUBRO/2025] ${alunosOrfaosOutubro.length} alunos com frequência mas não estão na unidade ${unidadeAtual}:`);
+            alunosOrfaosOutubro.forEach(aluno => {
+              console.warn(`  - ${aluno.codigo} - ${aluno.nome} (turma no BD: ${aluno.turmaNoBD})`);
+            });
+            console.warn(`💡 DICA: Esses alunos provavelmente mudaram de unidade ou foram removidos. Verifique a tabela 'alunos'.`);
+          }
         } else {
           console.warn(`⚠️ [OUTUBRO/2025] Nenhum registro encontrado!`);
         }
