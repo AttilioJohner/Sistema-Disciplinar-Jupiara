@@ -1850,8 +1850,15 @@ async function inicializarModuloFrequencia() {
             containerLista.style.display = 'none';
           }
 
-          // Recarregar TODOS os dados da nova unidade
+          // Resetar turma atual e voltar para resumo (se estava em visualização detalhada)
           if (window.frequenciaManager) {
+            window.frequenciaManager.turmaAtual = null;
+            window.frequenciaManager.mesAtual = null;
+            window.frequenciaManager.anoAtual = null;
+
+            // Forçar voltar para visualização de resumo
+            window.frequenciaManager.atualizarVisualizacao('resumo');
+
             await window.frequenciaManager.carregarTurmasLancamento();
             // Recarregar dados do resumo (cards de turmas e pesquisa avançada)
             await window.frequenciaManager.carregarDados();
