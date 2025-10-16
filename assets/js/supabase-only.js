@@ -314,17 +314,22 @@ const alunosDB = {
         if (!supabase) {
             await initSupabase();
         }
-        
+
         if (!supabase) {
             console.error('❌ Supabase não disponível em alunosDB.getAllBasic()');
             return [];
         }
-        
-        const { data, error } = await supabase
+
+        let query = supabase
             .from('alunos')
-            .select('codigo, "código (matrícula)", "Nome completo", turma')
+            .select('codigo, "código (matrícula)", "Nome completo", turma, unidade')
             .order('"Nome completo"');
-        
+
+        // Aplicar filtro de unidade
+        query = aplicarFiltroUnidade(query);
+
+        const { data, error } = await query;
+
         if (error) throw error;
         return data || [];
     },
@@ -635,22 +640,47 @@ const alunosDB = {
 // Database - Medidas
 const medidasDB = {
     async getAll() {
+        // Buscar códigos dos alunos da unidade atual
+        let queryAlunos = supabase.from('alunos').select('codigo');
+        queryAlunos = aplicarFiltroUnidade(queryAlunos);
+        const { data: alunosDaUnidade } = await queryAlunos;
+        const codigosDaUnidade = alunosDaUnidade?.map(a => a.codigo) || [];
+
+        if (codigosDaUnidade.length === 0) {
+            return [];
+        }
+
+        // Buscar medidas apenas desses alunos
         const { data, error } = await supabase
             .from('medidas')
             .select('*')
+            .in('codigo_matricula', codigosDaUnidade)
             .order('data_ocorrencia', { ascending: false });
-        
+
         if (error) throw error;
         return data || [];
     },
-    
+
     async getByAluno(alunoId) {
+        // Verificar se aluno pertence à unidade atual
+        let queryAluno = supabase
+            .from('alunos')
+            .select('codigo')
+            .eq('codigo', alunoId);
+        queryAluno = aplicarFiltroUnidade(queryAluno);
+        const { data: alunoData } = await queryAluno;
+
+        // Se aluno não pertence à unidade, retornar vazio
+        if (!alunoData || alunoData.length === 0) {
+            return [];
+        }
+
         const { data, error } = await supabase
             .from('medidas')
             .select('*')
-            .eq('aluno_codigo', alunoId)
+            .eq('codigo_matricula', alunoId)
             .order('data_ocorrencia', { ascending: false });
-        
+
         if (error) throw error;
         return data || [];
     },
@@ -695,44 +725,70 @@ async function getStatistics() {
         if (!supabase) {
             await initSupabase();
         }
-        
+
         if (!supabase) {
             console.error('❌ Supabase não disponível para estatísticas');
             return { totalAlunos: 0, totalMedidas: 0, totalFaltas: 0, totalTurmas: 0 };
         }
-        
-        console.log('📊 Carregando estatísticas do Supabase...');
-        
-        // Total alunos
-        const { count: totalAlunos } = await supabase
+
+        const unidade = window.unidadeSelector ? window.unidadeSelector.getUnidade() : 'Sede';
+        console.log(`📊 Carregando estatísticas do Supabase para unidade: ${unidade}`);
+
+        // Total alunos - FILTRADO POR UNIDADE
+        let queryAlunos = supabase
             .from('alunos')
             .select('*', { count: 'exact', head: true });
-        
-        // Total medidas
-        const { count: totalMedidas } = await supabase
-            .from('medidas')
-            .select('*', { count: 'exact', head: true });
-        
-        // Total faltas - contar todas as medidas por ora (pode ser refinado depois)
-        const { count: totalFaltas } = await supabase
-            .from('medidas')
-            .select('*', { count: 'exact', head: true });
-        
-        // Turmas únicas
-        const { data: turmas } = await supabase
+        queryAlunos = aplicarFiltroUnidade(queryAlunos);
+        const { count: totalAlunos } = await queryAlunos;
+
+        // Total medidas - FILTRADO POR UNIDADE (via join com alunos)
+        // Precisa buscar códigos dos alunos da unidade primeiro
+        let queryAlunosCodigos = supabase
+            .from('alunos')
+            .select('codigo');
+        queryAlunosCodigos = aplicarFiltroUnidade(queryAlunosCodigos);
+        const { data: alunosDaUnidade } = await queryAlunosCodigos;
+        const codigosDaUnidade = alunosDaUnidade?.map(a => a.codigo) || [];
+
+        let totalMedidas = 0;
+        let totalFaltas = 0;
+
+        if (codigosDaUnidade.length > 0) {
+            // Contar medidas apenas dos alunos desta unidade
+            const { count: countMedidas } = await supabase
+                .from('medidas')
+                .select('*', { count: 'exact', head: true })
+                .in('codigo_matricula', codigosDaUnidade);
+
+            totalMedidas = countMedidas || 0;
+
+            // Total faltas (da tabela frequencia)
+            const { count: countFaltas } = await supabase
+                .from('frequencia')
+                .select('*', { count: 'exact', head: true })
+                .in('codigo_matricula', codigosDaUnidade)
+                .in('status', ['F', 'FC']);
+
+            totalFaltas = countFaltas || 0;
+        }
+
+        // Turmas únicas - FILTRADO POR UNIDADE
+        let queryTurmas = supabase
             .from('alunos')
             .select('turma')
             .not('turma', 'is', null);
-        
+        queryTurmas = aplicarFiltroUnidade(queryTurmas);
+        const { data: turmas } = await queryTurmas;
+
         const turmasUnicas = [...new Set(turmas?.map(t => t.turma) || [])].length;
-        
+
         return {
             totalAlunos: totalAlunos || 0,
-            totalMedidas: totalMedidas || 0,
-            totalFaltas: totalFaltas || 0,
+            totalMedidas: totalMedidas,
+            totalFaltas: totalFaltas,
             totalTurmas: turmasUnicas
         };
-        
+
     } catch (error) {
         console.error('Erro ao carregar estatísticas:', error);
         return {
