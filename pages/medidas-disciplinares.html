@@ -2338,10 +2338,16 @@
                         }, 100);
                     });
                 }
-                
-                    const { data: alunosData, error } = await window.supabaseClient
+
+                // Obter unidade atual
+                const unidadeAtual = window.unidadeSelector ? window.unidadeSelector.getUnidade() : 'Sede';
+                console.log(`📚 Carregando alunos da unidade: ${unidadeAtual}`);
+
+                // Carregar alunos FILTRADOS pela unidade
+                const { data: alunosData, error } = await window.supabaseClient
                     .from('alunos')
-                    .select('codigo, "Nome completo", turma')
+                    .select('codigo, "Nome completo", turma, unidade')
+                    .eq('unidade', unidadeAtual)
                     .order('"Nome completo"');
 
                 if (error) throw error;
@@ -3665,12 +3671,17 @@ WHERE prazo_assinatura IS NULL
                     
                 todosAlunosMedidas = [];
                 window.todosAlunosMedidas = todosAlunosMedidas;
-                
-                // Carregar diretamente do Supabase
+
+                // Obter unidade atual
+                const unidadeAtual = window.unidadeSelector ? window.unidadeSelector.getUnidade() : 'Sede';
+                console.log(`📚 [CONSULTA] Carregando alunos da unidade: ${unidadeAtual}`);
+
+                // Carregar alunos FILTRADOS pela unidade
                 const { data: alunosData, error } = await window.supabaseClient
                     .from('alunos')
-                    .select('codigo, "Nome completo", turma');
-                    
+                    .select('codigo, "Nome completo", turma, unidade')
+                    .eq('unidade', unidadeAtual);
+
                 if (error) throw error;
                 
                 alunosData.forEach(aluno => {
