@@ -601,11 +601,30 @@
                 const aluno = csvData[i];
 
                 try {
-                    // Mapear dados
+                    // Obter código e validar
+                    const codigoMatricula = aluno['código (matrícula)'] || aluno['codigo'] || aluno['Código'];
+
+                    if (!codigoMatricula || codigoMatricula.trim() === '') {
+                        log(`⚠️ Pulando ${aluno['Nome completo']}: sem código de matrícula`, 'error');
+                        erros++;
+                        continue;
+                    }
+
+                    const codigoNumero = parseInt(codigoMatricula);
+
+                    if (isNaN(codigoNumero)) {
+                        log(`⚠️ Pulando ${aluno['Nome completo']}: código inválido (${codigoMatricula})`, 'error');
+                        erros++;
+                        continue;
+                    }
+
+                    // Mapear dados - IMPORTANTE: preencher ambos os campos!
                     const alunoLimpo = {
-                        codigo: parseInt(aluno['código (matrícula)']),
+                        'codigo': codigoNumero,                    // PK sem acento
+                        'código (matrícula)': codigoNumero,        // Campo com acento (cópia)
                         'Nome completo': aluno['Nome completo'],
-                        turma: aluno['turma'],
+                        'turma': aluno['turma'],
+                        'unidade': aluno['unidade'] || 'Anexa',   // Default Anexa
                         'responsável': aluno['responsável'],
                         'Telefone do responsável': aluno['Telefone do responsável'] ? parseInt(aluno['Telefone do responsável'].replace(/\D/g, '')) : null,
                         'Telefone do responsável 2': aluno['Telefone do responsável 2'] ? parseInt(aluno['Telefone do responsável 2'].replace(/\D/g, '')) : null
