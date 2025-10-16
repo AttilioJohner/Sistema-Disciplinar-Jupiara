@@ -155,16 +155,22 @@ class FrequenciaSupabaseManager {
 
       // Criar mapa de código do aluno -> turma correta
       const mapAlunoPorTurma = {};
+      const turmasUnicasNoBD = new Set();
       alunosComTurma.forEach(aluno => {
         mapAlunoPorTurma[aluno.codigo] = aluno.turma;
+        turmasUnicasNoBD.add(aluno.turma);
       });
 
       console.log(`📂 [RESUMO] Mapa de turmas criado para ${Object.keys(mapAlunoPorTurma).length} alunos`);
+      console.log(`📂 [RESUMO] Turmas únicas na tabela alunos (${unidadeAtual}):`, Array.from(turmasUnicasNoBD).sort());
 
       this.dadosFrequencia.clear();
 
       // Agrupar por turma/mês/ano
       const gruposDados = new Map();
+
+      // Contador de registros por turma para debug
+      const contadorPorTurma = {};
 
       if (frequencias && frequencias.length > 0) {
 
@@ -178,6 +184,9 @@ class FrequenciaSupabaseManager {
             return; // Pular este registro
           }
 
+          // Contar registros por turma
+          contadorPorTurma[turmaCorreta] = (contadorPorTurma[turmaCorreta] || 0) + 1;
+
           // Extrair mês e ano da data - CORREÇÃO: usar parsing UTC para evitar problema de timezone
           const dataObj = new Date(registro.data + 'T00:00:00.000Z');
           const mes = String(dataObj.getUTCMonth() + 1).padStart(2, '0');
@@ -188,7 +197,10 @@ class FrequenciaSupabaseManager {
           const chave = `${turmaCorreta}_${mes}_${ano}`;
 
           if (!gruposDados.has(chave)) {
-            console.log(`📅 Novo período: ${chave} (turma correta: ${turmaCorreta}, turma no BD: ${registro.turma})`);
+            // Só mostrar se houver discrepância entre turma correta e turma no BD
+            if (turmaCorreta !== registro.turma) {
+              console.log(`📅 Novo período: ${chave} ⚠️ CORRIGIDO (BD tinha: ${registro.turma})`);
+            }
             gruposDados.set(chave, {
               turma: turmaCorreta, // USAR TURMA CORRETA
               mes: mes,
@@ -231,7 +243,10 @@ class FrequenciaSupabaseManager {
             // console.log(`🔍 Debug processamento: ${registro.turma} - Aluno ${codigoAluno} - Dia ${dia} = ${registro.status}`);
           }
         });
-        
+
+        // Log do resumo de registros por turma
+        console.log(`📊 [RESUMO] Registros de frequência por turma:`, contadorPorTurma);
+
         // Converter Maps de alunos para arrays e debug final
         for (const [chave, grupo] of gruposDados) {
           const alunosArray = Array.from(grupo.alunos.values());
