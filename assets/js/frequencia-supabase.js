@@ -104,6 +104,7 @@ class FrequenciaSupabaseManager {
       }
 
       console.log(`📂 [RESUMO] Filtrando por ${codigosDaUnidade.length} alunos da ${unidadeAtual}`);
+      console.log(`📂 [RESUMO] Códigos dos alunos:`, codigosDaUnidade.slice(0, 10)); // Mostra primeiros 10
 
       let todasFrequencias = [];
       let pagina = 0;
@@ -234,8 +235,15 @@ class FrequenciaSupabaseManager {
       }
       
       this.dadosFrequencia = gruposDados;
-      
+
+      // Log de turmas únicas encontradas
+      const turmasUnicas = new Set();
+      for (const [chave, dados] of this.dadosFrequencia) {
+        turmasUnicas.add(dados.turma);
+      }
       console.log(`✅ Carregados ${this.dadosFrequencia.size} períodos de frequência`);
+      console.log(`📚 [RESUMO] Turmas encontradas:`, Array.from(turmasUnicas).sort());
+
       this.atualizarFiltros();
       
     } catch (error) {
@@ -312,12 +320,16 @@ class FrequenciaSupabaseManager {
   renderizarRelatorios() {
     const container = document.getElementById('resumoTurmas');
     if (!container) return;
-    
+
+    // Obter unidade atual para mostrar no título
+    const unidadeAtual = window.unidadeSelector ? window.unidadeSelector.getUnidade() : 'Sede';
+    console.log(`📊 [CARDS] Renderizando relatórios para unidade: ${unidadeAtual}`);
+
     // Criar estrutura preservando o layout original
     container.innerHTML = `
       <div class="cards-grid"></div>
     `;
-    
+
     // Criar filtros avançados em container separado, se não existir
     let filtrosContainer = document.getElementById('filtros-avancados-container');
     if (!filtrosContainer) {
@@ -325,7 +337,7 @@ class FrequenciaSupabaseManager {
       filtrosContainer.id = 'filtros-avancados-container';
       filtrosContainer.innerHTML = `
         <div class="container">
-          <h2>🔍 Pesquisa Avançada</h2>
+          <h2>🔍 Pesquisa Avançada - ${unidadeAtual}</h2>
           <div class="filters-row">
             <div class="filter-group">
               <label for="filtro-turma-avancado">Turma:</label>
@@ -347,19 +359,29 @@ class FrequenciaSupabaseManager {
       `;
       // Inserir antes do container de resumo das turmas
       container.parentNode.insertBefore(filtrosContainer, container);
+    } else {
+      // Atualizar título se já existe
+      const titulo = filtrosContainer.querySelector('h2');
+      if (titulo) {
+        titulo.textContent = `🔍 Pesquisa Avançada - ${unidadeAtual}`;
+      }
     }
-    
+
     const cardsGrid = container.querySelector('.cards-grid');
-    
+
     // Configurar event listeners dos novos elementos
     this.setupFiltrosAvancados();
-    
+
     // Agrupar por turma
     const relatoriosPorTurma = new Map();
-    
+
+    console.log(`📊 [CARDS] Processando ${this.dadosFrequencia.size} períodos`);
+
     for (const [chave, dados] of this.dadosFrequencia) {
       const { turma, alunos } = dados;
-      
+
+      console.log(`📊 [CARDS] Processando turma ${turma} com ${alunos.length} alunos`);
+
       if (!relatoriosPorTurma.has(turma)) {
         relatoriosPorTurma.set(turma, {
           totalAlunos: 0,
@@ -367,12 +389,14 @@ class FrequenciaSupabaseManager {
           ultimoMes: ''
         });
       }
-      
+
       const relatorio = relatoriosPorTurma.get(turma);
       relatorio.totalAlunos = Math.max(relatorio.totalAlunos, alunos.length);
       relatorio.totalPeriodos++;
       relatorio.ultimoMes = dados.mes + '/' + dados.ano;
     }
+
+    console.log(`📊 [CARDS] Total de turmas encontradas: ${relatoriosPorTurma.size}`);
     
     // Renderizar cards
     for (const [turma, relatorio] of relatoriosPorTurma) {
