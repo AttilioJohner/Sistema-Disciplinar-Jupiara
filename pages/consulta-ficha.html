@@ -1351,12 +1351,23 @@
             console.log('✅ Supabase pronto');
         }
         
+        // Flag para evitar carregamentos simultâneos
+        let carregandoDados = false;
+
         // Carregar turmas e alunos
         async function carregarTurmasEAlunos() {
+            // Evitar chamadas simultâneas
+            if (carregandoDados) {
+                console.log('⏸️ Já há um carregamento em andamento, aguardando...');
+                return;
+            }
+
             const turmaSelect = document.getElementById('turmaSelect');
             const loadingStatus = document.getElementById('loadingStatus');
 
             try {
+                carregandoDados = true;
+
                 // Obter unidade atual
                 const unidadeAtual = window.unidadeSelector ? window.unidadeSelector.getUnidade() : 'Sede';
                 console.log(`📚 Carregando turmas e alunos da unidade: ${unidadeAtual}`);
@@ -1366,39 +1377,50 @@
                 turmaSelect.innerHTML = '<option value="">⏳ Carregando turmas...</option>';
                 loadingStatus.classList.remove('hidden');
 
+                // Adicionar timeout de 10 segundos e ordenar resultados
                 const { data: alunosData, error } = await window.supabaseClient
                     .from('alunos')
                     .select('codigo, "Nome completo", turma, foto_url, unidade')
-                    .eq('unidade', unidadeAtual);
-                    
+                    .eq('unidade', unidadeAtual)
+                    .order('"Nome completo"')
+                    .abortSignal(AbortSignal.timeout(10000));
+
                 if (error) throw error;
-                
+
                 todosAlunos = alunosData || [];
                 todasTurmas = [...new Set(todosAlunos.map(a => a.turma))].sort();
-                
+
                 // Preencher select de turmas
                 turmaSelect.innerHTML = '<option value="">Selecione uma turma...</option>';
-                
+
                 todasTurmas.forEach(turma => {
                     const option = document.createElement('option');
                     option.value = turma;
                     option.textContent = turma;
                     turmaSelect.appendChild(option);
                 });
-                
+
                 // Habilitar select e ocultar loading
                 turmaSelect.disabled = false;
                 loadingStatus.classList.add('hidden');
-                
+
                 console.log(`✅ Carregados: ${todasTurmas.length} turmas, ${todosAlunos.length} alunos`);
-                
+
             } catch (error) {
                 console.error('❌ Erro ao carregar dados:', error);
-                
-                // Mostrar erro no select e status
-                turmaSelect.innerHTML = '<option value="">❌ Erro ao carregar turmas - Tente recarregar a página</option>';
+
+                // Tratamento específico para timeout
+                if (error.code === '57014' || error.message?.includes('timeout')) {
+                    turmaSelect.innerHTML = '<option value="">⚠️ Timeout - Clique para tentar novamente</option>';
+                    loadingStatus.innerHTML = '<span style="color: #f59e0b;">⚠️ Tempo esgotado. <button onclick="carregarTurmasEAlunos()" style="margin-left:10px;padding:4px 8px;border:none;background:#8b5cf6;color:white;border-radius:4px;cursor:pointer;">🔄 Tentar Novamente</button></span>';
+                } else {
+                    // Mostrar erro no select e status
+                    turmaSelect.innerHTML = '<option value="">❌ Erro ao carregar turmas</option>';
+                    loadingStatus.innerHTML = '<span style="color: #dc2626;">⚠️ Erro ao carregar dados. <button onclick="carregarTurmasEAlunos()" style="margin-left:10px;padding:4px 8px;border:none;background:#8b5cf6;color:white;border-radius:4px;cursor:pointer;">🔄 Tentar Novamente</button></span>';
+                }
                 turmaSelect.disabled = true;
-                loadingStatus.innerHTML = '<span style="color: #dc2626;">⚠️ Erro ao carregar dados. Verifique sua conexão e recarregue a página.</span>';
+            } finally {
+                carregandoDados = false;
             }
         }
         
@@ -1440,18 +1462,30 @@
             });
 
             // Evento mudança de unidade - recarregar turmas e alunos
+            let timeoutUnidade = null;
             if (window.unidadeSelector) {
                 window.unidadeSelector.onChange(async () => {
-                    console.log('🔄 Unidade alterada - recarregando dados...');
-                    // Limpar seleções
+                    console.log('🔄 Unidade alterada - aguardando para recarregar...');
+
+                    // Limpar timeout anterior se existir (debounce)
+                    if (timeoutUnidade) {
+                        clearTimeout(timeoutUnidade);
+                    }
+
+                    // Limpar seleções imediatamente
                     turmaSelect.value = '';
                     alunoSelect.value = '';
                     alunoSelect.disabled = true;
                     btnConsultar.disabled = true;
+
                     // Ocultar ficha se estava visível
                     document.getElementById('fichaAluno').style.display = 'none';
-                    // Recarregar dados da nova unidade
-                    await carregarTurmasEAlunos();
+
+                    // Aguardar 300ms antes de recarregar (debounce)
+                    timeoutUnidade = setTimeout(async () => {
+                        console.log('🔄 Recarregando dados da nova unidade...');
+                        await carregarTurmasEAlunos();
+                    }, 300);
                 });
             }
         }
