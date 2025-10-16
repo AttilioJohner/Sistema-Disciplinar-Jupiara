@@ -1355,18 +1355,21 @@
         async function carregarTurmasEAlunos() {
             const turmaSelect = document.getElementById('turmaSelect');
             const loadingStatus = document.getElementById('loadingStatus');
-            
+
             try {
-                console.log('📚 Carregando turmas e alunos...');
-                
+                // Obter unidade atual
+                const unidadeAtual = window.unidadeSelector ? window.unidadeSelector.getUnidade() : 'Sede';
+                console.log(`📚 Carregando turmas e alunos da unidade: ${unidadeAtual}`);
+
                 // Mostrar loading
                 turmaSelect.disabled = true;
                 turmaSelect.innerHTML = '<option value="">⏳ Carregando turmas...</option>';
                 loadingStatus.classList.remove('hidden');
-                
+
                 const { data: alunosData, error } = await window.supabaseClient
                     .from('alunos')
-                    .select('codigo, "Nome completo", turma, foto_url');
+                    .select('codigo, "Nome completo", turma, foto_url, unidade')
+                    .eq('unidade', unidadeAtual);
                     
                 if (error) throw error;
                 
@@ -1435,6 +1438,22 @@
                 btnConsultar.disabled = !this.value;
                 btnExportarPDF.disabled = !this.value;
             });
+
+            // Evento mudança de unidade - recarregar turmas e alunos
+            if (window.unidadeSelector) {
+                window.unidadeSelector.onChange(async () => {
+                    console.log('🔄 Unidade alterada - recarregando dados...');
+                    // Limpar seleções
+                    turmaSelect.value = '';
+                    alunoSelect.value = '';
+                    alunoSelect.disabled = true;
+                    btnConsultar.disabled = true;
+                    // Ocultar ficha se estava visível
+                    document.getElementById('fichaAluno').style.display = 'none';
+                    // Recarregar dados da nova unidade
+                    await carregarTurmasEAlunos();
+                });
+            }
         }
         
         // Consultar ficha do aluno
@@ -2152,11 +2171,16 @@
             };
             
             try {
-                // Buscar alunos da turma
+                // Obter unidade atual
+                const unidadeAtual = window.unidadeSelector ? window.unidadeSelector.getUnidade() : 'Sede';
+                console.log(`📊 [ANÁLISE TURMA] Calculando médias da unidade: ${unidadeAtual}`);
+
+                // Buscar alunos da turma FILTRADOS pela unidade
                 const { data: alunosTurma } = await window.supabaseClient
                     .from('alunos')
                     .select('codigo')
-                    .eq('turma', turma);
+                    .eq('turma', turma)
+                    .eq('unidade', unidadeAtual);
                 
                 if (alunosTurma && alunosTurma.length > 0) {
                     const codigosAlunos = alunosTurma.map(a => a.codigo);
@@ -2217,10 +2241,15 @@
             };
             
             try {
-                // Buscar dados gerais da escola
+                // Obter unidade atual
+                const unidadeAtual = window.unidadeSelector ? window.unidadeSelector.getUnidade() : 'Sede';
+                console.log(`📊 [ANÁLISE GERAL] Calculando médias gerais da unidade: ${unidadeAtual}`);
+
+                // Buscar dados gerais da unidade (não mais da escola toda)
                 const { data: todosAlunos } = await window.supabaseClient
                     .from('alunos')
-                    .select('codigo');
+                    .select('codigo')
+                    .eq('unidade', unidadeAtual);
                 
                 if (todosAlunos && todosAlunos.length > 0) {
                     const codigosTodos = todosAlunos.map(a => a.codigo);
