@@ -174,6 +174,11 @@ class FrequenciaSupabaseManager {
 
       if (frequencias && frequencias.length > 0) {
 
+        // Contador específico para outubro/2025
+        let registrosOutubro = 0;
+        const diasOutubroSet = new Set();
+        const alunosOutubroSet = new Set();
+
         frequencias.forEach(registro => {
           // USAR A TURMA CORRETA DO MAPA em vez do campo turma do registro
           const turmaCorreta = mapAlunoPorTurma[registro.codigo_matricula];
@@ -192,6 +197,13 @@ class FrequenciaSupabaseManager {
           const mes = String(dataObj.getUTCMonth() + 1).padStart(2, '0');
           const ano = String(dataObj.getUTCFullYear());
           const dia = String(dataObj.getUTCDate()).padStart(2, '0');
+
+          // Debug específico para OUTUBRO/2025
+          if (mes === '10' && ano === '2025') {
+            registrosOutubro++;
+            diasOutubroSet.add(dia);
+            alunosOutubroSet.add(registro.codigo_matricula);
+          }
 
           // Usar a turma CORRETA em vez de registro.turma
           const chave = `${turmaCorreta}_${mes}_${ano}`;
@@ -246,6 +258,17 @@ class FrequenciaSupabaseManager {
 
         // Log do resumo de registros por turma
         console.log(`📊 [RESUMO] Registros de frequência por turma:`, contadorPorTurma);
+
+        // Log específico de OUTUBRO/2025
+        if (registrosOutubro > 0) {
+          const diasOutubro = Array.from(diasOutubroSet).sort((a, b) => parseInt(a) - parseInt(b));
+          console.log(`📅 [OUTUBRO/2025] Total de registros: ${registrosOutubro}`);
+          console.log(`📅 [OUTUBRO/2025] Dias com dados: ${diasOutubro.join(', ')}`);
+          console.log(`📅 [OUTUBRO/2025] Total de alunos: ${alunosOutubroSet.size}`);
+          console.log(`📅 [OUTUBRO/2025] Total de dias: ${diasOutubro.length}`);
+        } else {
+          console.warn(`⚠️ [OUTUBRO/2025] Nenhum registro encontrado!`);
+        }
 
         // Converter Maps de alunos para arrays e debug final
         for (const [chave, grupo] of gruposDados) {
