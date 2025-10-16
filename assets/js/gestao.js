@@ -100,26 +100,27 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   document.addEventListener('DOMContentLoaded', async () => {
     initCount++;
     console.log(`🔄 DOMContentLoaded executado ${initCount}x`);
-    
+
     // HARD STOP - Máximo 1 execução
     if (isInitialized || initCount > 1) {
       console.log('🛑 INICIALIZAÇÃO BLOQUEADA - evitando loop');
       return;
     }
-    
+
     try {
       isInitialized = true;
       console.log('✅ Iniciando gestão (ÚNICA VEZ)');
-      
+
       await ensureLocalDb();
       mapElements();
       bindEvents();
       initPhotoPreview();
+      setupUnidadeChangeListener();
       // Garantir que botão de excluir do formulário principal fique sempre oculto
       if (els.btnExcluir) els.btnExcluir.style.display = 'none';
       // NÃO carregar alunos automaticamente - aguardar clique do usuário
       setTimeout(() => adicionarBotaoCarregamento(), 100);
-      
+
       // Única atualização de estatísticas
       setTimeout(() => {
         if (!window.statsUpdated) {
@@ -127,7 +128,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
           updateStatistics();
         }
       }, 1000);
-      
+
       console.log('✅ gestao.js inicializado DEFINITIVAMENTE');
     } catch (e) {
       console.error('❌ Erro na inicialização:', e);
@@ -263,6 +264,93 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         }
       });
     }
+  }
+
+  // =====================
+  // LISTENER DE MUDANÇA DE UNIDADE
+  // =====================
+  function setupUnidadeChangeListener() {
+    if (!window.unidadeSelector) {
+      console.warn('⚠️ Sistema de seleção de unidade não disponível');
+      return;
+    }
+
+    window.unidadeSelector.onChange(async () => {
+      const novaUnidade = window.unidadeSelector.getUnidade();
+      console.log(`🔄 Unidade alterada para: ${novaUnidade} - Recarregando gestão de alunos...`);
+
+      // Limpar caches
+      alunosCache = [];
+      consultaCache = [];
+      clearCache('cache_');
+
+      // Resetar filtro de turma
+      if (els.filtroTurma) {
+        els.filtroTurma.value = '';
+      }
+
+      // Limpar tabela principal
+      if (els.tbody) {
+        els.tbody.innerHTML = `
+          <tr>
+            <td colspan="9" style="text-align: center; padding: 40px;">
+              <div style="color: #666;">
+                <h4 style="margin: 0 0 15px 0;">🎯 Unidade alterada para ${novaUnidade}</h4>
+                <p style="margin: 0;">Selecione uma turma no filtro acima e clique em <strong>"🚀 Carregar Alunos"</strong></p>
+              </div>
+            </td>
+          </tr>
+        `;
+      }
+
+      // Limpar tabela de consulta
+      consultaCache = [];
+      const consultaTableBody = document.getElementById('consultaTableBody');
+      if (consultaTableBody) {
+        consultaTableBody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px; color: #666;">Digite o nome do aluno para buscar...</td></tr>';
+      }
+
+      // Ocultar consulta geral se estiver visível
+      const consultaContainer = document.getElementById('consultaContainer');
+      const btnMostrarConsulta = document.getElementById('btnMostrarConsulta');
+      if (consultaContainer && consultaContainer.style.display !== 'none') {
+        consultaContainer.style.display = 'none';
+        if (btnMostrarConsulta) btnMostrarConsulta.style.display = 'block';
+      }
+
+      // Remover botões de ação
+      const botaoLimpar = document.getElementById('btnLimparLista');
+      const botaoAtualizar = document.getElementById('btnAtualizarDados');
+      const botaoAtualizarConsulta = document.getElementById('btnAtualizarConsulta');
+      if (botaoLimpar) botaoLimpar.remove();
+      if (botaoAtualizar) botaoAtualizar.remove();
+      if (botaoAtualizarConsulta) botaoAtualizarConsulta.remove();
+
+      // Recriar botão de carregamento
+      const tableActions = document.querySelector('.table-actions');
+      if (tableActions && !document.getElementById('btnCarregarAlunos')) {
+        const botaoCarregar = document.createElement('button');
+        botaoCarregar.id = 'btnCarregarAlunos';
+        botaoCarregar.innerHTML = '🚀 Carregar Alunos';
+        botaoCarregar.className = 'btn btn-primary';
+        botaoCarregar.style.cssText = 'margin-left: 10px; padding: 8px 16px; font-size: 14px;';
+        botaoCarregar.onclick = carregarAlunosPorTurma;
+        tableActions.appendChild(botaoCarregar);
+      }
+
+      // Atualizar estatísticas
+      updateStatistics();
+
+      // Resetar total
+      if (els.total) {
+        els.total.textContent = '0';
+      }
+
+      console.log(`✅ Dados atualizados para ${novaUnidade}`);
+      toast(`📍 Unidade alterada para ${novaUnidade}`, 'ok');
+    });
+
+    console.log('✅ Listener de mudança de unidade configurado');
   }
 
   // =====================
