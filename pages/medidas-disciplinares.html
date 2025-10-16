@@ -3424,12 +3424,37 @@ WHERE prazo_assinatura IS NULL
                     });
                 }
 
-                
-                // Carregar todas as medidas
+                // Obter unidade atual
+                const unidadeAtual = window.unidadeSelector ? window.unidadeSelector.getUnidade() : 'Sede';
+                console.log(`📊 [ESTATÍSTICAS] Carregando estatísticas da unidade: ${unidadeAtual}`);
+
+                // Buscar códigos dos alunos da unidade atual
+                const { data: alunosDaUnidade, error: errorAlunos } = await window.supabaseClient
+                    .from('alunos')
+                    .select('codigo')
+                    .eq('unidade', unidadeAtual);
+
+                if (errorAlunos) throw errorAlunos;
+
+                const codigosDaUnidade = alunosDaUnidade?.map(a => a.codigo) || [];
+
+                if (codigosDaUnidade.length === 0) {
+                    console.warn('⚠️ Nenhum aluno encontrado na unidade selecionada');
+                    // Zerar estatísticas
+                    document.getElementById('totalMedidas').textContent = '0';
+                    document.getElementById('medidasMes').textContent = '0';
+                    document.getElementById('medidasSemana').textContent = '0';
+                    document.getElementById('alunosAfetados').textContent = '0';
+                    document.getElementById('mediaNotaEscola').textContent = '8.0';
+                    return;
+                }
+
+                // Carregar medidas APENAS dos alunos da unidade
                 const { data: todasMedidas, error } = await window.supabaseClient
                     .from('medidas')
-                    .select('id, codigo_matricula, criado_em');
-                
+                    .select('id, codigo_matricula, criado_em')
+                    .in('codigo_matricula', codigosDaUnidade);
+
                 if (error) throw error;
                 
                 const hoje = new Date();
@@ -3454,14 +3479,12 @@ WHERE prazo_assinatura IS NULL
                 const alunosUnicos = new Set(todasMedidas.map(medida => medida.codigo_matricula));
                 const alunosAfetados = alunosUnicos.size;
                 
-                // Calcular média de nota disciplinar da escola
+                // Calcular média de nota disciplinar da unidade
                 let mediaNotaEscola = 8.0;
                 try {
-                    // Buscar todos os alunos
-                    const { data: todosAlunos } = await window.supabaseClient
-                        .from('alunos')
-                        .select('codigo');
-                    
+                    // Usar alunos da unidade (já carregados acima)
+                    const todosAlunos = alunosDaUnidade;
+
                     if (todosAlunos && todosAlunos.length > 0) {
                         let somaNotas = 0;
                         const totalAlunos = todosAlunos.length;
@@ -3475,11 +3498,12 @@ WHERE prazo_assinatura IS NULL
                             medidasPorAluno[medida.codigo_matricula].push(medida);
                         });
                         
-                        // Otimização: Buscar todas as notas de uma vez usando a view
+                        // Otimização: Buscar notas dos alunos da unidade usando a view
                         try {
                             const { data: todasNotas, error: notasError } = await window.supabaseClient
                                 .from('v_nota_disciplinar_atual')
-                                .select('codigo_aluno, nota_atual');
+                                .select('codigo_aluno, nota_atual')
+                                .in('codigo_aluno', codigosDaUnidade);
                             
                             if (!notasError && todasNotas) {
                                 // Criar mapa de notas por aluno
@@ -4942,19 +4966,39 @@ WHERE prazo_assinatura IS NULL
         async function carregarMedidasNegativas() {
             const button = event.target;
             const originalText = button.innerHTML;
-            
+
             try {
                 button.innerHTML = '⏳ Carregando...';
                 button.disabled = true;
-                
-                console.log('📊 Carregando medidas disciplinares negativas...');
-                
+
+                // Obter unidade atual
+                const unidadeAtual = window.unidadeSelector ? window.unidadeSelector.getUnidade() : 'Sede';
+                console.log(`📊 [NEGATIVAS] Carregando medidas da unidade: ${unidadeAtual}`);
+
+                // Buscar códigos dos alunos da unidade atual
+                const { data: alunosDaUnidade, error: errorAlunos } = await window.supabaseClient
+                    .from('alunos')
+                    .select('codigo')
+                    .eq('unidade', unidadeAtual);
+
+                if (errorAlunos) throw errorAlunos;
+
+                const codigosDaUnidade = alunosDaUnidade?.map(a => a.codigo) || [];
+
+                if (codigosDaUnidade.length === 0) {
+                    medidasNegativasData = [];
+                    document.getElementById('tableMedidasNegativas').innerHTML = '<p class="text-center text-muted">Nenhum aluno encontrado na unidade selecionada</p>';
+                    return;
+                }
+
+                // Carregar medidas APENAS dos alunos da unidade
                 const { data, error } = await window.supabaseClient
                     .from('medidas')
                     .select('*')
+                    .in('codigo_matricula', codigosDaUnidade)
                     .in('tipo_medida', ['Fato Observado Negativo', 'Advertência Verbal', 'Advertência Escrita', 'Suspensão', 'Ação Educativa'])
                     .order('criado_em', { ascending: false });
-                
+
                 if (error) throw error;
                 
                 medidasNegativasData = data || [];
@@ -4976,19 +5020,39 @@ WHERE prazo_assinatura IS NULL
         async function carregarMedidasPositivas() {
             const button = event.target;
             const originalText = button.innerHTML;
-            
+
             try {
                 button.innerHTML = '⏳ Carregando...';
                 button.disabled = true;
-                
-                console.log('📊 Carregando medidas disciplinares positivas...');
-                
+
+                // Obter unidade atual
+                const unidadeAtual = window.unidadeSelector ? window.unidadeSelector.getUnidade() : 'Sede';
+                console.log(`📊 [POSITIVAS] Carregando medidas da unidade: ${unidadeAtual}`);
+
+                // Buscar códigos dos alunos da unidade atual
+                const { data: alunosDaUnidade, error: errorAlunos } = await window.supabaseClient
+                    .from('alunos')
+                    .select('codigo')
+                    .eq('unidade', unidadeAtual);
+
+                if (errorAlunos) throw errorAlunos;
+
+                const codigosDaUnidade = alunosDaUnidade?.map(a => a.codigo) || [];
+
+                if (codigosDaUnidade.length === 0) {
+                    medidasPositivasData = [];
+                    document.getElementById('tableMedidasPositivas').innerHTML = '<p class="text-center text-muted">Nenhum aluno encontrado na unidade selecionada</p>';
+                    return;
+                }
+
+                // Carregar medidas APENAS dos alunos da unidade
                 const { data, error } = await window.supabaseClient
                     .from('medidas')
                     .select('*')
+                    .in('codigo_matricula', codigosDaUnidade)
                     .in('tipo_medida', ['Elogio Individual', 'Elogio Coletivo', 'Fato Observado Positivo'])
                     .order('criado_em', { ascending: false });
-                
+
                 if (error) throw error;
                 
                 medidasPositivasData = data || [];
