@@ -83,10 +83,10 @@ class FrequenciaSupabaseManager {
       const unidadeAtual = window.unidadeSelector ? window.unidadeSelector.getUnidade() : 'Sede';
       console.log(`📂 [RESUMO] Carregando dados do Supabase para unidade: ${unidadeAtual}`);
 
-      // Primeiro, buscar códigos dos alunos da unidade
+      // Primeiro, buscar turmas e códigos dos alunos da unidade
       const { data: alunosDaUnidade, error: errorAlunos } = await this.supabase
         .from('alunos')
-        .select('codigo')
+        .select('codigo, turma')
         .eq('unidade', unidadeAtual);
 
       if (errorAlunos) {
@@ -95,6 +95,7 @@ class FrequenciaSupabaseManager {
       }
 
       const codigosDaUnidade = alunosDaUnidade?.map(a => a.codigo) || [];
+      const turmasDaUnidade = [...new Set(alunosDaUnidade?.map(a => a.turma).filter(Boolean))] || [];
 
       if (codigosDaUnidade.length === 0) {
         console.warn(`⚠️ [RESUMO] Nenhum aluno encontrado na unidade ${unidadeAtual}`);
@@ -104,7 +105,7 @@ class FrequenciaSupabaseManager {
       }
 
       console.log(`📂 [RESUMO] Filtrando por ${codigosDaUnidade.length} alunos da ${unidadeAtual}`);
-      console.log(`📂 [RESUMO] Códigos dos alunos:`, codigosDaUnidade.slice(0, 10)); // Mostra primeiros 10
+      console.log(`📂 [RESUMO] Turmas da unidade:`, turmasDaUnidade);
 
       let todasFrequencias = [];
       let pagina = 0;
@@ -115,11 +116,12 @@ class FrequenciaSupabaseManager {
         const inicio = pagina * tamanhoPagina;
         const fim = inicio + tamanhoPagina - 1;
 
-        // Carregando página FILTRADA pela unidade
+        // CORREÇÃO: Buscar por turma EM VEZ de por código de aluno
+        // Isso inclui dados históricos de alunos que mudaram de unidade
         const { data: frequenciasPagina, error } = await this.supabase
           .from('frequencia')
           .select('*')
-          .in('codigo_matricula', codigosDaUnidade)
+          .in('turma', turmasDaUnidade)
           .range(inicio, fim);
 
         if (error) {
@@ -183,10 +185,12 @@ class FrequenciaSupabaseManager {
 
         frequencias.forEach(registro => {
           // USAR A TURMA CORRETA DO MAPA em vez do campo turma do registro
-          const turmaCorreta = mapAlunoPorTurma[registro.codigo_matricula];
+          let turmaCorreta = mapAlunoPorTurma[registro.codigo_matricula];
 
           if (!turmaCorreta) {
             // Se não encontrar a turma, significa que o aluno não está na unidade atual
+            // MAS: em vez de descartar o registro, vamos usar a turma histórica do registro
+            // para exibir os dados de frequência que foram lançados no passado
 
             // Se for outubro, rastrear esses alunos "órfãos"
             const dataObj = new Date(registro.data + 'T00:00:00.000Z');
@@ -204,7 +208,9 @@ class FrequenciaSupabaseManager {
               }
             }
 
-            return; // Pular este registro
+            // CORREÇÃO: usar turma histórica do registro em vez de pular
+            turmaCorreta = registro.turma;
+            // Continuar processando o registro com a turma histórica
           }
 
           // Contar registros por turma
