@@ -346,6 +346,162 @@ class WhatsAppSender {
     return await this.enviarMensagem(telefone, mensagem);
   }
 
+  // Enviar mensagem em massa para todos os contatos
+  async enviarMensagemEmMassa(mensagem, opcoes = {}) {
+    const {
+      unidade = null,  // Filtrar por unidade específica (null = todas)
+      turma = null,    // Filtrar por turma específica
+      delayEntreMensagens = 2000,  // Delay em ms entre cada envio (2s padrão)
+      simular = false  // Se true, apenas simula sem enviar
+    } = opcoes;
+
+    console.log('📢 INICIANDO ENVIO EM MASSA');
+    console.log('Opções:', { unidade, turma, delayEntreMensagens, simular });
+
+    try {
+      // Verificar se Supabase está disponível
+      const clienteSupabase = window.supabaseClient || window.supabase;
+      if (!clienteSupabase) {
+        throw new Error('Cliente Supabase não disponível');
+      }
+
+      // Buscar alunos com filtros
+      let query = clienteSupabase
+        .from('alunos')
+        .select('codigo, "Nome completo", turma, unidade, "Telefone do responsável", "Telefone do responsável 2"');
+
+      if (unidade) {
+        query = query.eq('unidade', unidade);
+      }
+      if (turma) {
+        query = query.eq('turma', turma);
+      }
+
+      const { data: alunos, error } = await query;
+
+      if (error) throw error;
+
+      console.log(`📊 ${alunos.length} alunos encontrados`);
+
+      // Extrair telefones únicos
+      const telefonesMap = new Map(); // telefone -> array de alunos
+      let alunosSemTelefone = [];
+
+      alunos.forEach(aluno => {
+        const tel1 = aluno['Telefone do responsável'];
+        const tel2 = aluno['Telefone do responsável 2'];
+
+        if (tel1 || tel2) {
+          const telefones = [tel1, tel2].filter(Boolean);
+
+          telefones.forEach(tel => {
+            const telNormalizado = this.normalizarTelefone(tel);
+            if (telNormalizado) {
+              if (!telefonesMap.has(telNormalizado)) {
+                telefonesMap.set(telNormalizado, []);
+              }
+              telefonesMap.get(telNormalizado).push({
+                nome: aluno['Nome completo'],
+                turma: aluno.turma,
+                codigo: aluno.codigo
+              });
+            }
+          });
+        } else {
+          alunosSemTelefone.push({
+            codigo: aluno.codigo,
+            nome: aluno['Nome completo'],
+            turma: aluno.turma
+          });
+        }
+      });
+
+      const totalTelefones = telefonesMap.size;
+      console.log(`📱 ${totalTelefones} telefones únicos identificados`);
+      console.log(`⚠️ ${alunosSemTelefone.length} alunos sem telefone cadastrado`);
+
+      if (simular) {
+        console.log('🧪 MODO SIMULAÇÃO - Não enviando mensagens reais');
+        return {
+          success: true,
+          simulacao: true,
+          estatisticas: {
+            totalAlunos: alunos.length,
+            totalTelefones: totalTelefones,
+            alunosSemTelefone: alunosSemTelefone.length,
+            detalhesSemTelefone: alunosSemTelefone
+          },
+          preview: {
+            mensagem: mensagem,
+            primeirosTelefones: Array.from(telefonesMap.entries()).slice(0, 5).map(([tel, alunos]) => ({
+              telefone: tel,
+              alunos: alunos.map(a => a.nome)
+            }))
+          }
+        };
+      }
+
+      // Enviar mensagens com delay
+      const resultados = {
+        enviados: [],
+        falhas: [],
+        total: totalTelefones
+      };
+
+      let contador = 0;
+      for (const [telefone, alunosDoTelefone] of telefonesMap) {
+        contador++;
+        console.log(`📤 [${contador}/${totalTelefones}] Enviando para ${telefone} (${alunosDoTelefone.length} aluno(s))`);
+
+        const resultado = await this.enviarMensagem(telefone, mensagem);
+
+        if (resultado.success) {
+          resultados.enviados.push({
+            telefone,
+            alunos: alunosDoTelefone
+          });
+        } else {
+          resultados.falhas.push({
+            telefone,
+            alunos: alunosDoTelefone,
+            erro: resultado.error
+          });
+        }
+
+        // Delay entre envios (exceto no último)
+        if (contador < totalTelefones) {
+          await new Promise(resolve => setTimeout(resolve, delayEntreMensagens));
+        }
+      }
+
+      const estatisticas = {
+        totalAlunos: alunos.length,
+        totalTelefones: totalTelefones,
+        enviados: resultados.enviados.length,
+        falhas: resultados.falhas.length,
+        alunosSemTelefone: alunosSemTelefone.length,
+        taxaSucesso: ((resultados.enviados.length / totalTelefones) * 100).toFixed(1) + '%'
+      };
+
+      console.log('✅ ENVIO EM MASSA CONCLUÍDO');
+      console.log('Estatísticas:', estatisticas);
+
+      return {
+        success: true,
+        estatisticas,
+        resultados,
+        alunosSemTelefone
+      };
+
+    } catch (error) {
+      console.error('❌ Erro no envio em massa:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
   // Testar conexão
   async testarConexao() {
     try {
@@ -458,7 +614,52 @@ window.testarDeteccaoPositiva = function() {
   });
 };
 
+// Função global para envio em massa
+window.enviarWhatsAppEmMassa = async function(mensagem, opcoes = {}) {
+  return await window.whatsappSender.enviarMensagemEmMassa(mensagem, opcoes);
+};
+
+// Função de simulação para testar antes de enviar
+window.simularEnvioEmMassa = async function(mensagem, opcoes = {}) {
+  return await window.whatsappSender.enviarMensagemEmMassa(mensagem, { ...opcoes, simular: true });
+};
+
+// Exemplos de uso no console
+window.exemplosEnvioMassa = function() {
+  console.log(`
+📢 EXEMPLOS DE ENVIO EM MASSA:
+
+1️⃣ SIMULAR envio para TODOS os alunos:
+await simularEnvioEmMassa("Mensagem de teste")
+
+2️⃣ SIMULAR envio apenas para a Sede:
+await simularEnvioEmMassa("Mensagem de teste", { unidade: 'Sede' })
+
+3️⃣ SIMULAR envio para turma específica:
+await simularEnvioEmMassa("Mensagem de teste", { turma: '7A' })
+
+4️⃣ ENVIAR REAL para todos da Sede (delay 2s entre mensagens):
+await enviarWhatsAppEmMassa("Atenção pais! Amanhã haverá reunião às 19h.", { unidade: 'Sede' })
+
+5️⃣ ENVIAR com delay maior (5s) para evitar bloqueio:
+await enviarWhatsAppEmMassa("Mensagem importante", {
+  unidade: 'Sede',
+  delayEntreMensagens: 5000
+})
+
+6️⃣ ENVIAR para turma específica:
+await enviarWhatsAppEmMassa("Aviso para os pais da 7A", { turma: '7A' })
+
+⚠️ IMPORTANTE:
+- SEMPRE use simularEnvioEmMassa() primeiro para conferir!
+- Telefones duplicados são enviados apenas 1 vez
+- Delay padrão: 2 segundos entre mensagens
+- A função normaliza telefones automaticamente
+  `);
+};
+
 console.log('📱 WhatsApp Sender carregado - use: window.whatsappSender');
 console.log('🧪 Para testar medidas: await testarMedidaDisciplinar("positiva") ou await testarMedidaDisciplinar("negativa")');
 console.log('📞 Para testar telefones: testarNormalizacaoTelefone()');
 console.log('✅ Para testar detecção: testarDeteccaoPositiva()');
+console.log('📢 NOVO: Envio em massa disponível! Digite exemplosEnvioMassa() para ver como usar');
