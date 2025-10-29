@@ -111,7 +111,7 @@ exports.handler = async (event, context) => {
           temperature: 0.7,
           topK: 40,
           topP: 0.95,
-          maxOutputTokens: 2048,
+          maxOutputTokens: 4096,
         }
       })
     });
@@ -191,20 +191,21 @@ ${fato}
 """
 
 INSTRUÇÕES DE FORMATO:
-- Na seção "fato_corrigido", escreva 2-3 parágrafos formais descrevendo:
+- Na seção "fato_corrigido", escreva 2-3 parágrafos formais (máximo 500 palavras) descrevendo:
   a) O que aconteceu (fatos objetivos)
   b) Como isso afronta os valores da escola (respeito, disciplina, hierarquia)
   c) Prejuízo causado (exemplo aos colegas, ambiente escolar)
 
-- Na seção "artigos_aplicaveis", liste os artigos relevantes baseado nas faltas
-- Na seção "fundamento_gerado", explique cada artigo aplicável
+- Na seção "artigos_aplicaveis", liste os artigos relevantes baseado nas faltas (máximo 5 artigos)
+- Na seção "fundamento_gerado", explique cada artigo aplicável de forma CONCISA (máximo 300 palavras, sem repetir o texto do fato_corrigido)
 
 ATENÇÃO - FORMATO DA RESPOSTA:
 Sua resposta deve ser EXCLUSIVAMENTE um objeto JSON válido.
-NÃO use blocos de código markdown.
+NÃO use blocos de código markdown (nem ```json nem ``` em lugar nenhum).
 NÃO adicione explicações antes ou depois.
 NÃO inclua markdown em NENHUM campo.
-Retorne SOMENTE o JSON puro e direto.
+NÃO retorne JSON dentro de string (JSON aninhado).
+Retorne SOMENTE o JSON puro e direto, começando com { e terminando com }.
 
 Estrutura EXATA da resposta:
 {
