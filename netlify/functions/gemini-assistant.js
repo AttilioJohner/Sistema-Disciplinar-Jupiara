@@ -213,8 +213,14 @@ NÃO adicione markdown, explicações ou texto antes/depois do JSON.`;
 // Parsear resposta do Gemini (tentar extrair JSON)
 function parseResposta(texto) {
   try {
+    // Remover markdown code blocks se existirem (```json ... ```)
+    let textoLimpo = texto.trim();
+    textoLimpo = textoLimpo.replace(/^```json\s*/i, '');
+    textoLimpo = textoLimpo.replace(/\s*```$/, '');
+    textoLimpo = textoLimpo.trim();
+
     // Tentar parsear diretamente
-    const json = JSON.parse(texto);
+    const json = JSON.parse(textoLimpo);
     return json;
   } catch (e) {
     // Se falhar, tentar extrair JSON de dentro de markdown ou texto
