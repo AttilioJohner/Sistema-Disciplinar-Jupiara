@@ -1,7 +1,7 @@
 // gestao.js — CRUD de Alunos com Sistema Local + Modo Debug
 
 // ===== CONTROLE DE VERSÃO PARA EVITAR CACHE AGRESSIVO =====
-const APP_VERSION = '20251029-003';
+const APP_VERSION = '20251029-004';
 
 function checkAppVersion() {
   const lastVersion = localStorage.getItem('app_version');
@@ -580,6 +580,49 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
 
       console.log(`✅ Carregadas ${todasTurmas.length} turmas globalmente`);
       console.log('🔍 Verificação: window.todasTurmasGlobal =', window.todasTurmasGlobal);
+
+      // Criar função de diagnóstico global
+      window.diagnosticarTurmas = function() {
+        console.log('\n═══════════════════════════════════════════');
+        console.log('📊 DIAGNÓSTICO DE TURMAS - SEDE vs ANEXA');
+        console.log('═══════════════════════════════════════════\n');
+
+        const turmasSede = [];
+        const turmasAnexa = [];
+        const turmasDuplicadas = [];
+
+        Object.keys(turmaUnidadeMap).sort().forEach(turma => {
+          const unidades = Array.from(turmaUnidadeMap[turma]);
+
+          if (unidades.length > 1) {
+            turmasDuplicadas.push({ turma, unidades });
+          } else if (unidades[0] === 'Sede') {
+            turmasSede.push(turma);
+          } else if (unidades[0] === 'Anexa') {
+            turmasAnexa.push(turma);
+          }
+        });
+
+        console.log('🏫 TURMAS DA SEDE:', turmasSede);
+        console.log('🏫 TURMAS DA ANEXA:', turmasAnexa);
+
+        if (turmasDuplicadas.length > 0) {
+          console.log('\n⚠️ TURMAS DUPLICADAS (existem em ambas unidades):');
+          turmasDuplicadas.forEach(item => {
+            console.log(`  - ${item.turma}: ${item.unidades.join(', ')}`);
+          });
+        }
+
+        console.log('\n📋 RESUMO:');
+        console.log(`  Total Sede: ${turmasSede.length} turmas`);
+        console.log(`  Total Anexa: ${turmasAnexa.length} turmas`);
+        console.log(`  Duplicadas: ${turmasDuplicadas.length} turmas`);
+
+        console.log('\n═══════════════════════════════════════════\n');
+        return { turmasSede, turmasAnexa, turmasDuplicadas, mapa: turmaUnidadeMap };
+      };
+
+      console.log('💡 Digite diagnosticarTurmas() no console para ver diagnóstico completo');
     } catch (err) {
       console.error('❌ Erro ao carregar turmas globais:', err);
     }
