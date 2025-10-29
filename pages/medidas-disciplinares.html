@@ -2074,6 +2074,14 @@
                             <button type="button" class="btn btn-secondary" onclick="limparFormMedida()">
                                 🔄 Limpar
                             </button>
+                            <button
+                                type="button"
+                                class="btn btn-info"
+                                onclick="baixarPDFMedida()"
+                                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;"
+                            >
+                                📄 Gerar PDF
+                            </button>
                             <button type="submit" class="btn btn-warning" id="btnSalvarMedida">
                                 ⚠️ Salvar Medida
                             </button>
@@ -2699,7 +2707,372 @@
                 btn.textContent = '⚠️ Salvar Medida';
             }
         }
-        
+
+        // ============================================
+        // GERADOR DE PDF PARA MEDIDAS DISCIPLINARES
+        // ============================================
+
+        async function generateMedidaPDF(dadosMedida) {
+            try {
+                console.log('📄 Iniciando geração de PDF...', dadosMedida);
+
+                // Validação básica
+                if (!dadosMedida || !dadosMedida.aluno || !dadosMedida.fato) {
+                    throw new Error('Dados incompletos para gerar PDF');
+                }
+
+                // Criar instância do jsPDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
+
+                // Configurações de margens e layout
+                const marginLeft = 20;
+                const marginRight = 20;
+                const marginTop = 20;
+                const pageWidth = 210; // A4 width
+                const pageHeight = 297; // A4 height
+                const contentWidth = pageWidth - marginLeft - marginRight;
+                let currentY = marginTop;
+
+                // ============================================
+                // CABEÇALHO: Logo e Título da Escola
+                // ============================================
+
+                // Título principal
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'bold');
+                const titulo = 'ESCOLA ESTADUAL CÍVICO-MILITAR';
+                const tituloWidth = doc.getTextWidth(titulo);
+                doc.text(titulo, (pageWidth - tituloWidth) / 2, currentY);
+                currentY += 7;
+
+                // Subtítulo
+                doc.setFontSize(14);
+                const subtitulo = 'JUPIARA - MT';
+                const subtituloWidth = doc.getTextWidth(subtitulo);
+                doc.text(subtitulo, (pageWidth - subtituloWidth) / 2, currentY);
+                currentY += 10;
+
+                // Linha horizontal
+                doc.setDrawColor(102, 126, 234); // Cor roxa
+                doc.setLineWidth(0.5);
+                doc.line(marginLeft, currentY, pageWidth - marginRight, currentY);
+                currentY += 8;
+
+                // ============================================
+                // TIPO DE DOCUMENTO
+                // ============================================
+
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                const tipoDoc = dadosMedida.tipo === 'FO' ? 'FATO OBSERVADO (FO)' : 'FICHA DE MEDIDA DISCIPLINAR (FMD)';
+                const tipoDocWidth = doc.getTextWidth(tipoDoc);
+                doc.text(tipoDoc, (pageWidth - tipoDocWidth) / 2, currentY);
+                currentY += 8;
+
+                // Número do documento (se disponível)
+                if (dadosMedida.numeroDocumento) {
+                    doc.setFontSize(11);
+                    doc.setFont('helvetica', 'normal');
+                    const numDoc = `Nº ${dadosMedida.numeroDocumento}`;
+                    const numDocWidth = doc.getTextWidth(numDoc);
+                    doc.text(numDoc, (pageWidth - numDocWidth) / 2, currentY);
+                    currentY += 8;
+                }
+
+                // ============================================
+                // DADOS DO ALUNO
+                // ============================================
+
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.text('DADOS DO ALUNO', marginLeft, currentY);
+                currentY += 6;
+
+                // Box com fundo
+                doc.setFillColor(248, 249, 255);
+                doc.rect(marginLeft, currentY, contentWidth, 25, 'F');
+                doc.setDrawColor(102, 126, 234);
+                doc.rect(marginLeft, currentY, contentWidth, 25, 'S');
+
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                currentY += 5;
+
+                doc.setFont('helvetica', 'bold');
+                doc.text('Nome:', marginLeft + 3, currentY);
+                doc.setFont('helvetica', 'normal');
+                doc.text(dadosMedida.aluno.nome || 'Não informado', marginLeft + 18, currentY);
+                currentY += 6;
+
+                doc.setFont('helvetica', 'bold');
+                doc.text('Código:', marginLeft + 3, currentY);
+                doc.setFont('helvetica', 'normal');
+                doc.text((dadosMedida.aluno.codigo || 'N/A').toString(), marginLeft + 20, currentY);
+
+                doc.setFont('helvetica', 'bold');
+                doc.text('Turma:', marginLeft + 65, currentY);
+                doc.setFont('helvetica', 'normal');
+                doc.text(dadosMedida.aluno.turma || 'N/A', marginLeft + 80, currentY);
+
+                doc.setFont('helvetica', 'bold');
+                doc.text('Turno:', marginLeft + 120, currentY);
+                doc.setFont('helvetica', 'normal');
+                doc.text(dadosMedida.turno || 'N/A', marginLeft + 135, currentY);
+                currentY += 6;
+
+                doc.setFont('helvetica', 'bold');
+                doc.text('Data:', marginLeft + 3, currentY);
+                doc.setFont('helvetica', 'normal');
+                const dataFormatada = dadosMedida.data ? new Date(dadosMedida.data + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A';
+                doc.text(dataFormatada, marginLeft + 15, currentY);
+
+                doc.setFont('helvetica', 'bold');
+                doc.text('Tipo de Medida:', marginLeft + 65, currentY);
+                doc.setFont('helvetica', 'normal');
+                doc.text(dadosMedida.tipoMedida || 'N/A', marginLeft + 95, currentY);
+                currentY += 12;
+
+                // ============================================
+                // DESCRIÇÃO DO FATO
+                // ============================================
+
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.text('DESCRIÇÃO DO FATO', marginLeft, currentY);
+                currentY += 6;
+
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+
+                // Processar texto do fato (quebrar linhas automaticamente)
+                const fatoTexto = dadosMedida.fato || 'Não informado';
+                const fatoLinhas = doc.splitTextToSize(fatoTexto, contentWidth - 6);
+
+                // Calcular altura necessária
+                const fatoAltura = fatoLinhas.length * 5 + 6;
+
+                // Verificar se precisa de nova página
+                if (currentY + fatoAltura > pageHeight - 30) {
+                    doc.addPage();
+                    currentY = marginTop;
+                }
+
+                // Box para o fato
+                doc.setFillColor(255, 255, 255);
+                doc.rect(marginLeft, currentY, contentWidth, fatoAltura, 'FD');
+
+                currentY += 5;
+                fatoLinhas.forEach(linha => {
+                    doc.text(linha, marginLeft + 3, currentY);
+                    currentY += 5;
+                });
+                currentY += 5;
+
+                // ============================================
+                // FUNDAMENTO LEGAL (se disponível)
+                // ============================================
+
+                if (dadosMedida.fundamento && dadosMedida.fundamento.trim()) {
+                    // Verificar espaço na página
+                    if (currentY > pageHeight - 60) {
+                        doc.addPage();
+                        currentY = marginTop;
+                    }
+
+                    doc.setFontSize(12);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('FUNDAMENTO LEGAL', marginLeft, currentY);
+                    currentY += 6;
+
+                    doc.setFontSize(10);
+                    doc.setFont('helvetica', 'normal');
+
+                    const fundamentoLinhas = doc.splitTextToSize(dadosMedida.fundamento, contentWidth - 6);
+                    const fundamentoAltura = fundamentoLinhas.length * 5 + 6;
+
+                    // Verificar se precisa de nova página
+                    if (currentY + fundamentoAltura > pageHeight - 30) {
+                        doc.addPage();
+                        currentY = marginTop;
+                    }
+
+                    doc.setFillColor(248, 249, 255);
+                    doc.rect(marginLeft, currentY, contentWidth, fundamentoAltura, 'FD');
+
+                    currentY += 5;
+                    fundamentoLinhas.forEach(linha => {
+                        doc.text(linha, marginLeft + 3, currentY);
+                        currentY += 5;
+                    });
+                    currentY += 5;
+                }
+
+                // ============================================
+                // DISPOSIÇÕES FINAIS (se disponível)
+                // ============================================
+
+                if (dadosMedida.disposicoes && dadosMedida.disposicoes.trim()) {
+                    // Verificar espaço na página
+                    if (currentY > pageHeight - 50) {
+                        doc.addPage();
+                        currentY = marginTop;
+                    }
+
+                    doc.setFontSize(12);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('DISPOSIÇÕES FINAIS', marginLeft, currentY);
+                    currentY += 6;
+
+                    doc.setFontSize(10);
+                    doc.setFont('helvetica', 'normal');
+
+                    const disposicoesLinhas = doc.splitTextToSize(dadosMedida.disposicoes, contentWidth - 6);
+                    const disposicoesAltura = disposicoesLinhas.length * 5 + 6;
+
+                    // Verificar se precisa de nova página
+                    if (currentY + disposicoesAltura > pageHeight - 30) {
+                        doc.addPage();
+                        currentY = marginTop;
+                    }
+
+                    doc.setFillColor(255, 255, 255);
+                    doc.rect(marginLeft, currentY, contentWidth, disposicoesAltura, 'FD');
+
+                    currentY += 5;
+                    disposicoesLinhas.forEach(linha => {
+                        doc.text(linha, marginLeft + 3, currentY);
+                        currentY += 5;
+                    });
+                    currentY += 5;
+                }
+
+                // ============================================
+                // ASSINATURAS
+                // ============================================
+
+                // Verificar espaço para assinaturas
+                if (currentY > pageHeight - 70) {
+                    doc.addPage();
+                    currentY = marginTop;
+                }
+
+                currentY += 10;
+
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+
+                // Assinatura do Inspetor
+                const assinaturaY = currentY + 20;
+                doc.line(marginLeft, assinaturaY, marginLeft + 70, assinaturaY);
+                doc.text('Inspetor/Responsável', marginLeft + 10, assinaturaY + 5);
+
+                // Assinatura do Aluno
+                doc.line(pageWidth - marginRight - 70, assinaturaY, pageWidth - marginRight, assinaturaY);
+                doc.text('Assinatura do Aluno', pageWidth - marginRight - 60, assinaturaY + 5);
+
+                currentY = assinaturaY + 15;
+
+                // Assinatura do Responsável
+                const assinaturaRespY = currentY + 15;
+                const centerX = (pageWidth - 70) / 2;
+                doc.line(centerX, assinaturaRespY, centerX + 70, assinaturaRespY);
+                doc.text('Responsável Legal', centerX + 7, assinaturaRespY + 5);
+
+                // ============================================
+                // RODAPÉ
+                // ============================================
+
+                const rodapeY = pageHeight - 15;
+                doc.setFontSize(8);
+                doc.setTextColor(128, 128, 128);
+                const rodape = `Documento gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`;
+                const rodapeWidth = doc.getTextWidth(rodape);
+                doc.text(rodape, (pageWidth - rodapeWidth) / 2, rodapeY);
+
+                // ============================================
+                // SALVAR PDF
+                // ============================================
+
+                const nomeArquivo = `${dadosMedida.tipo || 'FMD'}_${dadosMedida.aluno.nome.replace(/[^a-zA-Z0-9]/g, '_')}_${dadosMedida.aluno.codigo}_${new Date().getTime()}.pdf`;
+
+                // Retornar PDF como blob para upload ou download
+                const pdfBlob = doc.output('blob');
+
+                console.log('✅ PDF gerado com sucesso:', nomeArquivo);
+
+                return {
+                    blob: pdfBlob,
+                    filename: nomeArquivo,
+                    doc: doc // Retornar também o documento para download direto se necessário
+                };
+
+            } catch (error) {
+                console.error('❌ Erro ao gerar PDF:', error);
+                throw error;
+            }
+        }
+
+        // Função auxiliar para baixar o PDF diretamente
+        async function baixarPDFMedida() {
+            try {
+                // Coletar dados do formulário atual
+                const alunoId = document.getElementById('alunoMedida').value;
+                const turno = document.getElementById('turnoMedida').value;
+                const tipoMedida = document.getElementById('tipoMedida').value;
+                const data = document.getElementById('dataMedida').value;
+                const motivo = document.getElementById('motivoMedida').value;
+                const fundamento = document.getElementById('fundamentoMedida').value;
+                const disposicoes = document.getElementById('disposicoesMedida').value;
+
+                if (!alunoId) {
+                    alert('Selecione um aluno primeiro');
+                    return;
+                }
+
+                // Buscar dados do aluno
+                const { data: dadosAluno, error: alunoError } = await window.supabaseClient
+                    .from('alunos')
+                    .select('codigo, "Nome completo", turma')
+                    .eq('codigo', parseInt(alunoId))
+                    .single();
+
+                if (alunoError || !dadosAluno) {
+                    throw new Error('Aluno não encontrado');
+                }
+
+                // Preparar dados para PDF
+                const dadosMedida = {
+                    tipo: tipoMedida.includes('Fato Observado') ? 'FO' : 'FMD',
+                    aluno: {
+                        nome: dadosAluno['Nome completo'],
+                        codigo: dadosAluno.codigo,
+                        turma: dadosAluno.turma
+                    },
+                    turno: turno,
+                    tipoMedida: tipoMedida,
+                    data: data,
+                    fato: motivo,
+                    fundamento: fundamento,
+                    disposicoes: disposicoes
+                };
+
+                // Gerar PDF
+                const resultado = await generateMedidaPDF(dadosMedida);
+
+                // Download automático
+                resultado.doc.save(resultado.filename);
+
+                showMessage('✅ PDF gerado e baixado com sucesso!', 'success');
+
+                return resultado;
+
+            } catch (error) {
+                console.error('❌ Erro ao baixar PDF:', error);
+                alert('Erro ao gerar PDF: ' + error.message);
+            }
+        }
+
         // Funções para gerenciar seleção de medidas categorizadas
         function configurarCamposMedida() {
             const tipoMedida = document.getElementById('tipoMedida').value;
