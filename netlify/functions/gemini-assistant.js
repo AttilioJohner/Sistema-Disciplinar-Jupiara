@@ -213,14 +213,27 @@ NÃO adicione markdown, explicações ou texto antes/depois do JSON.`;
 // Parsear resposta do Gemini (tentar extrair JSON)
 function parseResposta(texto) {
   try {
-    // Remover markdown code blocks se existirem (```json ... ```)
+    // Remover TODOS os blocos markdown de forma agressiva
     let textoLimpo = texto.trim();
-    textoLimpo = textoLimpo.replace(/^```json\s*/i, '');
-    textoLimpo = textoLimpo.replace(/\s*```$/, '');
+    // Remover markdown externo
+    textoLimpo = textoLimpo.replace(/^```(?:json)?\s*/i, '');
+    textoLimpo = textoLimpo.replace(/\s*```$/m, '');
     textoLimpo = textoLimpo.trim();
 
     // Tentar parsear diretamente
     const json = JSON.parse(textoLimpo);
+
+    // Limpar campos internos que possam ter markdown
+    if (json.fato_corrigido && typeof json.fato_corrigido === 'string') {
+      json.fato_corrigido = json.fato_corrigido.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/m, '').trim();
+    }
+    if (json.fundamento_gerado && typeof json.fundamento_gerado === 'string') {
+      json.fundamento_gerado = json.fundamento_gerado.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/m, '').trim();
+    }
+    if (json.sugestoes_adicionais && typeof json.sugestoes_adicionais === 'string') {
+      json.sugestoes_adicionais = json.sugestoes_adicionais.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/m, '').trim();
+    }
+
     return json;
   } catch (e) {
     // Se falhar, tentar extrair JSON de dentro de markdown ou texto
