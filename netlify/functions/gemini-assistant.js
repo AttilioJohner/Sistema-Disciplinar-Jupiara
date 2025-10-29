@@ -197,7 +197,13 @@ INSTRUÇÕES DE FORMATO:
   c) Prejuízo causado (exemplo aos colegas, ambiente escolar)
 
 - Na seção "artigos_aplicaveis", liste os artigos relevantes baseado nas faltas (máximo 5 artigos)
+
 - Na seção "fundamento_gerado", explique cada artigo aplicável de forma CONCISA (máximo 300 palavras, sem repetir o texto do fato_corrigido)
+
+- Na seção "disposicoes_finais", escreva orientações finais e complementares (máximo 150 palavras), incluindo:
+  a) Orientações ao aluno sobre comportamento esperado
+  b) Consequências em caso de reincidência
+  c) Direitos de recurso ou defesa, se aplicável
 
 ATENÇÃO - FORMATO DA RESPOSTA:
 Sua resposta deve ser EXCLUSIVAMENTE um objeto JSON válido.
@@ -212,11 +218,12 @@ Estrutura EXATA da resposta:
   "fato_corrigido": "Texto formal em 2-3 parágrafos...",
   "artigos_aplicaveis": ["Art. 6º", "Art. 7º, inciso II", "Anexo I, Item 56"],
   "fundamento_gerado": "Com base no Art. 6º...",
+  "disposicoes_finais": "O aluno deve estar ciente que...",
   "sugestoes_adicionais": "Texto opcional com observações"
 }
 
 Exemplo CORRETO de resposta:
-{"fato_corrigido":"No dia...", "artigos_aplicaveis":["Art. 6º"], "fundamento_gerado":"...", "sugestoes_adicionais":"..."}
+{"fato_corrigido":"No dia...", "artigos_aplicaveis":["Art. 6º"], "fundamento_gerado":"...", "disposicoes_finais":"...", "sugestoes_adicionais":"..."}
 `;
 }
 
@@ -259,6 +266,7 @@ function parseResposta(texto) {
       fato_corrigido: json.fato_corrigido || texto,
       artigos_aplicaveis: json.artigos_aplicaveis || [],
       fundamento_gerado: json.fundamento_gerado || 'Não foi possível gerar automaticamente. Revise manualmente.',
+      disposicoes_finais: json.disposicoes_finais || '',
       sugestoes_adicionais: json.sugestoes_adicionais || ''
     };
 
@@ -289,6 +297,7 @@ function parseResposta(texto) {
           fato_corrigido: extracted.fato_corrigido || texto,
           artigos_aplicaveis: extracted.artigos_aplicaveis || [],
           fundamento_gerado: extracted.fundamento_gerado || 'Não foi possível gerar automaticamente.',
+          disposicoes_finais: extracted.disposicoes_finais || '',
           sugestoes_adicionais: extracted.sugestoes_adicionais || ''
         };
       } catch (e2) {
@@ -302,6 +311,7 @@ function parseResposta(texto) {
       fato_corrigido: texto,
       artigos_aplicaveis: [],
       fundamento_gerado: 'Não foi possível gerar automaticamente. Revise manualmente.',
+      disposicoes_finais: '',
       sugestoes_adicionais: ''
     };
   }

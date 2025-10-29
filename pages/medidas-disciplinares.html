@@ -1999,7 +1999,38 @@
                                 </button>
                                 <div id="statusIA" style="margin-top: 8px; font-size: 13px; display: none;"></div>
                             </div>
-                            
+
+                            <!-- Campos gerados pela IA -->
+                            <div class="form-group form-group-full" id="fundamentoGroup" style="display: none;">
+                                <label class="form-label">
+                                    ⚖️ Fundamento Legal
+                                    <span style="font-size: 11px; color: #667eea; font-weight: normal; margin-left: 8px;">🤖 Gerado pela IA</span>
+                                </label>
+                                <textarea
+                                    id="fundamentoMedida"
+                                    class="form-textarea"
+                                    placeholder="O fundamento legal será gerado automaticamente pela IA com base nos artigos do regulamento..."
+                                    rows="4"
+                                    style="background: #f8f9ff; border-left: 3px solid #667eea;"
+                                ></textarea>
+                                <small class="form-help">Explicação dos artigos do regulamento aplicáveis a esta medida disciplinar</small>
+                            </div>
+
+                            <div class="form-group form-group-full" id="disposicoesGroup" style="display: none;">
+                                <label class="form-label">
+                                    📋 Disposições Finais
+                                    <span style="font-size: 11px; color: #667eea; font-weight: normal; margin-left: 8px;">🤖 Gerado pela IA</span>
+                                </label>
+                                <textarea
+                                    id="disposicoesMedida"
+                                    class="form-textarea"
+                                    placeholder="As disposições finais serão geradas automaticamente pela IA..."
+                                    rows="3"
+                                    style="background: #f8f9ff; border-left: 3px solid #667eea;"
+                                ></textarea>
+                                <small class="form-help">Orientações finais e observações complementares sobre a medida aplicada</small>
+                            </div>
+
                             <div class="form-group" id="prazoAssinaturaInfo" style="display: none;">
                                 <label class="form-label">📅 Prazo para Assinatura (Automático)</label>
                                 <div class="prazo-automatico">
@@ -5694,9 +5725,21 @@ WHERE prazo_assinatura IS NULL
                     // Atualizar textarea com texto corrigido
                     textarea.value = data.data.fato_corrigido;
 
+                    // Preencher fundamento legal (se disponível)
+                    if (data.data.fundamento_gerado) {
+                        document.getElementById('fundamentoMedida').value = data.data.fundamento_gerado;
+                        document.getElementById('fundamentoGroup').style.display = 'block';
+                    }
+
+                    // Preencher disposições finais (se disponível)
+                    if (data.data.disposicoes_finais) {
+                        document.getElementById('disposicoesMedida').value = data.data.disposicoes_finais;
+                        document.getElementById('disposicoesGroup').style.display = 'block';
+                    }
+
                     // Mostrar sucesso
                     status.style.color = '#28a745';
-                    status.textContent = '✅ Texto corrigido com sucesso!';
+                    status.textContent = '✅ Texto corrigido e campos preenchidos com sucesso!';
 
                     // Log dos artigos sugeridos
                     if (data.data.artigos_aplicaveis && data.data.artigos_aplicaveis.length > 0) {
