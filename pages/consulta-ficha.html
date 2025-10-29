@@ -1400,17 +1400,21 @@
                 loadingStatus.classList.remove('hidden');
                 loadingStatus.innerHTML = `<span class="loading-spinner"></span> Buscando dados das turmas... ${tentativa > 1 ? `(Tentativa ${tentativa}/${MAX_TENTATIVAS})` : 'Aguarde alguns segundos.'}`;
 
-                // Adicionar timeout de 10 segundos e ordenar resultados
+                // Buscar dados com timeout de 20 segundos (sem ordenação no banco para mais performance)
                 const { data: alunosData, error } = await window.supabaseClient
                     .from('alunos')
                     .select('codigo, "Nome completo", turma, foto_url, unidade')
                     .eq('unidade', unidadeAtual)
-                    .order('"Nome completo"')
-                    .abortSignal(AbortSignal.timeout(10000));
+                    .abortSignal(AbortSignal.timeout(20000));
 
                 if (error) throw error;
 
-                todosAlunos = alunosData || [];
+                // Ordenar alunos no JavaScript (mais rápido que ordenar no banco)
+                todosAlunos = (alunosData || []).sort((a, b) => {
+                    const nomeA = a['Nome completo'] || '';
+                    const nomeB = b['Nome completo'] || '';
+                    return nomeA.localeCompare(nomeB);
+                });
                 todasTurmas = [...new Set(todosAlunos.map(a => a.turma))].sort();
 
                 // Preencher select de turmas
