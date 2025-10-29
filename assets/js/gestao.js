@@ -489,15 +489,97 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     // Atualizar interface
     renderTable();
     updateStatistics();
-    
+    updateFormTurmaSelect(); // Atualizar select de turmas do formulário
+
     console.log('✅ Turma processada:', {
       turma: turma,
       total: alunosCache.length,
       primeiros: alunosCache.slice(0, 3).map(a => ({ codigo: a.codigo, nome: a.nome }))
     });
-    
+
     // Mostrar resumo para o usuário
     toast(`Turma ${turma}: ${alunosCache.length} alunos carregados`, 'ok');
+  }
+
+  // =====================
+  // ATUALIZAR SELECT DE TURMAS DO FORMULÁRIO
+  // =====================
+  function updateFormTurmaSelect() {
+    const selectTurma = document.getElementById('fld-turma');
+    if (!selectTurma) return;
+
+    // Buscar TODAS as turmas de TODAS as unidades do banco
+    if (!window.supabaseClient) {
+      console.warn('⚠️ Supabase não disponível para buscar turmas');
+      return;
+    }
+
+    // Query para buscar todas as turmas únicas (Sede + Anexa)
+    window.supabaseClient
+      .from('alunos')
+      .select('turma, unidade')
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('❌ Erro ao buscar turmas:', error);
+          return;
+        }
+
+        // Extrair turmas únicas e ordenar
+        const turmasUnicas = [...new Set(data.map(a => a.turma).filter(Boolean))].sort();
+
+        // Agrupar por unidade para exibir organizado
+        const turmasSede = turmasUnicas.filter(t => {
+          const alunosDaTurma = data.filter(a => a.turma === t);
+          return alunosDaTurma.some(a => a.unidade === 'Sede');
+        });
+
+        const turmasAnexa = turmasUnicas.filter(t => {
+          const alunosDaTurma = data.filter(a => a.turma === t);
+          return alunosDaTurma.some(a => a.unidade === 'Anexa');
+        });
+
+        // Salvar valor atual
+        const valorAtual = selectTurma.value;
+
+        // Limpar select
+        selectTurma.innerHTML = '<option value="">Selecione uma turma...</option>';
+
+        // Adicionar turmas da Sede
+        if (turmasSede.length > 0) {
+          const optgroupSede = document.createElement('optgroup');
+          optgroupSede.label = '🏫 Sede';
+          turmasSede.forEach(turma => {
+            const option = document.createElement('option');
+            option.value = turma;
+            option.textContent = turma;
+            optgroupSede.appendChild(option);
+          });
+          selectTurma.appendChild(optgroupSede);
+        }
+
+        // Adicionar turmas da Anexa
+        if (turmasAnexa.length > 0) {
+          const optgroupAnexa = document.createElement('optgroup');
+          optgroupAnexa.label = '🏫 Anexa';
+          turmasAnexa.forEach(turma => {
+            const option = document.createElement('option');
+            option.value = turma;
+            option.textContent = turma;
+            optgroupAnexa.appendChild(option);
+          });
+          selectTurma.appendChild(optgroupAnexa);
+        }
+
+        // Restaurar valor se ainda existir
+        if (turmasUnicas.includes(valorAtual)) {
+          selectTurma.value = valorAtual;
+        }
+
+        console.log(`✅ Select de turmas atualizado: ${turmasUnicas.length} turmas (${turmasSede.length} Sede, ${turmasAnexa.length} Anexa)`);
+      })
+      .catch(err => {
+        console.error('❌ Erro ao atualizar select de turmas:', err);
+      });
   }
 
   // =====================
@@ -1147,10 +1229,17 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
 
   function renderEditableRow(a) {
     console.log('✏️ renderEditableRow para aluno:', a.id || a.codigo);
-    // Opções de turma para o select
-    const turmaOptions = [
+
+    // Buscar TODAS as turmas de TODAS as unidades (Sede + Anexa) do cache de alunos
+    const todasTurmas = [...new Set(alunosCache.map(aluno => aluno.turma).filter(Boolean))].sort();
+
+    // Se não houver turmas no cache, usar lista padrão como fallback
+    const turmasDisponiveis = todasTurmas.length > 0 ? todasTurmas : [
       '1B', '1C', '2A', '6A', '6B', '7A', '7B', '8A', '8B', '9A', '9B', '9E'
-    ].map(turma =>
+    ];
+
+    // Opções de turma para o select (incluindo Sede e Anexa)
+    const turmaOptions = turmasDisponiveis.map(turma =>
       '<option value="' + turma + '"' + (turma === a.turma ? ' selected' : '') + '>' + turma + '</option>'
     ).join('');
 
