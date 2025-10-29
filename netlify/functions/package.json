@@ -1,15 +1,9 @@
 {
   "name": "netlify-functions",
   "version": "1.0.0",
-  "description": "Funções serverless para Sistema Disciplinar EECM Jupiara",
-  "main": "webhook.js",
-  "scripts": {
-    "test": "echo \"No tests\" && exit 0"
-  },
+  "description": "Netlify Functions para Sistema Disciplinar Jupiara",
+  "private": true,
   "dependencies": {
     "node-fetch": "^2.6.7"
-  },
-  "engines": {
-    "node": ">=14"
   }
 }

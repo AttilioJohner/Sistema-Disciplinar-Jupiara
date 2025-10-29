@@ -102,3 +102,17 @@
     Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Headers = "Content-Type, Authorization"
     Access-Control-Allow-Methods = "POST, GET, OPTIONS"
+
+# Redirect para função Gemini Assistant (IA de medidas disciplinares)
+[[redirects]]
+  from = "/api/gemini-assistant"
+  to = "/.netlify/functions/gemini-assistant"
+  status = 200
+
+# Headers específicos para gemini-assistant (CORS)
+[[headers]]
+  for = "/.netlify/functions/gemini-assistant"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+    Access-Control-Allow-Methods = "POST, OPTIONS"
