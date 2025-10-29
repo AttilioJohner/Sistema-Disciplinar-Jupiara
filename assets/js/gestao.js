@@ -507,21 +507,33 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   // CARREGAR TODAS AS TURMAS (SEDE + ANEXA) GLOBALMENTE
   // =====================
   async function carregarTodasTurmasGlobal() {
+    console.log('🔄 carregarTodasTurmasGlobal iniciado');
+    console.log('🔌 window.supabaseClient disponível?', !!window.supabaseClient);
+
     if (!window.supabaseClient) {
       console.warn('⚠️ Supabase não disponível para buscar turmas');
       return;
     }
 
     try {
+      console.log('📡 Fazendo query para buscar turmas...');
       // Query para buscar todas as turmas únicas (Sede + Anexa)
       const { data, error } = await window.supabaseClient
         .from('alunos')
         .select('turma, unidade');
 
+      console.log('📊 Query retornou:', {
+        temDados: !!data,
+        tamanho: data?.length,
+        temErro: !!error
+      });
+
       if (error) {
         console.error('❌ Erro ao buscar turmas:', error);
         return;
       }
+
+      console.log('📄 Primeiros 5 registros:', data.slice(0, 5));
 
       // Criar mapa de turma -> unidade(s)
       const turmaUnidadeMap = {};
@@ -534,6 +546,8 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         }
       });
 
+      console.log('🗺️ Mapa de turmas criado:', turmaUnidadeMap);
+
       // Criar array de turmas com suas unidades
       const todasTurmas = [];
       Object.keys(turmaUnidadeMap).sort().forEach(turma => {
@@ -543,11 +557,14 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         });
       });
 
+      console.log('📚 Array final de turmas:', todasTurmas);
+
       // Salvar globalmente
       window.todasTurmasGlobal = todasTurmas;
       window.turmaUnidadeMap = turmaUnidadeMap;
 
-      console.log(`✅ Carregadas ${todasTurmas.length} turmas globalmente:`, todasTurmas);
+      console.log(`✅ Carregadas ${todasTurmas.length} turmas globalmente`);
+      console.log('🔍 Verificação: window.todasTurmasGlobal =', window.todasTurmasGlobal);
     } catch (err) {
       console.error('❌ Erro ao carregar turmas globais:', err);
     }
@@ -792,7 +809,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
     toast('Use o botão "Editar" na linha da tabela para edição inline', 'info');
   }
   
-  function toggleRowEditMode(id) {
+  async function toggleRowEditMode(id) {
     const stringId = String(id); // Garantir que sempre seja string
     console.log('🔧 toggleRowEditMode chamado para ID:', id, 'tipo:', typeof id);
     console.log('🔧 stringId:', stringId, 'tipo:', typeof stringId);
@@ -806,6 +823,12 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       editingRows.clear();
       editingRows.add(stringId);
       console.log('🔧 Adicionado ao modo edição:', stringId);
+
+      // Carregar todas as turmas antes de renderizar (para garantir que o select esteja populado)
+      if (!window.todasTurmasGlobal || window.todasTurmasGlobal.length === 0) {
+        console.log('📚 Carregando turmas antes de entrar em modo edição...');
+        await carregarTodasTurmasGlobal();
+      }
     }
 
     console.log('🔧 editingRows depois:', Array.from(editingRows));
@@ -1335,6 +1358,9 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
 
   function renderEditableRow(a) {
     console.log('✏️ renderEditableRow para aluno:', a.id || a.codigo);
+    console.log('📚 Cache global disponível?', !!window.todasTurmasGlobal);
+    console.log('📚 Tamanho do cache:', window.todasTurmasGlobal?.length || 0);
+    console.log('📚 Conteúdo:', window.todasTurmasGlobal);
 
     // Buscar TODAS as turmas do banco (Sede + Anexa)
     // Usar variável global ou fazer query se disponível
@@ -1342,12 +1368,15 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
 
     if (window.todasTurmasGlobal && window.todasTurmasGlobal.length > 0) {
       // Usar cache global de turmas se disponível
+      console.log('✅ Usando cache global de turmas:', window.todasTurmasGlobal.length, 'turmas');
       turmaOptions = window.todasTurmasGlobal.map(item =>
         '<option value="' + item.turma + '"' + (item.turma === a.turma ? ' selected' : '') + '>' +
         item.turma + ' - ' + item.unidade + '</option>'
       ).join('');
+      console.log('📝 HTML gerado:', turmaOptions.substring(0, 200) + '...');
     } else {
       // Fallback: usar cache local (não ideal, mas funciona)
+      console.log('⚠️ Usando fallback - cache local');
       const todasTurmas = [...new Set(alunosCache.map(aluno => aluno.turma).filter(Boolean))].sort();
       const turmasDisponiveis = todasTurmas.length > 0 ? todasTurmas : [
         '1B', '1C', '2A', '6A', '6B', '7A', '7B', '8A', '8B', '9A', '9B', '9E'
