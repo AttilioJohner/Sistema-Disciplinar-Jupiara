@@ -2948,36 +2948,106 @@
                 }
 
                 // ============================================
-                // ASSINATURAS
+                // ITEM 4: RESPONSÁVEL LEGAL
                 // ============================================
 
-                // Verificar espaço para assinaturas
-                if (currentY > pageHeight - 70) {
+                // Verificar espaço para assinaturas (necessita ~140mm)
+                if (currentY > pageHeight - 150) {
                     doc.addPage();
                     currentY = marginTop;
                 }
 
                 currentY += 10;
 
+                // Título do Item 4
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.text('4. RESPONSÁVEL LEGAL', marginLeft, currentY);
+                currentY += 8;
+
+                // Opções de checkbox
                 doc.setFontSize(10);
                 doc.setFont('helvetica', 'normal');
 
-                // Assinatura do Inspetor
-                const assinaturaY = currentY + 20;
-                doc.line(marginLeft, assinaturaY, marginLeft + 70, assinaturaY);
-                doc.text('Inspetor/Responsável', marginLeft + 10, assinaturaY + 5);
+                // Checkbox 1
+                doc.rect(marginLeft, currentY - 3, 4, 4); // Checkbox quadrado
+                doc.text('(   ) Concordo e me comprometo a orientar meu(minha) filho(a) quanto ao cumprimento das normas.', marginLeft + 6, currentY);
+                currentY += 7;
 
-                // Assinatura do Aluno
-                doc.line(pageWidth - marginRight - 70, assinaturaY, pageWidth - marginRight, assinaturaY);
-                doc.text('Assinatura do Aluno', pageWidth - marginRight - 60, assinaturaY + 5);
+                // Checkbox 2
+                doc.rect(marginLeft, currentY - 3, 4, 4); // Checkbox quadrado
+                doc.text('(   ) Desejo esclarecimento junto à Direção.', marginLeft + 6, currentY);
+                currentY += 10;
 
-                currentY = assinaturaY + 15;
+                // Nome do responsável
+                doc.setFont('helvetica', 'bold');
+                doc.text('Nome do responsável:', marginLeft, currentY);
+                doc.setFont('helvetica', 'normal');
+                doc.line(marginLeft + 50, currentY, pageWidth - marginRight, currentY);
+                currentY += 10;
 
                 // Assinatura do Responsável
-                const assinaturaRespY = currentY + 15;
-                const centerX = (pageWidth - 70) / 2;
-                doc.line(centerX, assinaturaRespY, centerX + 70, assinaturaRespY);
-                doc.text('Responsável Legal', centerX + 7, assinaturaRespY + 5);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Assinatura do Responsável:', marginLeft, currentY);
+                doc.setFont('helvetica', 'normal');
+                doc.line(marginLeft + 60, currentY, pageWidth - marginRight, currentY);
+                currentY += 10;
+
+                // Data
+                doc.setFont('helvetica', 'bold');
+                doc.text('Data:', marginLeft, currentY);
+                doc.setFont('helvetica', 'normal');
+                doc.line(marginLeft + 15, currentY, marginLeft + 50, currentY);
+                currentY += 12;
+
+                // Assinatura do Aluno
+                doc.setFont('helvetica', 'bold');
+                doc.text('Assinatura do Aluno:', marginLeft, currentY);
+                doc.setFont('helvetica', 'normal');
+                doc.line(marginLeft + 50, currentY, pageWidth - marginRight, currentY);
+                currentY += 12;
+
+                // Frase em negrito sobre devolução
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(10);
+                const fraseDevolucao = 'O aluno deverá devolver o presente termo em até 3 dias úteis a partir do momento do recebimento.';
+                const fraseDevolucaoLinhas = doc.splitTextToSize(fraseDevolucao, contentWidth);
+                fraseDevolucaoLinhas.forEach(linha => {
+                    doc.text(linha, marginLeft, currentY);
+                    currentY += 5;
+                });
+                currentY += 10;
+
+                // ============================================
+                // ASSINATURAS OFICIAIS
+                // ============================================
+
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+
+                // Coordenadora
+                const assinaturaWidth = 50;
+                const espacamento = (contentWidth - (assinaturaWidth * 3)) / 2;
+
+                let xPos = marginLeft;
+                doc.line(xPos, currentY, xPos + assinaturaWidth, currentY);
+                const coordenadoraLabel = 'Coordenadora';
+                const coordenadoraWidth = doc.getTextWidth(coordenadoraLabel);
+                doc.text(coordenadoraLabel, xPos + (assinaturaWidth - coordenadoraWidth) / 2, currentY + 5);
+
+                // Diretora
+                xPos = marginLeft + assinaturaWidth + espacamento;
+                doc.line(xPos, currentY, xPos + assinaturaWidth, currentY);
+                const diretoraLabel = 'Diretora';
+                const diretoraWidth = doc.getTextWidth(diretoraLabel);
+                doc.text(diretoraLabel, xPos + (assinaturaWidth - diretoraWidth) / 2, currentY + 5);
+
+                // Gestor
+                xPos = marginLeft + (assinaturaWidth * 2) + (espacamento * 2);
+                doc.line(xPos, currentY, xPos + assinaturaWidth, currentY);
+                const gestorLabel = 'Gestor';
+                const gestorWidth = doc.getTextWidth(gestorLabel);
+                doc.text(gestorLabel, xPos + (assinaturaWidth - gestorWidth) / 2, currentY + 5);
 
                 // ============================================
                 // RODAPÉ
