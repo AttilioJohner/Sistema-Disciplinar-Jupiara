@@ -1,7 +1,7 @@
 // Netlify Function: Assistente IA para Medidas Disciplinares
 // Usa Google Gemini API para corrigir textos e sugerir artigos do regulamento
 
-const fetch = require('node-fetch');
+// Fetch é nativo no Node 18+ (usado pelo Netlify)
 
 // Configuração da API Gemini
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
