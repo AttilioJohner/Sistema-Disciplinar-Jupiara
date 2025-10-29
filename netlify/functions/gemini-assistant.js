@@ -216,11 +216,6 @@ Estrutura EXATA da resposta:
 
 Exemplo CORRETO de resposta:
 {"fato_corrigido":"No dia...", "artigos_aplicaveis":["Art. 6º"], "fundamento_gerado":"...", "sugestoes_adicionais":"..."}
-
-Exemplo ERRADO (NÃO faça isso):
-\`\`\`json
-{"fato_corrigido":"..."}
-\`\`\`
 `;
 }
 
