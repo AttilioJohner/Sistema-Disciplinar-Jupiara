@@ -1152,37 +1152,38 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       let houveTransferencia = false;
 
       if (alunoIndex !== -1) {
-        console.log('🔄 Atualizando cache para aluno:', alunosCache[alunoIndex]);
+        console.log('🔄 Verificando cache para aluno:', alunosCache[alunoIndex]);
         unidadeAnterior = alunosCache[alunoIndex].unidade;
 
-        const atualizacao = {
-          ...alunosCache[alunoIndex],
-          "Nome completo": data.nome_completo,
-          nome_completo: data.nome_completo,
-          turma: data.turma,
-          responsavel: data.responsavel,
-          "responsável": data.responsavel, // Campo com acento usado no Supabase
-          telefone1: data.telefone1,
-          telefone2: data.telefone2,
-          "Telefone do responsável": data.telefone1,
-          "Telefone secundário": data.telefone2,
-          foto_url: data.foto_url || alunosCache[alunoIndex].foto_url
-        };
+        // Verificar se houve transferência ANTES de atualizar
+        if (unidadeDetectada && unidadeAnterior && unidadeAnterior !== unidadeDetectada) {
+          houveTransferencia = true;
+          console.log(`🔄 Transferência detectada: ${unidadeAnterior} → ${unidadeDetectada}`);
+          console.log(`🗑️ Aluno será REMOVIDO do cache (não atualizado)`);
+        } else {
+          // Só atualiza o cache se NÃO houver transferência
+          console.log('🔄 Atualizando cache para aluno (sem transferência)');
+          const atualizacao = {
+            ...alunosCache[alunoIndex],
+            "Nome completo": data.nome_completo,
+            nome_completo: data.nome_completo,
+            turma: data.turma,
+            responsavel: data.responsavel,
+            "responsável": data.responsavel, // Campo com acento usado no Supabase
+            telefone1: data.telefone1,
+            telefone2: data.telefone2,
+            "Telefone do responsável": data.telefone1,
+            "Telefone secundário": data.telefone2,
+            foto_url: data.foto_url || alunosCache[alunoIndex].foto_url
+          };
 
-        // Atualizar unidade se foi detectada
-        if (unidadeDetectada) {
-          atualizacao.unidade = unidadeDetectada;
-          console.log(`🔄 Cache: Unidade atualizada para ${unidadeDetectada}`);
-
-          // Verificar se houve transferência
-          if (unidadeAnterior && unidadeAnterior !== unidadeDetectada) {
-            houveTransferencia = true;
-            console.log(`🔄 Transferência detectada: ${unidadeAnterior} → ${unidadeDetectada}`);
+          if (unidadeDetectada) {
+            atualizacao.unidade = unidadeDetectada;
           }
-        }
 
-        alunosCache[alunoIndex] = atualizacao;
-        console.log('✅ Cache local atualizado:', alunosCache[alunoIndex]);
+          alunosCache[alunoIndex] = atualizacao;
+          console.log('✅ Cache local atualizado:', alunosCache[alunoIndex]);
+        }
       } else {
         console.log('❌ Aluno não encontrado no cache!');
       }
