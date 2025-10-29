@@ -1,7 +1,7 @@
 // gestao.js — CRUD de Alunos com Sistema Local + Modo Debug
 
 // ===== CONTROLE DE VERSÃO PARA EVITAR CACHE AGRESSIVO =====
-const APP_VERSION = '20251029-004';
+const APP_VERSION = '20251029-005';
 
 function checkAppVersion() {
   const lastVersion = localStorage.getItem('app_version');
@@ -483,7 +483,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   // Função para processar dados da turma (evita duplicação de código)
   function processarDadosTurma(data, turma) {
     console.log('📊 Processando dados da turma:', turma, '(' + data.length + ' alunos)');
-    
+
     // Mapear dados para o formato esperado
     alunosCache = data.map((item) => {
       // Estrutura vinda do Supabase otimizado
@@ -493,6 +493,7 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         nome: item['Nome completo'] || item.nome_completo || item.nome || '',
         nome_completo: item['Nome completo'] || item.nome_completo || item.nome || '',
         turma: item.turma || '',
+        unidade: item.unidade || '', // ✅ INCLUIR UNIDADE NO CACHE (corrige bug de transferência)
         status: 'ativo', // Campo fixo já que não existe na tabela
         responsavel: item.responsável || item.responsavel || '',
         telefone1: item['Telefone do responsável'] || item.telefone1 || item.telefone_responsavel || item.telefone || '',
@@ -502,6 +503,12 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
         updatedAt: new Date().toISOString() // Campo fixo já que não existe na tabela
       };
     });
+
+    // Log de debug: mostrar unidades carregadas
+    if (alunosCache.length > 0) {
+      const unidadesNoCache = new Set(alunosCache.map(a => a.unidade).filter(u => u));
+      console.log('🏫 Unidades no cache:', Array.from(unidadesNoCache));
+    }
     
     // Atualizar interface
     renderTable();
