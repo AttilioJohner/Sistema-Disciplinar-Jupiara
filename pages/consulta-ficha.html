@@ -1400,12 +1400,12 @@
                 loadingStatus.classList.remove('hidden');
                 loadingStatus.innerHTML = `<span class="loading-spinner"></span> Buscando dados das turmas... ${tentativa > 1 ? `(Tentativa ${tentativa}/${MAX_TENTATIVAS})` : 'Aguarde alguns segundos.'}`;
 
-                // Buscar dados com timeout de 20 segundos (sem ordenação no banco para mais performance)
+                // Buscar apenas dados essenciais (foto_url será carregada depois, ao selecionar o aluno)
                 const { data: alunosData, error } = await window.supabaseClient
                     .from('alunos')
-                    .select('codigo, "Nome completo", turma, foto_url, unidade')
+                    .select('codigo, "Nome completo", turma, unidade')
                     .eq('unidade', unidadeAtual)
-                    .abortSignal(AbortSignal.timeout(20000));
+                    .abortSignal(AbortSignal.timeout(30000));
 
                 if (error) throw error;
 
@@ -1542,19 +1542,26 @@
             
             try {
                 console.log('🔍 Consultando ficha do aluno:', codigoAluno);
-                
+
                 const btnConsultar = document.getElementById('btnConsultar');
                 btnConsultar.disabled = true;
                 btnConsultar.innerHTML = '⏳ Carregando...';
-                
+
                 // Mostrar ficha com loading
                 document.getElementById('fichaAluno').style.display = 'block';
-                
+
                 // Habilitar botão de exportar PDF
                 document.getElementById('btnExportarPDF').disabled = false;
-                
-                // Buscar dados do aluno
-                const aluno = todosAlunos.find(a => a.codigo == codigoAluno);
+
+                // Buscar dados completos do aluno (incluindo foto)
+                const { data: alunoCompleto, error: alunoError } = await window.supabaseClient
+                    .from('alunos')
+                    .select('*')
+                    .eq('codigo', parseInt(codigoAluno))
+                    .single();
+
+                if (alunoError) throw alunoError;
+                const aluno = alunoCompleto;
                 
                 // Buscar medidas disciplinares
                 const { data: medidas, error: medidasError } = await window.supabaseClient
