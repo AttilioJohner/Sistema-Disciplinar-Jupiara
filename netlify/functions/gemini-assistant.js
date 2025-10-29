@@ -230,7 +230,19 @@ function parseResposta(texto) {
     textoLimpo = textoLimpo.trim();
 
     // Tentar parsear diretamente
-    const json = JSON.parse(textoLimpo);
+    let json = JSON.parse(textoLimpo);
+
+    // DETECTAR JSON ANINHADO: Se fato_corrigido começa com {, é JSON dentro de string
+    if (json.fato_corrigido && typeof json.fato_corrigido === 'string' && json.fato_corrigido.trim().startsWith('{')) {
+      try {
+        console.log('🔄 Detectado JSON aninhado, fazendo parse duplo...');
+        const jsonAninhado = JSON.parse(json.fato_corrigido);
+        // Usar o JSON interno ao invés do externo
+        json = jsonAninhado;
+      } catch (e) {
+        console.warn('⚠️ Falha ao parsear JSON aninhado:', e.message);
+      }
+    }
 
     // Limpar campos internos que possam ter markdown
     if (json.fato_corrigido && typeof json.fato_corrigido === 'string') {
