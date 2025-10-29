@@ -5,8 +5,8 @@
 
 // Configuração da API Gemini
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-// Formato correto: v1beta + gemini-1.0-pro-latest (modelo gratuito estável)
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro-latest:generateContent';
+// Modelo verificado: gemini-2.5-flash (disponível para esta API Key)
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 // Contexto dos regulamentos EECM-MT (será expandido com parsing dos PDFs)
 const CONTEXTO_REGULAMENTO = `
@@ -144,7 +144,7 @@ exports.handler = async (event, context) => {
         data: resultado,
         metadata: {
           processedAt: new Date().toISOString(),
-          model: 'gemini-1.0-pro-latest'
+          model: 'gemini-2.5-flash'
         }
       })
     };
