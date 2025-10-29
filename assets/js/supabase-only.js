@@ -385,6 +385,7 @@ const alunosDB = {
             'codigo': codigo,              // Coluna simples
             'Nome completo': aluno.nome_completo || aluno.nome || aluno['Nome completo'],
             'turma': aluno.turma,
+            'unidade': aluno.unidade,      // ✅ INCLUIR UNIDADE (corrige transferências entre Sede/Anexa)
             'responsável': aluno.responsavel || aluno.responsável,
             'Telefone do responsável': aluno.telefone1 || aluno.telefone,
             'Telefone do responsável 2': aluno.telefone2,
