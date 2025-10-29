@@ -5,7 +5,7 @@
 
 // Configuração da API Gemini
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent';
 
 // Contexto dos regulamentos EECM-MT (será expandido com parsing dos PDFs)
 const CONTEXTO_REGULAMENTO = `
