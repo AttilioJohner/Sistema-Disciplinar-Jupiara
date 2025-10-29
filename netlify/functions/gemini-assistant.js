@@ -199,7 +199,14 @@ INSTRUÇÕES DE FORMATO:
 - Na seção "artigos_aplicaveis", liste os artigos relevantes baseado nas faltas
 - Na seção "fundamento_gerado", explique cada artigo aplicável
 
-IMPORTANTE: Retorne APENAS um objeto JSON válido com esta estrutura exata:
+ATENÇÃO - FORMATO DA RESPOSTA:
+Sua resposta deve ser EXCLUSIVAMENTE um objeto JSON válido.
+NÃO use blocos de código markdown (não coloque ```json ou ```).
+NÃO adicione explicações antes ou depois.
+NÃO inclua markdown em NENHUM campo.
+Retorne SOMENTE o JSON puro e direto.
+
+Estrutura EXATA da resposta:
 {
   "fato_corrigido": "Texto formal em 2-3 parágrafos...",
   "artigos_aplicaveis": ["Art. 6º", "Art. 7º, inciso II", "Anexo I, Item 56"],
@@ -207,7 +214,14 @@ IMPORTANTE: Retorne APENAS um objeto JSON válido com esta estrutura exata:
   "sugestoes_adicionais": "Texto opcional com observações"
 }
 
-NÃO adicione markdown, explicações ou texto antes/depois do JSON.`;
+Exemplo CORRETO de resposta:
+{"fato_corrigido":"No dia...", "artigos_aplicaveis":["Art. 6º"], "fundamento_gerado":"...", "sugestoes_adicionais":"..."}
+
+Exemplo ERRADO (NÃO faça isso):
+\`\`\`json
+{"fato_corrigido":"..."}
+\`\`\`
+`;
 }
 
 // Parsear resposta do Gemini (tentar extrair JSON)
