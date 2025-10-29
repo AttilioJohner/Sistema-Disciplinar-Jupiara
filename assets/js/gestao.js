@@ -1,7 +1,7 @@
 // gestao.js — CRUD de Alunos com Sistema Local + Modo Debug
 
 // ===== CONTROLE DE VERSÃO PARA EVITAR CACHE AGRESSIVO =====
-const APP_VERSION = '20251029-002';
+const APP_VERSION = '20251029-003';
 
 function checkAppVersion() {
   const lastVersion = localStorage.getItem('app_version');
@@ -116,8 +116,23 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       bindEvents();
       initPhotoPreview();
       setupUnidadeChangeListener();
-      // Carregar todas as turmas globalmente (Sede + Anexa)
-      await carregarTodasTurmasGlobal();
+
+      // Aguardar window.supabaseClient estar disponível antes de carregar turmas
+      console.log('⏳ Aguardando window.supabaseClient estar pronto...');
+      let tentativas = 0;
+      while (!window.supabaseClient && tentativas < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        tentativas++;
+      }
+
+      if (window.supabaseClient) {
+        console.log('✅ window.supabaseClient pronto! Carregando turmas globais...');
+        // Carregar todas as turmas globalmente (Sede + Anexa)
+        await carregarTodasTurmasGlobal();
+      } else {
+        console.warn('⚠️ Timeout aguardando window.supabaseClient');
+      }
+
       // Garantir que botão de excluir do formulário principal fique sempre oculto
       if (els.btnExcluir) els.btnExcluir.style.display = 'none';
       // NÃO carregar alunos automaticamente - aguardar clique do usuário
