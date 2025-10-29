@@ -116,6 +116,8 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       bindEvents();
       initPhotoPreview();
       setupUnidadeChangeListener();
+      // Carregar todas as turmas globalmente (Sede + Anexa)
+      await carregarTodasTurmasGlobal();
       // Garantir que botão de excluir do formulário principal fique sempre oculto
       if (els.btnExcluir) els.btnExcluir.style.display = 'none';
       // NÃO carregar alunos automaticamente - aguardar clique do usuário
@@ -499,6 +501,56 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
 
     // Mostrar resumo para o usuário
     toast(`Turma ${turma}: ${alunosCache.length} alunos carregados`, 'ok');
+  }
+
+  // =====================
+  // CARREGAR TODAS AS TURMAS (SEDE + ANEXA) GLOBALMENTE
+  // =====================
+  async function carregarTodasTurmasGlobal() {
+    if (!window.supabaseClient) {
+      console.warn('⚠️ Supabase não disponível para buscar turmas');
+      return;
+    }
+
+    try {
+      // Query para buscar todas as turmas únicas (Sede + Anexa)
+      const { data, error } = await window.supabaseClient
+        .from('alunos')
+        .select('turma, unidade');
+
+      if (error) {
+        console.error('❌ Erro ao buscar turmas:', error);
+        return;
+      }
+
+      // Criar mapa de turma -> unidade(s)
+      const turmaUnidadeMap = {};
+      data.forEach(item => {
+        if (item.turma) {
+          if (!turmaUnidadeMap[item.turma]) {
+            turmaUnidadeMap[item.turma] = new Set();
+          }
+          turmaUnidadeMap[item.turma].add(item.unidade);
+        }
+      });
+
+      // Criar array de turmas com suas unidades
+      const todasTurmas = [];
+      Object.keys(turmaUnidadeMap).sort().forEach(turma => {
+        const unidades = Array.from(turmaUnidadeMap[turma]);
+        unidades.forEach(unidade => {
+          todasTurmas.push({ turma, unidade });
+        });
+      });
+
+      // Salvar globalmente
+      window.todasTurmasGlobal = todasTurmas;
+      window.turmaUnidadeMap = turmaUnidadeMap;
+
+      console.log(`✅ Carregadas ${todasTurmas.length} turmas globalmente:`, todasTurmas);
+    } catch (err) {
+      console.error('❌ Erro ao carregar turmas globais:', err);
+    }
   }
 
   // =====================
@@ -938,6 +990,26 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       // Salvar no banco usando a API do supabase-only.js
       console.log('🚀 Chamando updateAluno via supabaseSystem com:', { id, data });
 
+      // Detectar unidade baseada na turma escolhida
+      let unidadeDetectada = null;
+      if (data.turma && data.turma.trim()) {
+        // Usar o mapa global de turmas para detectar a unidade
+        if (window.turmaUnidadeMap && window.turmaUnidadeMap[data.turma.trim()]) {
+          const unidades = Array.from(window.turmaUnidadeMap[data.turma.trim()]);
+          if (unidades.length === 1) {
+            // Turma existe em apenas uma unidade
+            unidadeDetectada = unidades[0];
+          } else if (unidades.length > 1) {
+            // Turma existe em mais de uma unidade - usar a primeira (ou pode preferir manter a atual)
+            console.warn(`⚠️ Turma ${data.turma} existe em múltiplas unidades:`, unidades);
+            unidadeDetectada = unidades[0];
+          }
+          console.log(`🎯 Unidade detectada para turma ${data.turma}: ${unidadeDetectada}`);
+        } else {
+          console.warn(`⚠️ Turma ${data.turma} não encontrada no mapa global`);
+        }
+      }
+
       // Filtrar campos vazios/undefined para evitar erro bigint
       const updatePayload = {};
       if (data.nome_completo && data.nome_completo.trim()) {
@@ -945,6 +1017,11 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       }
       if (data.turma && data.turma.trim()) {
         updatePayload.turma = data.turma.trim();
+      }
+      // ATUALIZAR UNIDADE automaticamente baseado na turma
+      if (unidadeDetectada) {
+        updatePayload.unidade = unidadeDetectada;
+        console.log(`✅ Atualizando unidade para: ${unidadeDetectada}`);
       }
       if (data.responsavel && data.responsavel.trim()) {
         updatePayload.responsavel = data.responsavel.trim();
@@ -989,9 +1066,15 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       });
       console.log('🔍 Índice encontrado:', alunoIndex);
 
+      // Salvar unidade anterior para verificar transferência
+      let unidadeAnterior = null;
+      let houveTransferencia = false;
+
       if (alunoIndex !== -1) {
         console.log('🔄 Atualizando cache para aluno:', alunosCache[alunoIndex]);
-        alunosCache[alunoIndex] = {
+        unidadeAnterior = alunosCache[alunoIndex].unidade;
+
+        const atualizacao = {
           ...alunosCache[alunoIndex],
           "Nome completo": data.nome_completo,
           nome_completo: data.nome_completo,
@@ -1004,6 +1087,20 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
           "Telefone secundário": data.telefone2,
           foto_url: data.foto_url || alunosCache[alunoIndex].foto_url
         };
+
+        // Atualizar unidade se foi detectada
+        if (unidadeDetectada) {
+          atualizacao.unidade = unidadeDetectada;
+          console.log(`🔄 Cache: Unidade atualizada para ${unidadeDetectada}`);
+
+          // Verificar se houve transferência
+          if (unidadeAnterior && unidadeAnterior !== unidadeDetectada) {
+            houveTransferencia = true;
+            console.log(`🔄 Transferência detectada: ${unidadeAnterior} → ${unidadeDetectada}`);
+          }
+        }
+
+        alunosCache[alunoIndex] = atualizacao;
         console.log('✅ Cache local atualizado:', alunosCache[alunoIndex]);
       } else {
         console.log('❌ Aluno não encontrado no cache!');
@@ -1013,7 +1110,16 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
       editingRows.delete(String(id));
       renderTable();
 
-      toast('Aluno atualizado com sucesso!', 'ok');
+      // Mensagem personalizada se houve transferência de unidade
+      if (houveTransferencia && unidadeAnterior && unidadeDetectada) {
+        toast(`✅ Aluno transferido de ${unidadeAnterior} para ${unidadeDetectada}!`, 'ok');
+        console.log(`🔄 Transferência confirmada: ${unidadeAnterior} → ${unidadeDetectada}`);
+
+        // Recarregar turmas globais para refletir mudanças
+        setTimeout(() => carregarTodasTurmasGlobal(), 500);
+      } else {
+        toast('Aluno atualizado com sucesso!', 'ok');
+      }
 
     } catch (error) {
       console.error('💾 Erro ao salvar edição inline:', error);
@@ -1230,18 +1336,27 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
   function renderEditableRow(a) {
     console.log('✏️ renderEditableRow para aluno:', a.id || a.codigo);
 
-    // Buscar TODAS as turmas de TODAS as unidades (Sede + Anexa) do cache de alunos
-    const todasTurmas = [...new Set(alunosCache.map(aluno => aluno.turma).filter(Boolean))].sort();
+    // Buscar TODAS as turmas do banco (Sede + Anexa)
+    // Usar variável global ou fazer query se disponível
+    let turmaOptions = '';
 
-    // Se não houver turmas no cache, usar lista padrão como fallback
-    const turmasDisponiveis = todasTurmas.length > 0 ? todasTurmas : [
-      '1B', '1C', '2A', '6A', '6B', '7A', '7B', '8A', '8B', '9A', '9B', '9E'
-    ];
+    if (window.todasTurmasGlobal && window.todasTurmasGlobal.length > 0) {
+      // Usar cache global de turmas se disponível
+      turmaOptions = window.todasTurmasGlobal.map(item =>
+        '<option value="' + item.turma + '"' + (item.turma === a.turma ? ' selected' : '') + '>' +
+        item.turma + ' - ' + item.unidade + '</option>'
+      ).join('');
+    } else {
+      // Fallback: usar cache local (não ideal, mas funciona)
+      const todasTurmas = [...new Set(alunosCache.map(aluno => aluno.turma).filter(Boolean))].sort();
+      const turmasDisponiveis = todasTurmas.length > 0 ? todasTurmas : [
+        '1B', '1C', '2A', '6A', '6B', '7A', '7B', '8A', '8B', '9A', '9B', '9E'
+      ];
 
-    // Opções de turma para o select (incluindo Sede e Anexa)
-    const turmaOptions = turmasDisponiveis.map(turma =>
-      '<option value="' + turma + '"' + (turma === a.turma ? ' selected' : '') + '>' + turma + '</option>'
-    ).join('');
+      turmaOptions = turmasDisponiveis.map(turma =>
+        '<option value="' + turma + '"' + (turma === a.turma ? ' selected' : '') + '>' + turma + '</option>'
+      ).join('');
+    }
 
     // Foto editável
     const fotoCell = a.foto_url
