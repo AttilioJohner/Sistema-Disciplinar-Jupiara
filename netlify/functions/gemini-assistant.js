@@ -224,7 +224,6 @@ function parseResposta(texto) {
   try {
     // Remover TODOS os blocos markdown de forma agressiva
     let textoLimpo = texto.trim();
-    // Remover markdown externo
     textoLimpo = textoLimpo.replace(/^```(?:json)?\s*/i, '');
     textoLimpo = textoLimpo.replace(/\s*```$/m, '');
     textoLimpo = textoLimpo.trim();
@@ -232,43 +231,72 @@ function parseResposta(texto) {
     // Tentar parsear diretamente
     let json = JSON.parse(textoLimpo);
 
-    // DETECTAR JSON ANINHADO: Se fato_corrigido começa com {, é JSON dentro de string
-    if (json.fato_corrigido && typeof json.fato_corrigido === 'string' && json.fato_corrigido.trim().startsWith('{')) {
-      try {
-        console.log('🔄 Detectado JSON aninhado, fazendo parse duplo...');
-        const jsonAninhado = JSON.parse(json.fato_corrigido);
-        // Usar o JSON interno ao invés do externo
-        json = jsonAninhado;
-      } catch (e) {
-        console.warn('⚠️ Falha ao parsear JSON aninhado:', e.message);
+    // DETECTAR JSON ANINHADO (Gemini às vezes retorna JSON como string)
+    if (json.fato_corrigido && typeof json.fato_corrigido === 'string') {
+      const fato = json.fato_corrigido.trim();
+
+      // Se começa com { ou [ ou ", pode ser JSON aninhado
+      if (fato.startsWith('{') || fato.startsWith('"') || fato.startsWith('[')) {
+        try {
+          console.log('🔄 Tentando parsear JSON aninhado...');
+          const jsonAninhado = JSON.parse(fato);
+
+          // Se o parse deu certo e tem fato_corrigido, usar o JSON interno
+          if (jsonAninhado && jsonAninhado.fato_corrigido) {
+            console.log('✅ JSON aninhado parseado com sucesso');
+            json = jsonAninhado;
+          }
+        } catch (e) {
+          // Se falhar, manter o texto original (não é JSON aninhado)
+          console.log('ℹ️ Não era JSON aninhado, mantendo texto original');
+        }
       }
     }
 
-    // Limpar campos internos que possam ter markdown
-    if (json.fato_corrigido && typeof json.fato_corrigido === 'string') {
-      json.fato_corrigido = json.fato_corrigido.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/m, '').trim();
+    // Validar e retornar estrutura esperada
+    const resultado = {
+      fato_corrigido: json.fato_corrigido || texto,
+      artigos_aplicaveis: json.artigos_aplicaveis || [],
+      fundamento_gerado: json.fundamento_gerado || 'Não foi possível gerar automaticamente. Revise manualmente.',
+      sugestoes_adicionais: json.sugestoes_adicionais || ''
+    };
+
+    // Limpar markdown residual dos campos de texto
+    if (typeof resultado.fato_corrigido === 'string') {
+      resultado.fato_corrigido = resultado.fato_corrigido.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/m, '').trim();
     }
-    if (json.fundamento_gerado && typeof json.fundamento_gerado === 'string') {
-      json.fundamento_gerado = json.fundamento_gerado.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/m, '').trim();
-    }
-    if (json.sugestoes_adicionais && typeof json.sugestoes_adicionais === 'string') {
-      json.sugestoes_adicionais = json.sugestoes_adicionais.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/m, '').trim();
+    if (typeof resultado.fundamento_gerado === 'string') {
+      resultado.fundamento_gerado = resultado.fundamento_gerado.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/m, '').trim();
     }
 
-    return json;
+    console.log('✅ Resposta parseada:', {
+      tem_fato: !!resultado.fato_corrigido,
+      num_artigos: resultado.artigos_aplicaveis.length
+    });
+
+    return resultado;
   } catch (e) {
-    // Se falhar, tentar extrair JSON de dentro de markdown ou texto
+    console.error('❌ Erro ao parsear JSON:', e.message);
+
+    // Fallback: tentar extrair JSON com regex
     const match = texto.match(/\{[\s\S]*\}/);
     if (match) {
       try {
-        return JSON.parse(match[0]);
+        const extracted = JSON.parse(match[0]);
+        console.log('✅ JSON extraído com regex');
+        return {
+          fato_corrigido: extracted.fato_corrigido || texto,
+          artigos_aplicaveis: extracted.artigos_aplicaveis || [],
+          fundamento_gerado: extracted.fundamento_gerado || 'Não foi possível gerar automaticamente.',
+          sugestoes_adicionais: extracted.sugestoes_adicionais || ''
+        };
       } catch (e2) {
-        console.error('Erro ao parsear JSON extraído:', e2);
+        console.error('❌ Erro ao parsear JSON extraído:', e2.message);
       }
     }
 
-    // Fallback: retornar texto bruto
-    console.warn('⚠️ Não foi possível parsear JSON, retornando texto bruto');
+    // Último fallback: retornar texto bruto
+    console.warn('⚠️ Usando fallback: texto bruto');
     return {
       fato_corrigido: texto,
       artigos_aplicaveis: [],
