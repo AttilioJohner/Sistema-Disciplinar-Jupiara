@@ -3013,9 +3013,11 @@
             }
         }
 
-        // Função auxiliar para baixar o PDF diretamente
+        // Função auxiliar para baixar o PDF e fazer upload para Supabase Storage
         async function baixarPDFMedida() {
             try {
+                showMessage('📄 Gerando PDF...', 'info');
+
                 // Coletar dados do formulário atual
                 const alunoId = document.getElementById('alunoMedida').value;
                 const turno = document.getElementById('turnoMedida').value;
@@ -3060,15 +3062,105 @@
                 // Gerar PDF
                 const resultado = await generateMedidaPDF(dadosMedida);
 
-                // Download automático
+                console.log('📄 PDF gerado, iniciando upload...');
+
+                // ============================================
+                // FAZER UPLOAD PARA SUPABASE STORAGE
+                // ============================================
+
+                // Gerar caminho estruturado no bucket
+                const ano = new Date().getFullYear();
+                const timestamp = new Date().getTime();
+                const tipo = dadosMedida.tipo;
+                const storagePath = `${ano}/${tipo}/${tipo}_${dadosAluno.codigo}_${timestamp}.pdf`;
+
+                showMessage('☁️ Fazendo upload para a nuvem...', 'info');
+
+                // Upload do blob para o Storage
+                const { data: uploadData, error: uploadError } = await window.supabaseClient
+                    .storage
+                    .from('medidas-pdfs')
+                    .upload(storagePath, resultado.blob, {
+                        contentType: 'application/pdf',
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+
+                if (uploadError) {
+                    console.error('❌ Erro no upload:', uploadError);
+                    // Se houver erro, ainda faz download local
+                    resultado.doc.save(resultado.filename);
+                    showMessage('⚠️ PDF gerado localmente, mas não foi possível salvar na nuvem: ' + uploadError.message, 'warning');
+                    return resultado;
+                }
+
+                console.log('✅ Upload realizado com sucesso:', uploadData);
+
+                // Obter URL pública (autenticada) do arquivo
+                const { data: urlData } = window.supabaseClient
+                    .storage
+                    .from('medidas-pdfs')
+                    .getPublicUrl(storagePath);
+
+                const pdfUrl = urlData.publicUrl;
+
+                console.log('🔗 URL do PDF:', pdfUrl);
+
+                // ============================================
+                // SALVAR REGISTRO NA TABELA documentos_pdf
+                // ============================================
+
+                // Gerar número do documento
+                const { data: numeroData, error: numeroError } = await window.supabaseClient
+                    .rpc('gerar_numero_documento', {
+                        p_tipo: tipo,
+                        p_ano: ano
+                    });
+
+                const numeroDocumento = numeroData || `${tipo}-${ano}-001`;
+
+                console.log('📋 Número do documento:', numeroDocumento);
+
+                // Inserir registro na tabela documentos_pdf
+                const { data: docData, error: docError } = await window.supabaseClient
+                    .from('documentos_pdf')
+                    .insert([{
+                        tipo_documento: tipo,
+                        numero_documento: numeroDocumento,
+                        codigo_matricula: dadosAluno.codigo,
+                        nome_aluno: dadosAluno['Nome completo'],
+                        turma: dadosAluno.turma,
+                        turno: turno,
+                        fato_descrito: motivo,
+                        fundamento: fundamento,
+                        pdf_url: pdfUrl,
+                        pdf_tamanho_bytes: resultado.blob.size,
+                        criado_por: 'Sistema', // Ou obter email do usuário logado
+                        observacoes: disposicoes
+                    }])
+                    .select();
+
+                if (docError) {
+                    console.error('⚠️ Erro ao salvar registro do documento:', docError);
+                    // Ainda assim continua com o download
+                }
+
+                console.log('💾 Registro salvo no banco:', docData);
+
+                // Download automático local
                 resultado.doc.save(resultado.filename);
 
-                showMessage('✅ PDF gerado e baixado com sucesso!', 'success');
+                showMessage('✅ PDF gerado, salvo na nuvem e baixado com sucesso!', 'success');
 
-                return resultado;
+                return {
+                    ...resultado,
+                    pdfUrl: pdfUrl,
+                    numeroDocumento: numeroDocumento
+                };
 
             } catch (error) {
-                console.error('❌ Erro ao baixar PDF:', error);
+                console.error('❌ Erro ao processar PDF:', error);
+                showMessage('❌ Erro ao gerar PDF: ' + error.message, 'error');
                 alert('Erro ao gerar PDF: ' + error.message);
             }
         }
