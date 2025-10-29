@@ -2850,6 +2850,22 @@
                 currentY += 12;
 
                 // ============================================
+                // TEXTO FORMAL DA DIREÇÃO
+                // ============================================
+
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+
+                const textoFormal = 'A Direção da Escola Cívico-Militar Jupiara, com respaldo no Regimento Escolar e no Regulamento Disciplinar das EECM/MT, resolve aplicar a presente medida disciplinar ao(à) aluno(a) acima identificado(a), pelos fatos abaixo descritos:';
+                const textoFormalLinhas = doc.splitTextToSize(textoFormal, contentWidth);
+
+                textoFormalLinhas.forEach(linha => {
+                    doc.text(linha, marginLeft, currentY);
+                    currentY += 5;
+                });
+                currentY += 5;
+
+                // ============================================
                 // DESCRIÇÃO DO FATO
                 // ============================================
 
