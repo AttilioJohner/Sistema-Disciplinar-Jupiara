@@ -1898,6 +1898,15 @@
                                 </select>
                             </div>
                             <div class="form-group">
+                                <label class="form-label">Turno *</label>
+                                <select id="turnoMedida" class="form-select" required>
+                                    <option value="">Selecione o turno...</option>
+                                    <option value="Matutino">Matutino</option>
+                                    <option value="Vespertino">Vespertino</option>
+                                    <option value="Integral">Integral</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
                                 <label class="form-label">Aluno *</label>
                                 <select id="alunoMedida" class="form-select" required disabled>
                                     <option value="">Primeiro selecione uma turma...</option>
@@ -2443,6 +2452,7 @@
             const form = event.target;
             const btn = form.querySelector('button[type="submit"]');
             const alunoId = document.getElementById('alunoMedida').value;
+            const turno = document.getElementById('turnoMedida').value;
             const tipoMedida = document.getElementById('tipoMedida').value;
             const data = document.getElementById('dataMedida').value;
             const motivo = document.getElementById('motivoMedida').value;
@@ -2519,6 +2529,7 @@
                     codigo_matricula: dadosAluno.codigo.toString(),
                     nome_completo: dadosAluno['Nome completo'],
                     turma: dadosAluno.turma,
+                    turno: turno,
                     data: data,
                     especificacao: especificacao,
                     observacao: acoes,
