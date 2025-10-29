@@ -2735,26 +2735,42 @@
                 let currentY = marginTop;
 
                 // ============================================
-                // CABEÇALHO: Logo e Título da Escola
+                // CABEÇALHO OFICIAL
                 // ============================================
 
-                // Título principal
-                doc.setFontSize(16);
                 doc.setFont('helvetica', 'bold');
-                const titulo = 'ESCOLA ESTADUAL CÍVICO-MILITAR';
-                const tituloWidth = doc.getTextWidth(titulo);
-                doc.text(titulo, (pageWidth - tituloWidth) / 2, currentY);
-                currentY += 7;
+                doc.setTextColor(0, 0, 0);
 
-                // Subtítulo
-                doc.setFontSize(14);
-                const subtitulo = 'JUPIARA - MT';
-                const subtituloWidth = doc.getTextWidth(subtitulo);
-                doc.text(subtitulo, (pageWidth - subtituloWidth) / 2, currentY);
+                // Linha 1: ESTADO DE MATO GROSSO
+                doc.setFontSize(12);
+                let texto = 'ESTADO DE MATO GROSSO';
+                let textoWidth = doc.getTextWidth(texto);
+                doc.text(texto, (pageWidth - textoWidth) / 2, currentY);
+                currentY += 6;
+
+                // Linha 2: SECRETARIA DE ESTADO DE EDUCAÇÃO
+                doc.setFontSize(12);
+                texto = 'SECRETARIA DE ESTADO DE EDUCAÇÃO';
+                textoWidth = doc.getTextWidth(texto);
+                doc.text(texto, (pageWidth - textoWidth) / 2, currentY);
+                currentY += 6;
+
+                // Linha 3: COORDENADORIA DE ESCOLAS CÍVICO MILITARES
+                doc.setFontSize(12);
+                texto = 'COORDENADORIA DE ESCOLAS CÍVICO MILITARES';
+                textoWidth = doc.getTextWidth(texto);
+                doc.text(texto, (pageWidth - textoWidth) / 2, currentY);
+                currentY += 6;
+
+                // Linha 4: ESCOLA ESTADUAL CÍVICO MILITAR JUPIARA (fonte menor)
+                doc.setFontSize(10);
+                texto = 'ESCOLA ESTADUAL CÍVICO MILITAR JUPIARA';
+                textoWidth = doc.getTextWidth(texto);
+                doc.text(texto, (pageWidth - textoWidth) / 2, currentY);
                 currentY += 10;
 
-                // Linha horizontal
-                doc.setDrawColor(102, 126, 234); // Cor roxa
+                // Linha horizontal decorativa
+                doc.setDrawColor(0, 0, 0);
                 doc.setLineWidth(0.5);
                 doc.line(marginLeft, currentY, pageWidth - marginRight, currentY);
                 currentY += 8;
@@ -2948,22 +2964,24 @@
                 }
 
                 // ============================================
-                // ITEM 4: RESPONSÁVEL LEGAL
+                // ITEM 4: RESPONSÁVEL LEGAL (APENAS PARA FMD - ADVERTÊNCIAS)
                 // ============================================
 
-                // Verificar espaço para assinaturas (necessita ~140mm)
-                if (currentY > pageHeight - 150) {
-                    doc.addPage();
-                    currentY = marginTop;
-                }
+                // Mostrar seção de assinaturas dos pais APENAS para FMD (não para FO)
+                if (dadosMedida.tipo === 'FMD') {
+                    // Verificar espaço para assinaturas (necessita ~140mm)
+                    if (currentY > pageHeight - 150) {
+                        doc.addPage();
+                        currentY = marginTop;
+                    }
 
-                currentY += 10;
+                    currentY += 10;
 
-                // Título do Item 4
-                doc.setFontSize(12);
-                doc.setFont('helvetica', 'bold');
-                doc.text('4. RESPONSÁVEL LEGAL', marginLeft, currentY);
-                currentY += 8;
+                    // Título do Item 4
+                    doc.setFontSize(12);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('4. RESPONSÁVEL LEGAL', marginLeft, currentY);
+                    currentY += 8;
 
                 // Opções de checkbox
                 doc.setFontSize(10);
@@ -3018,6 +3036,8 @@
                 });
                 currentY += 10;
 
+                } // Fim do bloco condicional - Item 4 apenas para FMD
+
                 // ============================================
                 // ASSINATURAS OFICIAIS
                 // ============================================
@@ -3025,29 +3045,41 @@
                 doc.setFontSize(10);
                 doc.setFont('helvetica', 'normal');
 
-                // Coordenadora
-                const assinaturaWidth = 50;
-                const espacamento = (contentWidth - (assinaturaWidth * 3)) / 2;
+                if (dadosMedida.tipo === 'FMD') {
+                    // FMD: Coordenadora, Diretora e Gestor (3 assinaturas lado a lado)
+                    const assinaturaWidth = 50;
+                    const espacamento = (contentWidth - (assinaturaWidth * 3)) / 2;
 
-                let xPos = marginLeft;
-                doc.line(xPos, currentY, xPos + assinaturaWidth, currentY);
-                const coordenadoraLabel = 'Coordenadora';
-                const coordenadoraWidth = doc.getTextWidth(coordenadoraLabel);
-                doc.text(coordenadoraLabel, xPos + (assinaturaWidth - coordenadoraWidth) / 2, currentY + 5);
+                    let xPos = marginLeft;
+                    doc.line(xPos, currentY, xPos + assinaturaWidth, currentY);
+                    const coordenadoraLabel = 'Coordenadora';
+                    const coordenadoraWidth = doc.getTextWidth(coordenadoraLabel);
+                    doc.text(coordenadoraLabel, xPos + (assinaturaWidth - coordenadoraWidth) / 2, currentY + 5);
 
-                // Diretora
-                xPos = marginLeft + assinaturaWidth + espacamento;
-                doc.line(xPos, currentY, xPos + assinaturaWidth, currentY);
-                const diretoraLabel = 'Diretora';
-                const diretoraWidth = doc.getTextWidth(diretoraLabel);
-                doc.text(diretoraLabel, xPos + (assinaturaWidth - diretoraWidth) / 2, currentY + 5);
+                    // Diretora
+                    xPos = marginLeft + assinaturaWidth + espacamento;
+                    doc.line(xPos, currentY, xPos + assinaturaWidth, currentY);
+                    const diretoraLabel = 'Diretora';
+                    const diretoraWidth = doc.getTextWidth(diretoraLabel);
+                    doc.text(diretoraLabel, xPos + (assinaturaWidth - diretoraWidth) / 2, currentY + 5);
 
-                // Gestor
-                xPos = marginLeft + (assinaturaWidth * 2) + (espacamento * 2);
-                doc.line(xPos, currentY, xPos + assinaturaWidth, currentY);
-                const gestorLabel = 'Gestor';
-                const gestorWidth = doc.getTextWidth(gestorLabel);
-                doc.text(gestorLabel, xPos + (assinaturaWidth - gestorWidth) / 2, currentY + 5);
+                    // Gestor
+                    xPos = marginLeft + (assinaturaWidth * 2) + (espacamento * 2);
+                    doc.line(xPos, currentY, xPos + assinaturaWidth, currentY);
+                    const gestorLabel = 'Gestor';
+                    const gestorWidth = doc.getTextWidth(gestorLabel);
+                    doc.text(gestorLabel, xPos + (assinaturaWidth - gestorWidth) / 2, currentY + 5);
+
+                } else {
+                    // FO: apenas Gestor (centralizado)
+                    const assinaturaWidth = 70;
+                    const centerX = (pageWidth - assinaturaWidth) / 2;
+
+                    doc.line(centerX, currentY, centerX + assinaturaWidth, currentY);
+                    const gestorLabel = 'Gestor';
+                    const gestorWidth = doc.getTextWidth(gestorLabel);
+                    doc.text(gestorLabel, centerX + (assinaturaWidth - gestorWidth) / 2, currentY + 5);
+                }
 
                 // ============================================
                 // RODAPÉ
