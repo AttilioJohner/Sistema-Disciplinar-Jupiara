@@ -1,7 +1,7 @@
 // gestao.js — CRUD de Alunos com Sistema Local + Modo Debug
 
 // ===== CONTROLE DE VERSÃO PARA EVITAR CACHE AGRESSIVO =====
-const APP_VERSION = '20250924-002';
+const APP_VERSION = '20251029-001';
 
 function checkAppVersion() {
   const lastVersion = localStorage.getItem('app_version');
