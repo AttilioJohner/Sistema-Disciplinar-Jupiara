@@ -201,7 +201,7 @@ INSTRUÇÕES DE FORMATO:
 
 ATENÇÃO - FORMATO DA RESPOSTA:
 Sua resposta deve ser EXCLUSIVAMENTE um objeto JSON válido.
-NÃO use blocos de código markdown (nem ```json nem ``` em lugar nenhum).
+NÃO use blocos de código markdown (nem aspas triplas, nem tags de código).
 NÃO adicione explicações antes ou depois.
 NÃO inclua markdown em NENHUM campo.
 NÃO retorne JSON dentro de string (JSON aninhado).
