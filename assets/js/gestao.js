@@ -1,7 +1,7 @@
 // gestao.js — CRUD de Alunos com Sistema Local + Modo Debug
 
 // ===== CONTROLE DE VERSÃO PARA EVITAR CACHE AGRESSIVO =====
-const APP_VERSION = '20251029-001';
+const APP_VERSION = '20251029-002';
 
 function checkAppVersion() {
   const lastVersion = localStorage.getItem('app_version');
@@ -1131,12 +1131,26 @@ console.log('🔥 CARREGANDO gestao.js ÚNICA VEZ');
 
       // Sair do modo de edição
       editingRows.delete(String(id));
+
+      // Se houve transferência de unidade, remover aluno do cache local
+      if (houveTransferencia && unidadeAnterior && unidadeDetectada) {
+        // Remover do cache atual (da unidade antiga)
+        alunosCache = alunosCache.filter(aluno => {
+          const alunoId = aluno.id || aluno.codigo;
+          const idComparacao = parseInt(id);
+          return alunoId !== idComparacao && alunoId !== id;
+        });
+        console.log(`🗑️ Aluno ${id} removido do cache da ${unidadeAnterior}`);
+        console.log(`📊 Cache agora tem ${alunosCache.length} alunos`);
+      }
+
       renderTable();
 
       // Mensagem personalizada se houve transferência de unidade
       if (houveTransferencia && unidadeAnterior && unidadeDetectada) {
-        toast(`✅ Aluno transferido de ${unidadeAnterior} para ${unidadeDetectada}!`, 'ok');
+        toast(`✅ Aluno transferido de ${unidadeAnterior} para ${unidadeDetectada}! Aluno removido desta lista.`, 'ok');
         console.log(`🔄 Transferência confirmada: ${unidadeAnterior} → ${unidadeDetectada}`);
+        console.log(`💡 Para ver o aluno novamente, selecione a aba "${unidadeDetectada}"`);
 
         // Recarregar turmas globais para refletir mudanças
         setTimeout(() => carregarTodasTurmasGlobal(), 500);
