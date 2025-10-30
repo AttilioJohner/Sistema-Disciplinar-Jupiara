@@ -71,15 +71,21 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    console.log('🚀 Iniciando processamento...');
+
     // Verificar API Key
     if (!GEMINI_API_KEY) {
+      console.error('❌ GEMINI_API_KEY não configurada');
       throw new Error('GEMINI_API_KEY não configurada nas environment variables');
     }
+    console.log('✅ API Key configurada');
 
     // Parse do body
+    console.log('📦 Parseando body da requisição...');
     const { fato, faltasSelecionadas, tipoDocumento, aluno, data } = JSON.parse(event.body);
 
     if (!fato || !fato.trim()) {
+      console.error('❌ Campo fato vazio');
       return {
         statusCode: 400,
         headers,
@@ -91,6 +97,7 @@ exports.handler = async (event, context) => {
     console.log('📋 Faltas selecionadas:', faltasSelecionadas);
 
     // Construir prompt para o Gemini
+    console.log('🔨 Construindo prompt...');
     const prompt = construirPrompt({
       fato,
       faltasSelecionadas: faltasSelecionadas || [],
@@ -98,8 +105,10 @@ exports.handler = async (event, context) => {
       aluno,
       data
     });
+    console.log('✅ Prompt construído, tamanho:', prompt.length);
 
-    // Chamar Gemini API (sem timeout - Netlify gerencia isso)
+    // Chamar Gemini API
+    console.log('🤖 Chamando API Gemini...');
     const geminiResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -111,31 +120,40 @@ exports.handler = async (event, context) => {
           temperature: 0.7,
           topK: 40,
           topP: 0.95,
-          maxOutputTokens: 2048, // Reduzido de 4096 para responder mais rápido
+          maxOutputTokens: 2048,
         }
       })
     });
 
+    console.log('📡 Resposta Gemini recebida, status:', geminiResponse.status);
+
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
-      console.error('❌ Erro na API Gemini:', errorText);
-      throw new Error(`Gemini API error: ${geminiResponse.status} - ${errorText}`);
+      console.error('❌ Erro na API Gemini:', geminiResponse.status, errorText.substring(0, 200));
+      throw new Error(`Gemini API error: ${geminiResponse.status} - ${errorText.substring(0, 100)}`);
     }
 
+    console.log('📄 Parseando resposta JSON...');
     const geminiData = await geminiResponse.json();
+    console.log('✅ JSON parseado com sucesso');
 
     // Extrair texto da resposta
+    console.log('🔍 Extraindo texto da resposta...');
     const textoGerado = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!textoGerado) {
+      console.error('❌ Resposta vazia. Estrutura recebida:', JSON.stringify(geminiData).substring(0, 200));
       throw new Error('Resposta vazia da API Gemini');
     }
 
-    console.log('✅ Texto gerado com sucesso');
+    console.log('✅ Texto extraído, tamanho:', textoGerado.length);
 
     // Parsear resposta JSON do Gemini
+    console.log('🔄 Parseando resposta do Gemini...');
     const resultado = parseResposta(textoGerado);
+    console.log('✅ Resposta parseada com sucesso');
 
+    console.log('🎉 Processamento concluído com sucesso!');
     return {
       statusCode: 200,
       headers,
@@ -150,17 +168,19 @@ exports.handler = async (event, context) => {
     };
 
   } catch (error) {
-    console.error('❌ Erro no handler:', error);
+    console.error('❌ ERRO NO HANDLER:', error);
+    console.error('❌ Stack trace:', error.stack);
 
-    // Retornar erro com statusCode 500
+    // Retornar erro com statusCode 500 e detalhes
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
         success: false,
         error: error.message || 'Erro ao processar requisição. Tente novamente.',
+        errorDetails: process.env.NODE_ENV === 'development' ? error.stack : undefined,
         errorType: 'INTERNAL_ERROR',
-        fallback: true // Indica que o frontend deve permitir edição manual
+        fallback: true
       })
     };
   }
