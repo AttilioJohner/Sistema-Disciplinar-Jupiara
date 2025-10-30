@@ -5,8 +5,8 @@
 
 // Configuração da API Gemini
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-// Modelo: gemini-1.5-flash (mais estável, sem thoughtsTokens)
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+// Modelo: gemini-2.5-flash (único disponível nesta API Key)
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 // Contexto dos regulamentos EECM-MT (será expandido com parsing dos PDFs)
 const CONTEXTO_REGULAMENTO = `
@@ -117,10 +117,10 @@ exports.handler = async (event, context) => {
           parts: [{ text: prompt }]
         }],
         generationConfig: {
-          temperature: 0.5,
-          topK: 20,
-          topP: 0.8,
-          maxOutputTokens: 2048, // AUMENTADO: gemini-1.5-flash não tem thoughtsTokens
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 4096, // AUMENTADO: gemini-2.5-flash usa ~1000 tokens em "thoughts"
         },
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
@@ -188,7 +188,7 @@ exports.handler = async (event, context) => {
         data: resultado,
         metadata: {
           processedAt: new Date().toISOString(),
-          model: 'gemini-1.5-flash'
+          model: 'gemini-2.5-flash'
         }
       })
     };
@@ -212,27 +212,53 @@ exports.handler = async (event, context) => {
   }
 };
 
-// Construir prompt estruturado (versão otimizada para velocidade)
+// Construir prompt estruturado
 function construirPrompt({ fato, faltasSelecionadas, tipoDocumento, aluno, data }) {
-  // Prompt SIMPLIFICADO para processar mais rápido (<10s)
-  return `Você é um assistente de Escola Cívico-Militar. Formalize o texto abaixo para documento oficial.
+  const faltasTexto = faltasSelecionadas.length > 0
+    ? faltasSelecionadas.join(', ')
+    : 'não especificadas';
 
-TEXTO ORIGINAL:
-"${fato}"
+  return `${CONTEXTO_REGULAMENTO}
 
-TAREFA (seja BREVE e DIRETO):
-1. Corrija gramática e formalize a linguagem
-2. Escreva em 1-2 parágrafos curtos e objetivos
-3. Mencione: respeito, disciplina, prejuízo ao ambiente escolar
+TAREFA:
+Você deve analisar o fato disciplinar descrito abaixo e:
+1. Corrigir gramática e ortografia
+2. Formalizar a linguagem (adequada para documento oficial escolar)
+3. Estruturar o texto de forma clara e objetiva
+4. Sugerir artigos aplicáveis do regulamento
+5. Gerar o texto da seção "FUNDAMENTO" com base nos artigos
 
-RESPONDA APENAS COM ESTE JSON (sem markdown, sem explicações):
+INFORMAÇÕES DO CASO:
+- Aluno: ${aluno || 'não informado'}
+- Data: ${data || 'não informada'}
+- Tipo de documento: ${tipoDocumento}
+- Faltas selecionadas: ${faltasTexto}
+
+TEXTO ORIGINAL DO FATO (escrito pelo inspetor):
+"""
+${fato}
+"""
+
+INSTRUÇÕES DE FORMATO:
+- Na seção "fato_corrigido", escreva 2-3 parágrafos formais descrevendo:
+  a) O que aconteceu (fatos objetivos)
+  b) Como isso afronta os valores da escola (respeito, disciplina, hierarquia)
+  c) Prejuízo causado (exemplo aos colegas, ambiente escolar)
+
+- Na seção "artigos_aplicaveis", liste os artigos relevantes baseado nas faltas
+- Na seção "fundamento_gerado", explique cada artigo aplicável de forma concisa
+- Na seção "disposicoes_finais", escreva orientações finais ao aluno
+
+IMPORTANTE: Retorne APENAS um objeto JSON válido com esta estrutura exata:
 {
-  "fato_corrigido": "texto formal aqui (máximo 200 palavras)",
-  "artigos_aplicaveis": ["Art. 6º", "Art. 7º, inciso II"],
-  "fundamento_gerado": "justificativa breve baseada nos artigos (máximo 100 palavras)",
-  "disposicoes_finais": "orientação ao aluno sobre comportamento esperado (máximo 50 palavras)",
-  "sugestoes_adicionais": ""
-}`;
+  "fato_corrigido": "Texto formal em 2-3 parágrafos...",
+  "artigos_aplicaveis": ["Art. 6º", "Art. 7º, inciso II", "Anexo I, Item 56"],
+  "fundamento_gerado": "Com base no Art. 6º...",
+  "disposicoes_finais": "O aluno deve estar ciente que...",
+  "sugestoes_adicionais": "Texto opcional com observações"
+}
+
+NÃO adicione markdown, explicações ou texto antes/depois do JSON.`;
 }
 
 // Parsear resposta do Gemini (tentar extrair JSON)
