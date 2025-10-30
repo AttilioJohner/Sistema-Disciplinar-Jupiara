@@ -117,11 +117,17 @@ exports.handler = async (event, context) => {
           parts: [{ text: prompt }]
         }],
         generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 2048,
-        }
+          temperature: 0.5, // Reduzido de 0.7 para ser mais determinístico e rápido
+          topK: 20,         // Reduzido de 40
+          topP: 0.8,        // Reduzido de 0.95
+          maxOutputTokens: 1024, // REDUZIDO de 2048 para 1024 (50% mais rápido)
+        },
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+        ]
       })
     });
 
@@ -135,14 +141,30 @@ exports.handler = async (event, context) => {
 
     console.log('📄 Parseando resposta JSON...');
     const geminiData = await geminiResponse.json();
-    console.log('✅ JSON parseado com sucesso');
+    console.log('✅ JSON parseado. Estrutura:', JSON.stringify(geminiData).substring(0, 300));
+
+    // Verificar se há candidates
+    if (!geminiData.candidates || geminiData.candidates.length === 0) {
+      console.error('❌ Nenhum candidate retornado. Resposta completa:', JSON.stringify(geminiData));
+      throw new Error('API Gemini não retornou resultados. Possível bloqueio por safety filters.');
+    }
+
+    const candidate = geminiData.candidates[0];
+    console.log('📋 Candidate finishReason:', candidate.finishReason);
 
     // Extrair texto da resposta
     console.log('🔍 Extraindo texto da resposta...');
-    const textoGerado = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const textoGerado = candidate?.content?.parts?.[0]?.text;
 
     if (!textoGerado) {
-      console.error('❌ Resposta vazia. Estrutura recebida:', JSON.stringify(geminiData).substring(0, 200));
+      console.error('❌ Resposta vazia. FinishReason:', candidate.finishReason);
+      console.error('❌ Candidate completo:', JSON.stringify(candidate));
+
+      // Se foi bloqueado por safety, retornar erro específico
+      if (candidate.finishReason === 'SAFETY') {
+        throw new Error('Conteúdo bloqueado pelos filtros de segurança da IA. Tente reformular o texto.');
+      }
+
       throw new Error('Resposta vazia da API Gemini');
     }
 
@@ -186,68 +208,27 @@ exports.handler = async (event, context) => {
   }
 };
 
-// Construir prompt estruturado
+// Construir prompt estruturado (versão otimizada para velocidade)
 function construirPrompt({ fato, faltasSelecionadas, tipoDocumento, aluno, data }) {
-  const faltasTexto = faltasSelecionadas.length > 0
-    ? faltasSelecionadas.join(', ')
-    : 'não especificadas';
+  // Prompt SIMPLIFICADO para processar mais rápido (<10s)
+  return `Você é um assistente de Escola Cívico-Militar. Formalize o texto abaixo para documento oficial.
 
-  return `${CONTEXTO_REGULAMENTO}
+TEXTO ORIGINAL:
+"${fato}"
 
-TAREFA:
-Você deve analisar o fato disciplinar descrito abaixo e:
-1. Corrigir gramática e ortografia
-2. Formalizar a linguagem (adequada para documento oficial escolar)
-3. Estruturar o texto de forma clara e objetiva
-4. Sugerir artigos aplicáveis do regulamento
-5. Gerar o texto da seção "FUNDAMENTO" com base nos artigos
+TAREFA (seja BREVE e DIRETO):
+1. Corrija gramática e formalize a linguagem
+2. Escreva em 1-2 parágrafos curtos e objetivos
+3. Mencione: respeito, disciplina, prejuízo ao ambiente escolar
 
-INFORMAÇÕES DO CASO:
-- Aluno: ${aluno || 'não informado'}
-- Data: ${data || 'não informada'}
-- Tipo de documento: ${tipoDocumento}
-- Faltas selecionadas: ${faltasTexto}
-
-TEXTO ORIGINAL DO FATO (escrito pelo inspetor):
-"""
-${fato}
-"""
-
-INSTRUÇÕES DE FORMATO:
-- Na seção "fato_corrigido", escreva 2-3 parágrafos formais (máximo 500 palavras) descrevendo:
-  a) O que aconteceu (fatos objetivos)
-  b) Como isso afronta os valores da escola (respeito, disciplina, hierarquia)
-  c) Prejuízo causado (exemplo aos colegas, ambiente escolar)
-
-- Na seção "artigos_aplicaveis", liste os artigos relevantes baseado nas faltas (máximo 5 artigos)
-
-- Na seção "fundamento_gerado", explique cada artigo aplicável de forma CONCISA (máximo 300 palavras, sem repetir o texto do fato_corrigido)
-
-- Na seção "disposicoes_finais", escreva orientações finais e complementares (máximo 150 palavras), incluindo:
-  a) Orientações ao aluno sobre comportamento esperado
-  b) Consequências em caso de reincidência
-  c) Direitos de recurso ou defesa, se aplicável
-
-ATENÇÃO - FORMATO DA RESPOSTA:
-Sua resposta deve ser EXCLUSIVAMENTE um objeto JSON válido.
-NÃO use blocos de código markdown (nem aspas triplas, nem tags de código).
-NÃO adicione explicações antes ou depois.
-NÃO inclua markdown em NENHUM campo.
-NÃO retorne JSON dentro de string (JSON aninhado).
-Retorne SOMENTE o JSON puro e direto, começando com { e terminando com }.
-
-Estrutura EXATA da resposta:
+RESPONDA APENAS COM ESTE JSON (sem markdown, sem explicações):
 {
-  "fato_corrigido": "Texto formal em 2-3 parágrafos...",
-  "artigos_aplicaveis": ["Art. 6º", "Art. 7º, inciso II", "Anexo I, Item 56"],
-  "fundamento_gerado": "Com base no Art. 6º...",
-  "disposicoes_finais": "O aluno deve estar ciente que...",
-  "sugestoes_adicionais": "Texto opcional com observações"
-}
-
-Exemplo CORRETO de resposta:
-{"fato_corrigido":"No dia...", "artigos_aplicaveis":["Art. 6º"], "fundamento_gerado":"...", "disposicoes_finais":"...", "sugestoes_adicionais":"..."}
-`;
+  "fato_corrigido": "texto formal aqui (máximo 200 palavras)",
+  "artigos_aplicaveis": ["Art. 6º", "Art. 7º, inciso II"],
+  "fundamento_gerado": "justificativa breve baseada nos artigos (máximo 100 palavras)",
+  "disposicoes_finais": "orientação ao aluno sobre comportamento esperado (máximo 50 palavras)",
+  "sugestoes_adicionais": ""
+}`;
 }
 
 // Parsear resposta do Gemini (tentar extrair JSON)
