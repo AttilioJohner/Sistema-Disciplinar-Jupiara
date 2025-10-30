@@ -5,8 +5,8 @@
 
 // Configuração da API Gemini
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-// Modelo verificado: gemini-2.5-flash (disponível para esta API Key)
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+// Modelo: gemini-1.5-flash (mais estável, sem thoughtsTokens)
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
 // Contexto dos regulamentos EECM-MT (será expandido com parsing dos PDFs)
 const CONTEXTO_REGULAMENTO = `
@@ -117,10 +117,10 @@ exports.handler = async (event, context) => {
           parts: [{ text: prompt }]
         }],
         generationConfig: {
-          temperature: 0.5, // Reduzido de 0.7 para ser mais determinístico e rápido
-          topK: 20,         // Reduzido de 40
-          topP: 0.8,        // Reduzido de 0.95
-          maxOutputTokens: 1024, // REDUZIDO de 2048 para 1024 (50% mais rápido)
+          temperature: 0.5,
+          topK: 20,
+          topP: 0.8,
+          maxOutputTokens: 2048, // AUMENTADO: gemini-1.5-flash não tem thoughtsTokens
         },
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
@@ -160,12 +160,16 @@ exports.handler = async (event, context) => {
       console.error('❌ Resposta vazia. FinishReason:', candidate.finishReason);
       console.error('❌ Candidate completo:', JSON.stringify(candidate));
 
-      // Se foi bloqueado por safety, retornar erro específico
+      // Tratamento específico por finishReason
       if (candidate.finishReason === 'SAFETY') {
         throw new Error('Conteúdo bloqueado pelos filtros de segurança da IA. Tente reformular o texto.');
       }
 
-      throw new Error('Resposta vazia da API Gemini');
+      if (candidate.finishReason === 'MAX_TOKENS') {
+        throw new Error('Resposta muito longa. Tente descrever o fato de forma mais breve.');
+      }
+
+      throw new Error('Resposta vazia da API Gemini. FinishReason: ' + candidate.finishReason);
     }
 
     console.log('✅ Texto extraído, tamanho:', textoGerado.length);
@@ -184,7 +188,7 @@ exports.handler = async (event, context) => {
         data: resultado,
         metadata: {
           processedAt: new Date().toISOString(),
-          model: 'gemini-2.5-flash'
+          model: 'gemini-1.5-flash'
         }
       })
     };
