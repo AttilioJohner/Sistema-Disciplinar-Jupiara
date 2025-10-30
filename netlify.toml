@@ -11,6 +11,14 @@
 # Configuração das funções serverless
 [functions]
   directory = "netlify/functions"
+  # Timeout de 26 segundos (máximo permitido no Netlify)
+  # Função gemini-assistant precisa de mais tempo pois chama API externa
+  node_bundler = "esbuild"
+
+# Configuração específica para função gemini-assistant
+[[functions]]
+  name = "gemini-assistant"
+  timeout = 26
 
 # Cabeçalhos de segurança
 [[headers]]
