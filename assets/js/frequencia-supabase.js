@@ -1443,29 +1443,28 @@ class FrequenciaSupabaseManager {
   }
 
   mostrarTabelaDias(mesEscolhido = null, anoEscolhido = null) {
-    // console.log('🔍 DEBUG - mostrarTabelaDias() iniciado - Substituindo por visualização diária');
-    
+    console.log('🔍 [VER POR DIAS] Função iniciada');
+    console.log('🔍 [VER POR DIAS] turmaAtual:', this.turmaAtual);
+    console.log('🔍 [VER POR DIAS] mesEscolhido:', mesEscolhido, 'anoEscolhido:', anoEscolhido);
+
     if (!this.turmaAtual) {
-      console.warn('⚠️ DEBUG - Turma não selecionada');
+      console.warn('⚠️ [VER POR DIAS] Turma não selecionada');
       showToast('Selecione uma turma primeiro', 'warning');
       return;
     }
-    
+
     const container = document.getElementById('frequenciaContainer');
     if (!container) {
-      console.error('❌ DEBUG - frequenciaContainer não encontrado!');
+      console.error('❌ [VER POR DIAS] frequenciaContainer não encontrado!');
       return;
     }
-    
-    // Se não foi especificado mês/ano, usar agosto/2025 como padrão
-    const mesVisualizacao = mesEscolhido || '08';
-    const anoVisualizacao = anoEscolhido || '2025';
-    
-    // console.log(`🎯 DEBUG - Compilando visualização diária para turma: ${this.turmaAtual} - ${mesVisualizacao}/${anoVisualizacao}`);
-    
+
     // Encontrar períodos disponíveis para esta turma
     const periodosDisponiveis = [];
+    console.log('🔍 [VER POR DIAS] Verificando dadosFrequencia.size:', this.dadosFrequencia.size);
+
     this.dadosFrequencia.forEach((periodo, chave) => {
+      console.log('🔍 [VER POR DIAS] Analisando chave:', chave, 'turma:', periodo.turma);
       if (periodo.turma === this.turmaAtual) {
         periodosDisponiveis.push({
           chave: chave,
@@ -1475,10 +1474,35 @@ class FrequenciaSupabaseManager {
         });
       }
     });
-    
+
+    console.log('📅 [VER POR DIAS] Períodos disponíveis para', this.turmaAtual + ':', periodosDisponiveis);
+
+    // Se não foi especificado mês/ano, usar o PRIMEIRO PERÍODO DISPONÍVEL
+    let mesVisualizacao, anoVisualizacao;
+
+    if (mesEscolhido && anoEscolhido) {
+      mesVisualizacao = mesEscolhido;
+      anoVisualizacao = anoEscolhido;
+    } else if (periodosDisponiveis.length > 0) {
+      // Usar o primeiro período disponível
+      mesVisualizacao = periodosDisponiveis[0].mes;
+      anoVisualizacao = periodosDisponiveis[0].ano;
+      console.log('✅ [VER POR DIAS] Usando primeiro período disponível:', mesVisualizacao + '/' + anoVisualizacao);
+    } else {
+      console.error('❌ [VER POR DIAS] Nenhum período disponível para esta turma!');
+      container.innerHTML = `
+        <div class="info-text">
+          ⚠️ Nenhum dado de frequência encontrado para a turma ${this.turmaAtual}
+        </div>
+      `;
+      return;
+    }
+
     // Compilar dados do mês específico
     const chaveEscolhida = `${this.turmaAtual}_${mesVisualizacao}_${anoVisualizacao}`;
+    console.log('🔍 [VER POR DIAS] Buscando chave:', chaveEscolhida);
     const dadosPeriodo = this.dadosFrequencia.get(chaveEscolhida);
+    console.log('🔍 [VER POR DIAS] dadosPeriodo encontrado?', !!dadosPeriodo);
     
     if (!dadosPeriodo) {
       container.innerHTML = `
