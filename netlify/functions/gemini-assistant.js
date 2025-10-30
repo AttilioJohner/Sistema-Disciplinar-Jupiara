@@ -99,11 +99,7 @@ exports.handler = async (event, context) => {
       data
     });
 
-    // Criar AbortController para timeout na chamada do Gemini
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 segundos para API Gemini
-
-    // Chamar Gemini API
+    // Chamar Gemini API (sem timeout - Netlify gerencia isso)
     const geminiResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -115,14 +111,10 @@ exports.handler = async (event, context) => {
           temperature: 0.7,
           topK: 40,
           topP: 0.95,
-          maxOutputTokens: 4096,
+          maxOutputTokens: 2048, // Reduzido de 4096 para responder mais rápido
         }
-      }),
-      signal: controller.signal
+      })
     });
-
-    // Limpar timeout se completou com sucesso
-    clearTimeout(timeoutId);
 
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
@@ -160,27 +152,13 @@ exports.handler = async (event, context) => {
   } catch (error) {
     console.error('❌ Erro no handler:', error);
 
-    // Tratamento específico para timeout
-    if (error.name === 'AbortError') {
-      return {
-        statusCode: 504, // Gateway Timeout
-        headers,
-        body: JSON.stringify({
-          success: false,
-          error: 'API Gemini não respondeu a tempo. Tente novamente.',
-          errorType: 'TIMEOUT',
-          fallback: true
-        })
-      };
-    }
-
-    // Erro genérico
+    // Retornar erro com statusCode 500
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
         success: false,
-        error: error.message || 'Erro interno ao processar requisição',
+        error: error.message || 'Erro ao processar requisição. Tente novamente.',
         errorType: 'INTERNAL_ERROR',
         fallback: true // Indica que o frontend deve permitir edição manual
       })

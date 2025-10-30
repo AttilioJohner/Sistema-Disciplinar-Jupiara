@@ -6280,9 +6280,9 @@ WHERE prazo_assinatura IS NULL
                 return;
             }
 
-            // Criar AbortController para timeout
+            // Criar AbortController para timeout (60s - Gemini pode demorar)
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos
+            const timeoutId = setTimeout(() => controller.abort(), 60000);
 
             try {
                 // Desabilitar botão e mostrar loading
@@ -6290,7 +6290,7 @@ WHERE prazo_assinatura IS NULL
                 btnTexto.textContent = 'Processando...';
                 status.style.display = 'block';
                 status.style.color = '#667eea';
-                status.textContent = '⏳ Consultando IA... aguarde 10-20 segundos';
+                status.textContent = '⏳ Consultando IA... pode levar até 30 segundos';
 
                 // Chamar API Gemini
                 const response = await fetch('https://eecmjupiara.com.br/.netlify/functions/gemini-assistant', {
