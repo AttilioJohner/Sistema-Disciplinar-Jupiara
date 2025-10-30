@@ -3034,13 +3034,23 @@
 
                 // Checkbox 1
                 doc.rect(marginLeft, currentY - 3, 4, 4); // Checkbox quadrado
-                doc.text('(   ) Concordo e me comprometo a orientar meu(minha) filho(a) quanto ao cumprimento das normas.', marginLeft + 6, currentY);
-                currentY += 7;
+                const textoCheckbox1 = '(   ) Concordo e me comprometo a orientar meu(minha) filho(a) quanto ao cumprimento das normas.';
+                const linhasCheckbox1 = doc.splitTextToSize(textoCheckbox1, contentWidth - 10);
+                linhasCheckbox1.forEach(linha => {
+                    doc.text(linha, marginLeft + 6, currentY, { maxWidth: contentWidth - 10, align: 'justify' });
+                    currentY += 5;
+                });
+                currentY += 2;
 
                 // Checkbox 2
                 doc.rect(marginLeft, currentY - 3, 4, 4); // Checkbox quadrado
-                doc.text('(   ) Desejo esclarecimento junto à Direção.', marginLeft + 6, currentY);
-                currentY += 10;
+                const textoCheckbox2 = '(   ) Desejo esclarecimento junto à Direção.';
+                const linhasCheckbox2 = doc.splitTextToSize(textoCheckbox2, contentWidth - 10);
+                linhasCheckbox2.forEach(linha => {
+                    doc.text(linha, marginLeft + 6, currentY, { maxWidth: contentWidth - 10, align: 'justify' });
+                    currentY += 5;
+                });
+                currentY += 5;
 
                 // Nome do responsável
                 doc.setFont('helvetica', 'bold');
@@ -3076,7 +3086,7 @@
                 const fraseDevolucao = 'O aluno deverá devolver o presente termo em até 3 dias úteis a partir do momento do recebimento.';
                 const fraseDevolucaoLinhas = doc.splitTextToSize(fraseDevolucao, contentWidth);
                 fraseDevolucaoLinhas.forEach(linha => {
-                    doc.text(linha, marginLeft, currentY);
+                    doc.text(linha, marginLeft, currentY, { maxWidth: contentWidth, align: 'justify' });
                     currentY += 5;
                 });
                 currentY += 10;
