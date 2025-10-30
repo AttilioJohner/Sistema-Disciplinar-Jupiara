@@ -2567,8 +2567,8 @@
                 let especificacao = motivo;
                 
                 // Se faltas foram selecionadas, usar elas como especificação
-                if (faltasSelecionadas && faltasSelecionadas.length > 0) {
-                    especificacao = faltasSelecionadas.join(' | ');
+                if (window.faltasSelecionadas && window.faltasSelecionadas.length > 0) {
+                    especificacao = window.faltasSelecionadas.join(' | ');
                     console.log(`✅ Faltas selecionadas: ${especificacao}`);
                 } else if (!motivo || motivo.trim() === '') {
                     // Se não há faltas selecionadas nem motivo, usar tipo da medida
@@ -2850,6 +2850,35 @@
                 currentY += 12;
 
                 // ============================================
+                // FALTAS DISCIPLINARES (se selecionadas)
+                // ============================================
+
+                if (dadosMedida.faltas && dadosMedida.faltas.length > 0) {
+                    doc.setFontSize(12);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('FALTAS DISCIPLINARES', marginLeft, currentY);
+                    currentY += 6;
+
+                    doc.setFontSize(10);
+                    doc.setFont('helvetica', 'normal');
+
+                    // Box para as faltas
+                    const faltasTexto = dadosMedida.faltas.join('; ');
+                    const faltasLinhas = doc.splitTextToSize(faltasTexto, contentWidth - 6);
+                    const faltasAltura = faltasLinhas.length * 5 + 6;
+
+                    doc.setFillColor(255, 250, 240);
+                    doc.rect(marginLeft, currentY, contentWidth, faltasAltura, 'FD');
+
+                    currentY += 5;
+                    faltasLinhas.forEach(linha => {
+                        doc.text(linha, marginLeft + 3, currentY, { maxWidth: contentWidth - 6, align: 'justify' });
+                        currentY += 5;
+                    });
+                    currentY += 5;
+                }
+
+                // ============================================
                 // TEXTO FORMAL DA DIREÇÃO
                 // ============================================
 
@@ -2860,7 +2889,7 @@
                 const textoFormalLinhas = doc.splitTextToSize(textoFormal, contentWidth);
 
                 textoFormalLinhas.forEach(linha => {
-                    doc.text(linha, marginLeft, currentY);
+                    doc.text(linha, marginLeft, currentY, { maxWidth: contentWidth, align: 'justify' });
                     currentY += 5;
                 });
                 currentY += 5;
@@ -2896,7 +2925,7 @@
 
                 currentY += 5;
                 fatoLinhas.forEach(linha => {
-                    doc.text(linha, marginLeft + 3, currentY);
+                    doc.text(linha, marginLeft + 3, currentY, { maxWidth: contentWidth - 6, align: 'justify' });
                     currentY += 5;
                 });
                 currentY += 5;
@@ -2934,7 +2963,7 @@
 
                     currentY += 5;
                     fundamentoLinhas.forEach(linha => {
-                        doc.text(linha, marginLeft + 3, currentY);
+                        doc.text(linha, marginLeft + 3, currentY, { maxWidth: contentWidth - 6, align: 'justify' });
                         currentY += 5;
                     });
                     currentY += 5;
@@ -2973,7 +3002,7 @@
 
                     currentY += 5;
                     disposicoesLinhas.forEach(linha => {
-                        doc.text(linha, marginLeft + 3, currentY);
+                        doc.text(linha, marginLeft + 3, currentY, { maxWidth: contentWidth - 6, align: 'justify' });
                         currentY += 5;
                     });
                     currentY += 5;
@@ -3174,7 +3203,8 @@
                     data: data,
                     fato: motivo,
                     fundamento: fundamento,
-                    disposicoes: disposicoes
+                    disposicoes: disposicoes,
+                    faltas: window.faltasSelecionadas || [] // Adicionar faltas selecionadas
                 };
 
                 // Gerar PDF
@@ -5383,12 +5413,12 @@ WHERE prazo_assinatura IS NULL
         }
 
         // === SISTEMA DE CATEGORIAS MÚLTIPLAS ===
-        let faltasSelecionadas = [];
+        window.faltasSelecionadas = [];
         let categoriasSelecionadas = [];
 
         function limparSelecoesCategorias() {
             categoriasSelecionadas = [];
-            faltasSelecionadas = [];
+            window.faltasSelecionadas = [];
             
             // Desmarcar todos os checkboxes
             document.querySelectorAll('#faltasMultiContainer input[type="checkbox"]').forEach(cb => {
@@ -5552,11 +5582,11 @@ WHERE prazo_assinatura IS NULL
         }
 
         function toggleFalta(falta) {
-            const index = faltasSelecionadas.indexOf(falta);
+            const index = window.faltasSelecionadas.indexOf(falta);
             if (index > -1) {
-                faltasSelecionadas.splice(index, 1);
+                window.faltasSelecionadas.splice(index, 1);
             } else {
-                faltasSelecionadas.push(falta);
+                window.faltasSelecionadas.push(falta);
             }
             atualizarTagsFaltas();
         }
@@ -5564,10 +5594,10 @@ WHERE prazo_assinatura IS NULL
         function atualizarTagsFaltas() {
             const tagsContainer = document.getElementById('faltasTagsContainer');
             if (!tagsContainer) return;
-            
+
             tagsContainer.innerHTML = '';
-            
-            faltasSelecionadas.forEach(falta => {
+
+            window.faltasSelecionadas.forEach(falta => {
                 const tag = document.createElement('span');
                 tag.className = 'falta-tag';
                 tag.innerHTML = `
@@ -5576,16 +5606,16 @@ WHERE prazo_assinatura IS NULL
                 `;
                 tagsContainer.appendChild(tag);
             });
-            
+
             // Atualizar o campo oculto se necessário
             const hiddenField = document.getElementById('faltasSelecionadasHidden');
             if (hiddenField) {
-                hiddenField.value = JSON.stringify(faltasSelecionadas);
+                hiddenField.value = JSON.stringify(window.faltasSelecionadas);
             }
         }
 
         function removerFalta(falta) {
-            faltasSelecionadas = faltasSelecionadas.filter(f => f !== falta);
+            window.faltasSelecionadas = window.faltasSelecionadas.filter(f => f !== falta);
             
             // Desmarcar checkbox correspondente
             const checkbox = document.querySelector(`input[value="${falta}"]`);
